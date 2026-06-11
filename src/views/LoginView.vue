@@ -23,8 +23,8 @@ async function enter(role: UserRole) {
   <main class="login-page">
     <section class="login-hero">
       <p class="eyebrow">产地检疫 · 运输监管 · 屠宰检疫 · 产品出证</p>
-      <h1>畜牧兽医管理分系统演示 Demo</h1>
-      <p class="hero-text">围绕动物从养殖场到屠宰场的检疫数据流转，模拟申报、审核、出证、运输、入场、产品检疫和监管预警闭环。</p>
+      <h1>畜牧兽医管理分系统</h1>
+      <p class="hero-text">围绕动物从养殖场到屠宰场的检疫数据流转，支撑申报、审核、出证、运输、入场、产品检疫和监管预警闭环。</p>
       <div class="flow-strip">
         <span>产地申报</span>
         <span>官方出证</span>

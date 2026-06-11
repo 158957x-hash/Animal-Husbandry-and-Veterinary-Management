@@ -16,7 +16,7 @@ async function landing(taskId: string) {
   ElMessage.success('落地报告已提交')
 }
 async function exception(taskId: string) {
-  await store.markTransportException({ transportTaskId: taskId, type: 'route_deviation', message: '监管模拟：车辆轨迹偏离申报路线' })
+  await store.markTransportException({ transportTaskId: taskId, type: 'route_deviation', message: '监管标记：车辆轨迹偏离申报路线' })
   ElMessage.error('已生成轨迹偏离预警和承运限制')
 }
 </script>
@@ -39,7 +39,7 @@ async function exception(taskId: string) {
         <template #header><strong>运输任务</strong></template>
         <div v-for="task in store.data.transportTasks" :key="task.id" class="task-item large">
           <div><b>{{ task.plateNo }}</b><p>{{ task.route[0]?.description }} → {{ task.route[2]?.description }}</p></div>
-          <div class="action-inline"><el-tag :type="statusType[task.status]">{{ statusText[task.status] }}</el-tag><el-button size="small" @click="landing(task.id)">提交落地</el-button><el-button size="small" type="danger" @click="exception(task.id)">模拟异常</el-button></div>
+          <div class="action-inline"><el-tag :type="statusType[task.status]">{{ statusText[task.status] }}</el-tag><el-button size="small" @click="landing(task.id)">提交落地</el-button><el-button size="small" type="danger" @click="exception(task.id)">标记异常</el-button></div>
         </div>
         <el-empty v-if="!store.data.transportTasks.length" description="暂无运输任务" />
       </el-card>

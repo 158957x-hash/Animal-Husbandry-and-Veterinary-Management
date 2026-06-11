@@ -41,7 +41,7 @@ async function check() {
             <el-option v-for="item in certificateOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="车牌识别模拟">
+        <el-form-item label="车牌识别">
           <div class="action-inline full-width"><el-input v-model="form.recognizedPlateNo" placeholder="点击识别自动填充" /><el-button @click="recognizePlate">识别车牌</el-button></div>
           <small>{{ recognitionText }}</small>
         </el-form-item>

@@ -3,7 +3,7 @@ import { mockApi } from '../api/mockApi'
 
 describe('扩展检疫屠宰监管闭环', () => {
   beforeEach(async () => {
-    await mockApi.resetDemoData()
+    await mockApi.restoreInitialData()
   })
 
   async function createIssuedTransport() {
@@ -124,7 +124,7 @@ describe('扩展检疫屠宰监管闭环', () => {
   it('无害化处理完成后回写闭环状态并生成同步日志', async () => {
     await mockApi.createHarmlessTreatmentTask({
       source: 'farm_death',
-      sourceId: 'farm-death-demo',
+      sourceId: 'farm-death-record',
       quantity: 3,
       weight: 240,
       reason: '养殖死亡申报',

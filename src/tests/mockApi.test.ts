@@ -3,7 +3,7 @@ import { mockApi } from '../api/mockApi'
 
 describe('mockApi 检疫屠宰闭环', () => {
   beforeEach(async () => {
-    await mockApi.resetDemoData()
+    await mockApi.restoreInitialData()
   })
 
   it('完成产地申报、出证、运输、入场、屠宰申报和产品出证闭环', async () => {

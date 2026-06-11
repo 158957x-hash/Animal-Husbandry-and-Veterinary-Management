@@ -28,7 +28,7 @@ async function approve() {
     <el-card class="panel-card">
       <template #header><strong>现场查验与无纸化出证</strong></template>
       <div class="inspection-steps">
-        <div class="step-box done"><b>人脸识别模拟</b><span>官方兽医身份核验通过</span></div>
+        <div class="step-box done"><b>人脸识别</b><span>官方兽医身份核验通过</span></div>
         <div class="step-box done"><b>现场查验</b><span>动物精神状态、耳标、数量核验</span></div>
         <div class="step-box done"><b>拍照取证</b><span>上传车辆、耳标、装载照片</span></div>
       </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '../stores/app'
@@ -7,6 +7,7 @@ import { useAppStore } from '../stores/app'
 const store = useAppStore()
 const route = useRoute()
 const router = useRouter()
+const assistantVisible = ref(false)
 
 const roleText = computed(() => {
   const map = {
@@ -62,8 +63,13 @@ async function logout() {
 }
 
 async function reset() {
-  await store.resetDemoData()
-  ElMessage.success('演示数据已重置')
+  await store.restoreInitialData()
+  ElMessage.success('业务数据已恢复到初始状态')
+}
+
+async function refreshData() {
+  await store.refresh()
+  ElMessage.success('业务数据已刷新')
 }
 </script>
 
@@ -74,7 +80,7 @@ async function reset() {
         <span class="brand-mark">牧</span>
         <div>
           <strong>畜牧兽医管理</strong>
-          <small>检疫屠宰闭环 Demo</small>
+          <small>检疫屠宰闭环监管</small>
         </div>
       </div>
       <nav class="nav-list">
@@ -89,7 +95,6 @@ async function reset() {
         </button>
       </nav>
       <div class="sidebar-footer">
-        <el-button plain class="full-btn" @click="reset">重置演示数据</el-button>
         <el-button class="full-btn" @click="logout">返回角色选择</el-button>
       </div>
     </aside>
@@ -107,5 +112,19 @@ async function reset() {
       </header>
       <router-view />
     </main>
+
+    <div class="assistant-float">
+      <button class="assistant-trigger" @click="assistantVisible = !assistantVisible">AI助手</button>
+      <div v-if="assistantVisible" class="assistant-panel">
+        <div class="assistant-header">
+          <strong>AI助手</strong>
+          <button @click="assistantVisible = false">×</button>
+        </div>
+        <p>系统辅助工具</p>
+        <el-button type="success" class="full-width" @click="refreshData">刷新业务数据</el-button>
+        <el-button plain class="full-width" @click="reset">恢复初始数据</el-button>
+        <el-button class="full-width" @click="router.push('/regulator/closed-loop')">查看闭环校验</el-button>
+      </div>
+    </div>
   </div>
 </template>

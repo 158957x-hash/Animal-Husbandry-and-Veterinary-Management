@@ -57,8 +57,8 @@ export const useAppStore = defineStore('app', {
       await mockApi.logout()
       this.session = undefined
     },
-    async resetDemoData() {
-      this.data = await mockApi.resetDemoData()
+    async restoreInitialData() {
+      this.data = await mockApi.restoreInitialData()
     },
     async submitOriginApplication(input: OriginApplicationInput) {
       const result = await mockApi.submitOriginApplication(input)

@@ -37,8 +37,8 @@ import type {
 import { createSeedData, roleSessions } from '../domain/seed'
 import { transitionStatus } from '../domain/stateMachine'
 
-const STORAGE_KEY = 'animal-vet-demo-data'
-const SESSION_KEY = 'animal-vet-demo-session'
+const STORAGE_KEY = 'animal-vet-system-data'
+const SESSION_KEY = 'animal-vet-system-session'
 const memoryStorage = new Map<string, string>()
 const syncTargets = ['动物检疫大数据系统', '畜禽屠宰行业管理系统', '无害化处理数据系统', '省级畜牧数据仓']
 
@@ -592,7 +592,7 @@ export const mockApi = {
     return clone(log)
   },
 
-  async resetDemoData(): Promise<AppData> {
+  async restoreInitialData(): Promise<AppData> {
     const seed = createSeedData()
     writeData(seed)
     return clone(seed)
