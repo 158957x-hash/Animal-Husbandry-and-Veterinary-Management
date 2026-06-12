@@ -1,10 +1,13 @@
 ﻿export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
 
+export type OriginPurpose = 'slaughter' | 'breeding' | 'trade' | 'exhibition'
 export type BusinessStatus =
   | 'draft'
   | 'submitted'
   | 'origin_reviewing'
   | 'origin_approved'
+  | 'rejected'
+  | 'voided'
   | 'certificate_issued'
   | 'transporting'
   | 'landing_pending'
@@ -85,10 +88,22 @@ export interface OriginQuarantineApplication {
   animalType: string
   quantity: number
   destination: string
+  destinationAddress: string
+  purpose: OriginPurpose
+  departureTime: string
+  contactPerson: string
+  contactPhone: string
+  remark?: string
   vehicleId: string
   carrier: string
   status: BusinessStatus
   validationResults: ValidationResult[]
+  rejectReason?: string
+  withdrawReason?: string
+  voidReason?: string
+  voidRequested?: boolean
+  voidRequestReason?: string
+  submittedAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -490,7 +505,18 @@ export interface AppData {
   alerts: AlertRecord[]
 }
 
-export interface OriginApplicationInput { batchId: string; quantity: number; destination: string; vehicleId: string }
+export interface OriginApplicationInput {
+  batchId: string
+  quantity: number
+  destination: string
+  destinationAddress: string
+  purpose: OriginPurpose
+  departureTime: string
+  contactPerson: string
+  contactPhone: string
+  remark?: string
+  vehicleId: string
+}
 export interface OriginInspectionInput { faceRecognitionPassed: boolean; siteInspectionPassed: boolean; evidencePhotoCount: number; remark: string }
 export interface EntryCheckInput { query: string; actualQuantity: number; channel: string; recognizedPlateNo?: string; earTagMatched?: boolean; originRegionMatched?: boolean }
 export interface SlaughterApplicationInput { entryCheckId: string; quantity: number; africanSwineFeverResult: DetectionResult; bannedDrugResult: DetectionResult }

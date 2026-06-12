@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import LoginView from '../views/LoginView.vue'
+import FarmerDashboardView from '../views/farmer/FarmerDashboardView.vue'
+import OriginApplicationListView from '../views/farmer/OriginApplicationListView.vue'
 import OriginApplyView from '../views/farmer/OriginApplyView.vue'
 import OriginDetailView from '../views/farmer/OriginDetailView.vue'
 import OriginTodoView from '../views/vet/OriginTodoView.vue'
@@ -33,7 +35,7 @@ import ClinicSupervisionView from '../views/clinic/ClinicSupervisionView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginView },
@@ -41,7 +43,10 @@ const router = createRouter({
       path: '/',
       component: AppShell,
       children: [
+        { path: 'farmer/dashboard', component: FarmerDashboardView, meta: { role: 'farmer' } },
+        { path: 'farmer/origin-applications', component: OriginApplicationListView, meta: { role: 'farmer' } },
         { path: 'farmer/origin-apply', component: OriginApplyView, meta: { role: 'farmer' } },
+        { path: 'farmer/origin-apply/:id', component: OriginApplyView, meta: { role: 'farmer' } },
         { path: 'farmer/origin-detail/:id?', component: OriginDetailView, meta: { role: 'farmer' } },
         { path: 'vet/origin-todos', component: OriginTodoView, meta: { role: 'vet' } },
         { path: 'vet/origin-inspection/:id', component: OriginInspectionView, meta: { role: 'vet' } },

@@ -25,8 +25,9 @@ const roleText = computed(() => {
 const menus = computed(() => {
   const config = {
     farmer: [
-      { label: '产地检疫申报', path: '/farmer/origin-apply' },
-      { label: '申报详情与证明', path: '/farmer/origin-detail' },
+      { label: '养殖场户工作台', path: '/farmer/dashboard' },
+      { label: '我的产地检疫申报', path: '/farmer/origin-applications' },
+      { label: '新增产地检疫申报', path: '/farmer/origin-apply' },
     ],
     vet: [
       { label: '产地检疫待办', path: '/vet/origin-todos' },
@@ -140,7 +141,7 @@ async function refreshData() {
           <strong>AI助手</strong>
           <button @click="assistantVisible = false">×</button>
         </div>
-        <p>系统辅助工具</p>
+        <p>常用业务工具</p>
         <el-button type="success" class="full-width" @click="refreshData">刷新业务数据</el-button>
         <el-button plain class="full-width" @click="reset">恢复初始数据</el-button>
         <el-button class="full-width" @click="router.push('/regulator/closed-loop')">查看闭环校验</el-button>

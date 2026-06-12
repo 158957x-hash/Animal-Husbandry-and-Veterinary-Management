@@ -42,7 +42,7 @@ async function withdraw(row: AnnualReport) {
       <div class="card-header-line">
         <div>
           <h2>年度报告管理</h2>
-          <p>默认展示年度报告列表，报告由日常业务数据自动汇总；已提交报告不能删除，只能撤回后重新生成或提交。</p>
+          <p>年度报告由诊疗机构日常业务数据汇总形成，提交后可撤回并重新汇总。</p>
         </div>
         <div class="action-inline">
           <el-button @click="store.refresh()">刷新</el-button>

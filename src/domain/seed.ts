@@ -1,13 +1,54 @@
-import type { AppData, UserRole, UserSession } from './models'
+import type { AppData, BusinessStatus, OriginPurpose, UserRole, UserSession, ValidationResult } from './models'
 
 export const roleSessions: Record<UserRole, UserSession> = {
-  farmer: { role: 'farmer', name: '绿丰生态养殖场', homePath: '/farmer/origin-apply' },
+  farmer: { role: 'farmer', name: '绿丰生态养殖场', homePath: '/farmer/dashboard' },
   vet: { role: 'vet', name: '官方兽医 王敏', homePath: '/vet/origin-todos' },
   slaughter: { role: 'slaughter', name: '皖北标准化屠宰中心', homePath: '/slaughter/entry-check' },
   regulator: { role: 'regulator', name: '市级畜牧兽医监管员', homePath: '/regulator/dashboard' },
   clinic_admin: { role: 'clinic_admin', name: '安心动物诊疗中心管理员', homePath: '/clinic/admin/dashboard' },
   practicing_vet: { role: 'practicing_vet', name: '执业兽医 陈晓宁', homePath: '/clinic/veterinarian/pets' },
   pet_owner: { role: 'pet_owner', name: '宠物主人 李女士', homePath: '/clinic/owner/records' },
+}
+
+const seedTime = '2026-06-12T09:00:00.000Z'
+const submittedTime = '2026-06-12T09:30:00.000Z'
+const certificateTime = '2026-06-12T11:00:00.000Z'
+
+function checks(quantity: number): ValidationResult[] {
+  return [
+    { label: '存栏校验', passed: true, message: `当前存栏 320，申报 ${quantity}` },
+    { label: '强制免疫', passed: true, message: '免疫记录在有效期内' },
+    { label: '耳标状态', passed: true, message: `耳标 AH-LF-2026-1001 至 ${1000 + quantity} 可用` },
+    { label: '车辆备案', passed: true, message: '皖K·A3189 已备案' },
+    { label: '承运人备案', passed: true, message: '李建国 已备案' },
+    { label: '目的地备案', passed: true, message: '皖北标准化屠宰中心已备案' },
+    { label: '定位设备状态', passed: true, message: '车辆定位在线' },
+  ]
+}
+
+function originApplication(id: string, applicationNo: string, status: BusinessStatus, quantity: number, purpose: OriginPurpose, extra: Partial<AppData['originApplications'][number]> = {}): AppData['originApplications'][number] {
+  return {
+    id,
+    applicationNo,
+    batchId: 'batch-001',
+    animalType: '生猪',
+    quantity,
+    destination: '皖北标准化屠宰中心',
+    destinationAddress: '安徽省亳州市利辛县屠宰加工园区 1 号',
+    purpose,
+    departureTime: '2026-06-13T08:00:00.000Z',
+    contactPerson: '王场长',
+    contactPhone: '13900002222',
+    remark: '按计划调运申报',
+    vehicleId: 'vehicle-001',
+    carrier: '李建国',
+    status,
+    validationResults: checks(quantity),
+    submittedAt: status === 'draft' ? undefined : submittedTime,
+    createdAt: seedTime,
+    updatedAt: extra.updatedAt || submittedTime,
+    ...extra,
+  }
 }
 
 export function createSeedData(): AppData {
@@ -76,9 +117,67 @@ export function createSeedData(): AppData {
         channel: '东门动物运输专用通道',
       },
     ],
-    originApplications: [],
-    quarantineCertificates: [],
-    transportTasks: [],
+    originApplications: [
+      originApplication('origin-seed-draft', 'CDJY202606120001', 'draft', 60, 'slaughter', { submittedAt: undefined, updatedAt: seedTime }),
+      originApplication('origin-seed-submitted', 'CDJY202606120002', 'submitted', 45, 'trade'),
+      originApplication('origin-seed-rejected', 'CDJY202606120003', 'rejected', 30, 'breeding', { rejectReason: '目的地详细地址材料不完整，请补充后重新提交。' }),
+      originApplication('origin-seed-issued', 'CDJY202606120004', 'certificate_issued', 50, 'slaughter', { updatedAt: certificateTime }),
+      originApplication('origin-seed-transporting', 'CDJY202606120005', 'transporting', 40, 'slaughter', { updatedAt: certificateTime }),
+    ],
+    quarantineCertificates: [
+      {
+        id: 'cert-seed-issued',
+        certificateNo: 'AH-CD-202606120004',
+        applicationId: 'origin-seed-issued',
+        validFrom: certificateTime,
+        validTo: '2026-06-13T11:00:00.000Z',
+        issuedBy: '官方兽医 王敏',
+        animalType: '生猪',
+        quantity: 50,
+        origin: '安徽省阜阳市颍州区三十里铺镇',
+        destination: '皖北标准化屠宰中心',
+        vehiclePlateNo: '皖K·A3189',
+      },
+      {
+        id: 'cert-seed-transporting',
+        certificateNo: 'AH-CD-202606120005',
+        applicationId: 'origin-seed-transporting',
+        validFrom: certificateTime,
+        validTo: '2026-06-13T11:00:00.000Z',
+        issuedBy: '官方兽医 王敏',
+        animalType: '生猪',
+        quantity: 40,
+        origin: '安徽省阜阳市颍州区三十里铺镇',
+        destination: '皖北标准化屠宰中心',
+        vehiclePlateNo: '皖K·A3189',
+      },
+    ],
+    transportTasks: [
+      {
+        id: 'transport-seed-issued',
+        certificateId: 'cert-seed-issued',
+        plateNo: '皖K·A3189',
+        status: 'certificate_issued',
+        hasDeviation: false,
+        startedAt: certificateTime,
+        route: [
+          { name: '起运地', time: '2026-06-12 11:10', status: 'pending', description: '待发车' },
+          { name: '指定通道', time: '2026-06-12 12:10', status: 'pending', description: '待过站' },
+        ],
+      },
+      {
+        id: 'transport-seed-transporting',
+        certificateId: 'cert-seed-transporting',
+        plateNo: '皖K·A3189',
+        status: 'transporting',
+        hasDeviation: false,
+        startedAt: certificateTime,
+        route: [
+          { name: '起运地', time: '2026-06-12 11:10', status: 'done', description: '已发车' },
+          { name: '指定通道', time: '2026-06-12 12:10', status: 'active', description: '车辆运输中' },
+        ],
+      },
+    ],
     landingReports: [],
     carrierRestrictions: [],
     entryChecks: [],

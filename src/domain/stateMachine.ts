@@ -1,10 +1,12 @@
 import type { BusinessStatus } from './models'
 
 export const statusTransitions: Record<BusinessStatus, BusinessStatus[]> = {
-  draft: ['submitted'],
-  submitted: ['origin_reviewing'],
-  origin_reviewing: ['origin_approved'],
+  draft: ['submitted', 'voided'],
+  submitted: ['draft', 'origin_reviewing', 'rejected', 'voided'],
+  origin_reviewing: ['origin_approved', 'rejected'],
   origin_approved: ['certificate_issued'],
+  rejected: ['submitted', 'voided'],
+  voided: [],
   certificate_issued: ['transporting'],
   transporting: ['landing_pending', 'landing_exception', 'arrived'],
   landing_pending: ['landing_submitted', 'landing_overdue', 'landing_exception'],
@@ -34,8 +36,10 @@ export const statusTransitions: Record<BusinessStatus, BusinessStatus[]> = {
 export const statusText: Record<BusinessStatus, string> = {
   draft: '草稿',
   submitted: '已提交',
-  origin_reviewing: '产地检疫审核中',
+  origin_reviewing: '待现场查验',
   origin_approved: '产地检疫已通过',
+  rejected: '已驳回',
+  voided: '已作废',
   certificate_issued: '动物检疫证明已出证',
   transporting: '运输中',
   landing_pending: '待提交落地报告',
@@ -67,6 +71,8 @@ export const statusType: Record<BusinessStatus, 'info' | 'primary' | 'success' |
   submitted: 'primary',
   origin_reviewing: 'warning',
   origin_approved: 'success',
+  rejected: 'danger',
+  voided: 'info',
   certificate_issued: 'success',
   transporting: 'primary',
   landing_pending: 'warning',

@@ -79,7 +79,7 @@ async function voidRecord(row: MedicalWasteRecord) {
       <div class="card-header-line">
         <div>
           <h2>诊疗废弃物处理</h2>
-          <p>默认展示废弃物处理台账，新增登记、编辑待处理记录和处理完成均通过业务按钮办理。</p>
+          <p>记录诊疗废弃物产生、暂存、交接和处理凭证，确保处置过程可追溯。</p>
         </div>
         <div class="action-inline">
           <el-button @click="store.refresh()">刷新</el-button>

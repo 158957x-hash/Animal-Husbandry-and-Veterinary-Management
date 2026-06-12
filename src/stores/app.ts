@@ -69,8 +69,52 @@ export const useAppStore = defineStore('app', {
     async restoreInitialData() {
       this.data = await mockApi.restoreInitialData()
     },
+    async saveOriginDraft(input: OriginApplicationInput) {
+      const result = await mockApi.saveOriginDraft(input)
+      await this.refresh()
+      return result
+    },
+    async updateOriginDraft(id: string, input: OriginApplicationInput) {
+      const result = await mockApi.updateOriginDraft(id, input)
+      await this.refresh()
+      return result
+    },
+    async deleteOriginDraft(id: string) {
+      await mockApi.deleteOriginDraft(id)
+      await this.refresh()
+    },
+    async submitOriginDraft(id: string) {
+      const result = await mockApi.submitOriginDraft(id)
+      await this.refresh()
+      return result
+    },
     async submitOriginApplication(input: OriginApplicationInput) {
       const result = await mockApi.submitOriginApplication(input)
+      await this.refresh()
+      return result
+    },
+    async withdrawOriginApplication(id: string, reason: string) {
+      const result = await mockApi.withdrawOriginApplication(id, reason)
+      await this.refresh()
+      return result
+    },
+    async rejectOriginApplication(id: string, reason: string) {
+      const result = await mockApi.rejectOriginApplication(id, reason)
+      await this.refresh()
+      return result
+    },
+    async resubmitRejectedOriginApplication(id: string, input: OriginApplicationInput) {
+      const result = await mockApi.resubmitRejectedOriginApplication(id, input)
+      await this.refresh()
+      return result
+    },
+    async voidOriginApplication(id: string, reason: string) {
+      const result = await mockApi.voidOriginApplication(id, reason)
+      await this.refresh()
+      return result
+    },
+    async requestVoidOriginApplication(id: string, reason: string) {
+      const result = await mockApi.requestVoidOriginApplication(id, reason)
       await this.refresh()
       return result
     },

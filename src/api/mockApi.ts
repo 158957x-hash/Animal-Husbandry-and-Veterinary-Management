@@ -158,14 +158,72 @@ function validateOriginApplication(data: AppData, input: OriginApplicationInput)
   const enoughEarTags = batch ? input.quantity <= batch.earTagEnd - batch.earTagStart + 1 : false
 
   return [
-    { label: '存栏数量', passed: Boolean(batch && input.quantity > 0 && batch.stock >= input.quantity), message: batch && batch.stock >= input.quantity ? `当前存栏 ${batch.stock} 头，可申报` : '申报数量超过当前存栏' },
-    { label: '耳标区间', passed: Boolean(batch && enoughEarTags), message: batch && enoughEarTags ? `${batch.earTagPrefix} 区间覆盖本次数量` : '耳标区间不足或批次不存在' },
-    { label: '免疫状态', passed: Boolean(batch?.immuneQualified), message: batch?.immuneQualified ? '免疫记录齐全且在有效期内' : '免疫记录不合格' },
+    { label: '存栏校验', passed: Boolean(batch && input.quantity > 0 && batch.stock >= input.quantity), message: batch && batch.stock >= input.quantity ? `当前存栏 ${batch.stock} 头，可申报` : '申报数量超过当前存栏' },
+    { label: '耳标状态', passed: Boolean(batch && enoughEarTags), message: batch && enoughEarTags ? `${batch.earTagPrefix} 区间覆盖本次数量` : '耳标区间不足或批次不存在' },
+    { label: '强制免疫', passed: Boolean(batch?.immuneQualified), message: batch?.immuneQualified ? '免疫记录齐全且在有效期内' : '免疫记录不合格' },
     { label: '车辆备案', passed: Boolean(vehicle?.registered), message: vehicle?.registered ? `${vehicle.plateNo} 已备案` : '车辆未备案' },
-    { label: '承运人状态', passed: Boolean(vehicle && !vehicle.blacklisted), message: vehicle && !vehicle.blacklisted ? `${vehicle.carrier} 未命中黑名单` : '车辆或承运人命中黑名单' },
-    { label: '定位设备', passed: Boolean(vehicle?.registered), message: vehicle?.registered ? '定位设备在线' : '定位设备未备案' },
-    { label: '目的地信息', passed: Boolean(input.destination), message: input.destination ? `目的地：${input.destination}` : '目的地不能为空' },
+    { label: '承运人备案', passed: Boolean(vehicle && !vehicle.blacklisted), message: vehicle && !vehicle.blacklisted ? `${vehicle.carrier} 未命中黑名单` : '车辆或承运人命中黑名单' },
+    { label: '定位设备状态', passed: Boolean(vehicle?.registered), message: vehicle?.registered ? '定位设备在线' : '定位设备未备案' },
+    { label: '目的地备案', passed: Boolean(input.destination && input.destinationAddress), message: input.destination && input.destinationAddress ? `${input.destination}已备案` : '目的地和详细地址不能为空' },
   ]
+}
+
+function buildOriginApplication(data: AppData, input: OriginApplicationInput, status: OriginQuarantineApplication['status']): OriginQuarantineApplication {
+  const batch = data.farmBatches.find((item) => item.id === input.batchId)
+  const vehicle = data.vehicles.find((item) => item.id === input.vehicleId)
+  if (!batch || !vehicle) throw new Error('申报批次或车辆不存在')
+  const current = now()
+
+  return {
+    id: id('origin'),
+    applicationNo: no('CDJY'),
+    batchId: batch.id,
+    animalType: batch.animalType,
+    quantity: input.quantity,
+    destination: input.destination,
+    destinationAddress: input.destinationAddress,
+    purpose: input.purpose,
+    departureTime: input.departureTime,
+    contactPerson: input.contactPerson,
+    contactPhone: input.contactPhone,
+    remark: input.remark,
+    vehicleId: vehicle.id,
+    carrier: vehicle.carrier,
+    status,
+    validationResults: validateOriginApplication(data, input),
+    submittedAt: status === 'submitted' ? current : undefined,
+    createdAt: current,
+    updatedAt: current,
+  }
+}
+
+function updateOriginApplicationFields(data: AppData, application: OriginQuarantineApplication, input: OriginApplicationInput) {
+  const batch = data.farmBatches.find((item) => item.id === input.batchId)
+  const vehicle = data.vehicles.find((item) => item.id === input.vehicleId)
+  if (!batch || !vehicle) throw new Error('申报批次或车辆不存在')
+  application.batchId = batch.id
+  application.animalType = batch.animalType
+  application.quantity = input.quantity
+  application.destination = input.destination
+  application.destinationAddress = input.destinationAddress
+  application.purpose = input.purpose
+  application.departureTime = input.departureTime
+  application.contactPerson = input.contactPerson
+  application.contactPhone = input.contactPhone
+  application.remark = input.remark
+  application.vehicleId = vehicle.id
+  application.carrier = vehicle.carrier
+  application.validationResults = validateOriginApplication(data, input)
+  application.updatedAt = now()
+}
+
+function assertOriginPrecheckPassed(data: AppData, application: OriginQuarantineApplication) {
+  const failed = application.validationResults.filter((item) => !item.passed)
+  if (!failed.length) return
+  pushLog(data, 'farmer', '绿丰生态养殖场', '阻断产地检疫申报提交', `${application.applicationNo}：${failed.map((item) => item.label).join('、')}`)
+  pushAlert(data, 'danger', '申报前自查异常', failed.map((item) => `${item.label}：${item.message}`).join('；'), application.id)
+  writeData(data)
+  throw new Error('申报前自查存在异常，不能提交')
 }
 
 function findCertificateData(data: AppData, query: string) {
@@ -228,32 +286,119 @@ export const mockApi = {
     return clone(data)
   },
 
+  async saveOriginDraft(input: OriginApplicationInput): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = buildOriginApplication(data, input, 'draft')
+    const batch = data.farmBatches.find((item) => item.id === input.batchId)
+    data.originApplications.unshift(application)
+    pushLog(data, 'farmer', batch?.farmName || '养殖场户', '保存产地检疫申报草稿', application.applicationNo)
+    writeData(data)
+    return clone(application)
+  },
+
+  async updateOriginDraft(idValue: string, input: OriginApplicationInput): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (!['draft', 'rejected'].includes(application.status)) throw new Error('只有草稿或驳回申报可以编辑')
+    updateOriginApplicationFields(data, application, input)
+    const batch = data.farmBatches.find((item) => item.id === input.batchId)
+    pushLog(data, 'farmer', batch?.farmName || '养殖场户', application.status === 'rejected' ? '编辑驳回产地检疫申报' : '编辑产地检疫申报草稿', application.applicationNo)
+    writeData(data)
+    return clone(application)
+  },
+
+  async deleteOriginDraft(idValue: string): Promise<void> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (application.status !== 'draft') throw new Error('只有草稿可以删除')
+    data.originApplications = data.originApplications.filter((item) => item.id !== idValue)
+    pushLog(data, 'farmer', '绿丰生态养殖场', '删除产地检疫申报草稿', application.applicationNo)
+    writeData(data)
+  },
+
+  async submitOriginDraft(idValue: string): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (application.status !== 'draft') throw new Error('只有草稿可以提交')
+    assertOriginPrecheckPassed(data, application)
+    application.status = transitionStatus(application.status, 'submitted')
+    application.submittedAt = now()
+    application.updatedAt = now()
+    pushLog(data, 'farmer', '绿丰生态养殖场', '提交产地检疫申报', application.applicationNo)
+    pushNode(data, '产地检疫申报', '养殖场户端', application.validationResults.every((item) => item.passed), '绿丰生态养殖场', application.id, `申报 ${application.quantity} 头${application.animalType}`)
+    application.validationResults.filter((item) => !item.passed).forEach((item) => pushAlert(data, 'warning', item.label, item.message, application.id))
+    writeData(data)
+    return clone(application)
+  },
+
   async submitOriginApplication(input: OriginApplicationInput): Promise<OriginQuarantineApplication> {
     const data = readData()
+    const application = buildOriginApplication(data, input, transitionStatus('draft', 'submitted'))
+    assertOriginPrecheckPassed(data, application)
     const batch = data.farmBatches.find((item) => item.id === input.batchId)
-    const vehicle = data.vehicles.find((item) => item.id === input.vehicleId)
-    if (!batch || !vehicle) throw new Error('申报批次或车辆不存在')
-
-    const validationResults = validateOriginApplication(data, input)
-    const application: OriginQuarantineApplication = {
-      id: id('origin'),
-      applicationNo: no('CDJY'),
-      batchId: batch.id,
-      animalType: batch.animalType,
-      quantity: input.quantity,
-      destination: input.destination,
-      vehicleId: vehicle.id,
-      carrier: vehicle.carrier,
-      status: transitionStatus('draft', 'submitted'),
-      validationResults,
-      createdAt: now(),
-      updatedAt: now(),
-    }
 
     data.originApplications.unshift(application)
-    pushLog(data, 'farmer', batch.farmName, '提交产地检疫申报', application.applicationNo)
-    pushNode(data, '产地检疫申报', '养殖场户端', validationResults.every((item) => item.passed), batch.farmName, application.id, `申报 ${application.quantity} 头${application.animalType}`)
-    validationResults.filter((item) => !item.passed).forEach((item) => pushAlert(data, 'warning', item.label, item.message, application.id))
+    pushLog(data, 'farmer', batch?.farmName || '养殖场户', '提交产地检疫申报', application.applicationNo)
+    pushNode(data, '产地检疫申报', '养殖场户端', application.validationResults.every((item) => item.passed), batch?.farmName || '养殖场户', application.id, `申报 ${application.quantity} 头${application.animalType}`)
+    application.validationResults.filter((item) => !item.passed).forEach((item) => pushAlert(data, 'warning', item.label, item.message, application.id))
+    writeData(data)
+    return clone(application)
+  },
+
+  async withdrawOriginApplication(idValue: string, reason: string): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (!['submitted', 'origin_reviewing'].includes(application.status)) throw new Error('当前状态不允许撤回')
+    application.status = transitionStatus(application.status, 'draft')
+    application.withdrawReason = reason
+    application.updatedAt = now()
+    pushLog(data, 'farmer', '绿丰生态养殖场', '撤回产地检疫申报', `${application.applicationNo}：${reason}`)
+    writeData(data)
+    return clone(application)
+  },
+
+  async rejectOriginApplication(idValue: string, reason: string): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (!['submitted', 'origin_reviewing'].includes(application.status)) throw new Error('当前状态不允许驳回')
+    application.status = transitionStatus(application.status, 'rejected')
+    application.rejectReason = reason
+    application.updatedAt = now()
+    pushLog(data, 'vet', '官方兽医 王敏', '驳回产地检疫申报', `${application.applicationNo}：${reason}`)
+    writeData(data)
+    return clone(application)
+  },
+
+  async resubmitRejectedOriginApplication(idValue: string, input: OriginApplicationInput): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (application.status !== 'rejected') throw new Error('只有驳回申报可以重新提交')
+    updateOriginApplicationFields(data, application, input)
+    assertOriginPrecheckPassed(data, application)
+    application.status = transitionStatus(application.status, 'submitted')
+    application.submittedAt = now()
+    application.rejectReason = undefined
+    application.updatedAt = now()
+    pushLog(data, 'farmer', '绿丰生态养殖场', '重新提交产地检疫申报', application.applicationNo)
+    writeData(data)
+    return clone(application)
+  },
+
+  async voidOriginApplication(idValue: string, reason: string): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (!['draft', 'submitted', 'rejected'].includes(application.status)) throw new Error('当前状态不允许作废')
+    application.status = transitionStatus(application.status, 'voided')
+    application.voidReason = reason
+    application.updatedAt = now()
+    pushLog(data, 'farmer', '绿丰生态养殖场', '作废产地检疫申报', `${application.applicationNo}：${reason}`)
     writeData(data)
     return clone(application)
   },
@@ -264,6 +409,20 @@ export const mockApi = {
 
   async getOriginApplication(idValue: string): Promise<OriginQuarantineApplication | undefined> {
     return clone(readData().originApplications.find((item) => item.id === idValue))
+  },
+
+  async requestVoidOriginApplication(idValue: string, reason: string): Promise<OriginQuarantineApplication> {
+    const data = readData()
+    const application = data.originApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('申报不存在')
+    if (application.status !== 'certificate_issued') throw new Error('只有已出证申报可以申请作废')
+    application.voidRequested = true
+    application.voidRequestReason = reason
+    application.updatedAt = now()
+    pushLog(data, 'farmer', '绿丰生态养殖场', '申请作废产地检疫证明', `${application.applicationNo}：${reason}`)
+    pushAlert(data, 'warning', '产地检疫证明作废申请', `${application.applicationNo}：${reason}`, application.id)
+    writeData(data)
+    return clone(application)
   },
 
   async approveOriginApplication(idValue: string, input: OriginInspectionInput): Promise<QuarantineCertificate> {

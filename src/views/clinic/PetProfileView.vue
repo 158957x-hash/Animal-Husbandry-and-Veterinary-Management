@@ -93,7 +93,7 @@ async function removePet(row: PetProfile) {
 <template>
   <div class="page-grid">
     <el-card class="panel-card">
-      <div class="card-header-line"><div><h2>宠物主人与宠物档案</h2><p>默认展示主人与宠物档案列表，新增、编辑和详情通过弹窗主动打开。</p></div><div class="action-inline"><el-button @click="store.refresh()">刷新</el-button><el-button @click="openOwner">新增宠物主人</el-button><el-button type="success" @click="openPet">新增宠物档案</el-button></div></div>
+      <div class="card-header-line"><div><h2>宠物主人与宠物档案</h2><p>集中维护宠物主人信息、宠物档案和关联免疫处方记录。</p></div><div class="action-inline"><el-button @click="store.refresh()">刷新</el-button><el-button @click="openOwner">新增宠物主人</el-button><el-button type="success" @click="openPet">新增宠物档案</el-button></div></div>
       <div class="action-inline"><el-input v-model="keyword" placeholder="按主人、手机号、宠物名称或标识号筛选" clearable /><el-button>导出</el-button></div>
     </el-card>
     <div class="page-grid two-col">

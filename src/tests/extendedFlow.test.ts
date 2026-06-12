@@ -14,6 +14,12 @@ describe('扩展检疫屠宰监管闭环', () => {
       batchId: batch.id,
       quantity: 50,
       destination: '皖北标准化屠宰中心',
+      destinationAddress: '安徽省亳州市利辛县屠宰加工园区 1 号',
+      purpose: 'slaughter',
+      departureTime: '2026-06-13T08:00:00.000Z',
+      contactPerson: '王场长',
+      contactPhone: '13900002222',
+      remark: '扩展闭环测试',
       vehicleId: vehicle.id,
     })
     const certificate = await mockApi.approveOriginApplication(origin.id, {

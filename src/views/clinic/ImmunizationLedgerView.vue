@@ -44,7 +44,7 @@ async function voidRecord(row: ImmunizationLedger) {
       <div class="card-header-line">
         <div>
           <h2>免疫台账管理</h2>
-          <p>默认展示免疫记录列表，新增登记通过按钮打开；已生效记录只能作废，不能直接删除。</p>
+          <p>记录宠物免疫接种、疫苗批号、接种机构和下次免疫日期，保障免疫信息可追溯。</p>
         </div>
         <div class="action-inline">
           <el-button @click="store.refresh()">刷新</el-button>
