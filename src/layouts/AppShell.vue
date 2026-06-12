@@ -15,46 +15,66 @@ const roleText = computed(() => {
     vet: '官方兽医',
     slaughter: '屠宰企业',
     regulator: '监管人员',
+    clinic_admin: '诊疗机构管理员',
+    practicing_vet: '执业兽医',
+    pet_owner: '宠物主人',
   }
   return store.session ? map[store.session.role] : '未登录'
 })
 
 const menus = computed(() => {
-  if (store.currentRole === 'farmer') {
-    return [
-      { path: '/farmer/origin-apply', label: '产地检疫申报' },
-      { path: '/farmer/origin-detail', label: '申报详情与证明' },
-    ]
+  const config = {
+    farmer: [
+      { label: '产地检疫申报', path: '/farmer/origin-apply' },
+      { label: '申报详情与证明', path: '/farmer/origin-detail' },
+    ],
+    vet: [
+      { label: '产地检疫待办', path: '/vet/origin-todos' },
+      { label: '屠宰检疫审核', path: '/vet/slaughter-audit' },
+    ],
+    slaughter: [
+      { label: '入场查验', path: '/slaughter/entry-check' },
+      { label: '待宰管理', path: '/slaughter/waiting-slaughter' },
+      { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
+    ],
+    regulator: [
+      { label: '检疫监管', path: '/regulator/dashboard' },
+      { label: '诊疗监管', path: '/regulator/clinic-supervision' },
+      { label: '调运监管一张图', path: '/regulator/transport-map' },
+      { label: '产地证明抽查', path: '/regulator/certificate-spot-check' },
+      { label: '落地报告抽查', path: '/regulator/landing-report-spot-check' },
+      { label: '产地统计分析', path: '/regulator/origin-statistics' },
+      { label: '承运限制管理', path: '/regulator/carrier-restrictions' },
+      { label: '无害化处理', path: '/regulator/harmless-treatment' },
+      { label: '证章管理', path: '/regulator/seal-management' },
+      { label: '屠宰统计分析', path: '/regulator/slaughter-statistics' },
+      { label: '接口同步日志', path: '/regulator/sync-logs' },
+      { label: '闭环校验总览', path: '/regulator/closed-loop' },
+      { label: '诊疗机构审核', path: '/regulator/clinic-institutions' },
+      { label: '执业兽医审核', path: '/regulator/clinic-veterinarians' },
+      { label: '年度报告查看', path: '/regulator/clinic-reports' },
+      { label: '药品处方监管', path: '/regulator/clinic-drug-supervision' },
+      { label: '废弃物监管', path: '/regulator/clinic-waste-supervision' },
+    ],
+    clinic_admin: [
+      { label: '动物诊疗工作台', path: '/clinic/admin/dashboard' },
+      { label: '诊疗机构备案', path: '/clinic/admin/institutions' },
+      { label: '执业兽医备案', path: '/clinic/admin/veterinarians' },
+      { label: '药品库存与处方', path: '/clinic/admin/drugs' },
+      { label: '废弃物处理', path: '/clinic/admin/waste' },
+      { label: '年度报告管理', path: '/clinic/admin/reports' },
+    ],
+    practicing_vet: [
+      { label: '宠物主人与档案', path: '/clinic/veterinarian/pets' },
+      { label: '免疫台账管理', path: '/clinic/veterinarian/immunization' },
+      { label: '药品库存与处方', path: '/clinic/veterinarian/prescriptions' },
+    ],
+    pet_owner: [
+      { label: '宠物档案记录', path: '/clinic/owner/records' },
+    ],
   }
-  if (store.currentRole === 'vet') {
-    return [
-      { path: '/vet/origin-todos', label: '产地检疫待办' },
-      { path: '/vet/slaughter-audit', label: '屠宰检疫审核' },
-    ]
-  }
-  if (store.currentRole === 'slaughter') {
-    return [
-      { path: '/slaughter/entry-check', label: '入场查验' },
-      { path: '/slaughter/waiting-slaughter', label: '待宰管理' },
-      { path: '/slaughter/slaughter-apply', label: '屠宰检疫申报' },
-    ]
-  }
-  if (store.currentRole === 'regulator') {
-    return [
-      { path: '/regulator/dashboard', label: '监管看板' },
-      { path: '/regulator/transport-map', label: '调运监管一张图' },
-      { path: '/regulator/certificate-spot-check', label: '证明抽查' },
-      { path: '/regulator/landing-report-spot-check', label: '落地报告抽查' },
-      { path: '/regulator/origin-statistics', label: '产地检疫统计' },
-      { path: '/regulator/carrier-restrictions', label: '承运限制管理' },
-      { path: '/regulator/harmless-treatment', label: '无害化处理' },
-      { path: '/regulator/seal-management', label: '检疫证章管理' },
-      { path: '/regulator/slaughter-statistics', label: '屠宰统计分析' },
-      { path: '/regulator/sync-logs', label: '接口同步日志' },
-      { path: '/regulator/closed-loop', label: '闭环校验总览' },
-    ]
-  }
-  return []
+
+  return store.currentRole ? (config[store.currentRole as keyof typeof config] ?? []) : []
 })
 
 async function logout() {

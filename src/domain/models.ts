@@ -1,4 +1,4 @@
-export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator'
+export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
 
 export type BusinessStatus =
   | 'draft'
@@ -37,6 +37,12 @@ export type SimpleStatus = 'pending' | 'completed'
 export type SyncStatus = 'success' | 'failed' | 'pending'
 export type HarmlessSource = 'farm_death' | 'slaughter_unqualified' | 'entry_exception'
 export type SealAction = 'receive' | 'issue' | 'use' | 'recycle' | 'destroy'
+export type FilingStatus = 'pending' | 'approved' | 'rejected'
+export type PracticeType = 'licensed_veterinarian' | 'assistant_veterinarian'
+export type DrugRecordType = 'in' | 'out'
+export type WasteStatus = 'pending' | 'handled'
+export type AnnualReportStatus = 'generated' | 'submitted'
+export type WasteSourceBusinessType = 'immunization' | 'prescription'
 
 export interface UserSession {
   role: UserRole
@@ -263,6 +269,141 @@ export interface SealManagementRecord {
   createdAt: string
 }
 
+export interface ClinicInstitution {
+  id: string
+  name: string
+  licenseNo: string
+  address: string
+  contactPerson: string
+  phone: string
+  type: string
+  mapPoint: string
+  status: FilingStatus
+  reviewRemark?: string
+  createdAt: string
+  reviewedAt?: string
+}
+
+export interface Veterinarian {
+  id: string
+  name: string
+  certificateNo: string
+  practiceType: PracticeType
+  institutionId: string
+  practiceScope: string
+  phone: string
+  material: string
+  status: FilingStatus
+  reviewRemark?: string
+  createdAt: string
+  reviewedAt?: string
+}
+
+export interface PetOwner {
+  id: string
+  name: string
+  phone: string
+  address: string
+  createdAt: string
+}
+
+export interface PetProfile {
+  id: string
+  ownerId: string
+  name: string
+  species: string
+  breed: string
+  gender: string
+  age: number
+  identityNo: string
+  createdAt: string
+}
+
+export interface ImmunizationLedger {
+  id: string
+  petId: string
+  vaccineName: string
+  vaccineBatchNo: string
+  immunizedAt: string
+  nextImmunizedAt: string
+  veterinarianId: string
+  institutionId: string
+  createdAt: string
+}
+
+export interface DrugInventory {
+  id: string
+  institutionId: string
+  drugName: string
+  batchNo: string
+  manufacturer: string
+  approvalNo: string
+  validTo: string
+  quantity: number
+  supplier: string
+  traceCode: string
+  createdAt: string
+}
+
+export interface Prescription {
+  id: string
+  prescriptionNo: string
+  petId: string
+  diagnosis: string
+  drugId: string
+  drugName: string
+  dosage: string
+  quantity: number
+  veterinarianId: string
+  institutionId: string
+  issuedAt: string
+}
+
+export interface DrugInOutRecord {
+  id: string
+  type: DrugRecordType
+  drugId: string
+  drugName: string
+  institutionId: string
+  quantity: number
+  relatedId?: string
+  operator: string
+  createdAt: string
+}
+
+export interface MedicalWasteRecord {
+  id: string
+  wasteNo: string
+  type: string
+  sourceBusinessType: WasteSourceBusinessType
+  sourceBusinessId: string
+  weight: number
+  generatedAt: string
+  storageLocation: string
+  disposalCompany: string
+  handoverPerson: string
+  status: WasteStatus
+  handledAt?: string
+  voucherNo?: string
+  createdAt: string
+}
+
+export interface AnnualReport {
+  id: string
+  institutionId: string
+  year: number
+  status: AnnualReportStatus
+  veterinarianCount: number
+  petCount: number
+  immunizationCount: number
+  prescriptionCount: number
+  drugStockInQuantity: number
+  drugStockOutQuantity: number
+  wasteHandledCount: number
+  generatedAt: string
+  submittedAt?: string
+}
+
 export interface SyncLog {
   id: string
   target: string
@@ -323,6 +464,16 @@ export interface AppData {
   threeCertificateLinks: ThreeCertificateLink[]
   harmlessTasks: HarmlessTreatmentTask[]
   sealRecords: SealManagementRecord[]
+  clinicInstitutions: ClinicInstitution[]
+  veterinarians: Veterinarian[]
+  petOwners: PetOwner[]
+  petProfiles: PetProfile[]
+  immunizationLedgers: ImmunizationLedger[]
+  drugInventories: DrugInventory[]
+  prescriptions: Prescription[]
+  drugInOutRecords: DrugInOutRecord[]
+  medicalWasteRecords: MedicalWasteRecord[]
+  annualReports: AnnualReport[]
   syncLogs: SyncLog[]
   closedLoopNodes: ClosedLoopNode[]
   operationLogs: OperationLog[]
@@ -342,3 +493,12 @@ export interface ProductCertificateInput { waitingBatchId: string; productName: 
 export interface MeatQualityCertificateInput { waitingBatchId: string; productName: string; weight: number; inspector: string }
 export interface HarmlessTaskInput { source: HarmlessSource; sourceId: string; quantity: number; weight: number; reason: string }
 export interface CompleteHarmlessInput { taskId: string; method: string; processedQuantity: number; processedWeight: number; photoCount: number; operator: string }
+export interface ClinicInstitutionInput { name: string; licenseNo: string; address: string; contactPerson: string; phone: string; type: string; mapPoint: string }
+export interface VeterinarianInput { name: string; certificateNo: string; practiceType: PracticeType; institutionId: string; practiceScope: string; phone: string; material: string }
+export interface PetOwnerInput { name: string; phone: string; address: string }
+export interface PetProfileInput { ownerId: string; name: string; species: string; breed: string; gender: string; age: number; identityNo: string }
+export interface ImmunizationInput { petId: string; vaccineName: string; vaccineBatchNo: string; immunizedAt: string; nextImmunizedAt: string; veterinarianId: string; institutionId: string }
+export interface DrugStockInInput { institutionId: string; drugName: string; batchNo: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; supplier: string; traceCode: string }
+export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
+export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
+export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }

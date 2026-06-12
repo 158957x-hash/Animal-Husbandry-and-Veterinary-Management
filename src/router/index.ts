@@ -20,6 +20,16 @@ import SealManagementView from '../views/regulator/SealManagementView.vue'
 import SlaughterStatisticsView from '../views/regulator/SlaughterStatisticsView.vue'
 import SyncLogView from '../views/regulator/SyncLogView.vue'
 import ClosedLoopOverviewView from '../views/regulator/ClosedLoopOverviewView.vue'
+import ClinicDashboardView from '../views/clinic/ClinicDashboardView.vue'
+import ClinicInstitutionView from '../views/clinic/ClinicInstitutionView.vue'
+import ClinicVeterinarianView from '../views/clinic/ClinicVeterinarianView.vue'
+import PetProfileView from '../views/clinic/PetProfileView.vue'
+import ImmunizationLedgerView from '../views/clinic/ImmunizationLedgerView.vue'
+import DrugPrescriptionView from '../views/clinic/DrugPrescriptionView.vue'
+import MedicalWasteView from '../views/clinic/MedicalWasteView.vue'
+import AnnualReportView from '../views/clinic/AnnualReportView.vue'
+import PetOwnerRecordsView from '../views/clinic/PetOwnerRecordsView.vue'
+import ClinicSupervisionView from '../views/clinic/ClinicSupervisionView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
@@ -50,6 +60,22 @@ const router = createRouter({
         { path: 'regulator/slaughter-statistics', component: SlaughterStatisticsView, meta: { role: 'regulator' } },
         { path: 'regulator/sync-logs', component: SyncLogView, meta: { role: 'regulator' } },
         { path: 'regulator/closed-loop', component: ClosedLoopOverviewView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-supervision', component: ClinicSupervisionView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-institutions', component: ClinicInstitutionView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-veterinarians', component: ClinicVeterinarianView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-reports', component: AnnualReportView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-drug-supervision', component: DrugPrescriptionView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-waste-supervision', component: MedicalWasteView, meta: { role: 'regulator' } },
+        { path: 'clinic/admin/dashboard', component: ClinicDashboardView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/institutions', component: ClinicInstitutionView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/veterinarians', component: ClinicVeterinarianView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/drugs', component: DrugPrescriptionView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/waste', component: MedicalWasteView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/reports', component: AnnualReportView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/veterinarian/pets', component: PetProfileView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/immunization', component: ImmunizationLedgerView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/prescriptions', component: DrugPrescriptionView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/owner/records', component: PetOwnerRecordsView, meta: { role: 'pet_owner' } },
       ],
     },
   ],

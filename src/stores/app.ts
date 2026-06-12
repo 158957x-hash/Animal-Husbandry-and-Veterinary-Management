@@ -3,20 +3,29 @@ import { mockApi } from '../api/mockApi'
 import type {
   AnteMortemInput,
   AppData,
+  ClinicInstitutionInput,
   CompleteHarmlessInput,
+  CompleteMedicalWasteInput,
+  DrugStockInInput,
   EntryCheckInput,
   HarmlessTaskInput,
+  ImmunizationInput,
   LandingReportInput,
   MeatQualityCertificateInput,
+  MedicalWasteInput,
   OriginApplicationInput,
   OriginInspectionInput,
+  PetOwnerInput,
+  PetProfileInput,
   PostMortemInput,
+  PrescriptionInput,
   ProductCertificateInput,
   SlaughterApplicationInput,
   SlaughterAuditInput,
   TransportExceptionInput,
   UserRole,
   UserSession,
+  VeterinarianInput,
 } from '../domain/models'
 import { createSeedData } from '../domain/seed'
 
@@ -137,6 +146,71 @@ export const useAppStore = defineStore('app', {
     },
     async releaseCarrierRestriction(id: string, remark: string) {
       const result = await mockApi.releaseCarrierRestriction(id, remark)
+      await this.refresh()
+      return result
+    },
+    async submitClinicInstitution(input: ClinicInstitutionInput) {
+      const result = await mockApi.submitClinicInstitution(input)
+      await this.refresh()
+      return result
+    },
+    async reviewClinicInstitution(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.reviewClinicInstitution(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async submitVeterinarian(input: VeterinarianInput) {
+      const result = await mockApi.submitVeterinarian(input)
+      await this.refresh()
+      return result
+    },
+    async reviewVeterinarian(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.reviewVeterinarian(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async createPetOwner(input: PetOwnerInput) {
+      const result = await mockApi.createPetOwner(input)
+      await this.refresh()
+      return result
+    },
+    async createPetProfile(input: PetProfileInput) {
+      const result = await mockApi.createPetProfile(input)
+      await this.refresh()
+      return result
+    },
+    async createImmunizationRecord(input: ImmunizationInput) {
+      const result = await mockApi.createImmunizationRecord(input)
+      await this.refresh()
+      return result
+    },
+    async stockInDrug(input: DrugStockInInput) {
+      const result = await mockApi.stockInDrug(input)
+      await this.refresh()
+      return result
+    },
+    async issuePrescription(input: PrescriptionInput) {
+      const result = await mockApi.issuePrescription(input)
+      await this.refresh()
+      return result
+    },
+    async createMedicalWaste(input: MedicalWasteInput) {
+      const result = await mockApi.createMedicalWaste(input)
+      await this.refresh()
+      return result
+    },
+    async completeMedicalWaste(input: CompleteMedicalWasteInput) {
+      const result = await mockApi.completeMedicalWaste(input)
+      await this.refresh()
+      return result
+    },
+    async generateAnnualReport(institutionId: string, year: number) {
+      const result = await mockApi.generateAnnualReport(institutionId, year)
+      await this.refresh()
+      return result
+    },
+    async submitAnnualReport(id: string) {
+      const result = await mockApi.submitAnnualReport(id)
       await this.refresh()
       return result
     },

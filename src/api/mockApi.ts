@@ -1,23 +1,40 @@
 import type {
   AlertRecord,
+  AnnualReport,
   AnteMortemInput,
   AppData,
   CarrierRestriction,
+  ClinicInstitution,
+  ClinicInstitutionInput,
   ClosedLoopNode,
   CompleteHarmlessInput,
+  CompleteMedicalWasteInput,
+  DrugInOutRecord,
+  DrugInventory,
+  DrugStockInInput,
   EntryCheckInput,
   EntryCheckRecord,
   HarmlessTaskInput,
   HarmlessTreatmentTask,
+  ImmunizationInput,
+  ImmunizationLedger,
   LandingReport,
   LandingReportInput,
+  MedicalWasteInput,
+  MedicalWasteRecord,
   MeatQualityCertificate,
   MeatQualityCertificateInput,
   OperationLog,
   OriginApplicationInput,
   OriginInspectionInput,
   OriginQuarantineApplication,
+  PetOwner,
+  PetOwnerInput,
+  PetProfile,
+  PetProfileInput,
   PostMortemInput,
+  Prescription,
+  PrescriptionInput,
   ProductCertificate,
   ProductCertificateInput,
   QuarantineCertificate,
@@ -32,6 +49,8 @@ import type {
   UserRole,
   UserSession,
   ValidationResult,
+  Veterinarian,
+  VeterinarianInput,
   WaitingSlaughterBatch,
 } from '../domain/models'
 import { createSeedData, roleSessions } from '../domain/seed'
@@ -567,6 +586,199 @@ export const mockApi = {
   async getSealRecords() { return clone(readData().sealRecords) },
   async getSyncLogs() { return clone(readData().syncLogs) },
   async getClosedLoopNodes() { return clone(readData().closedLoopNodes) },
+
+  async submitClinicInstitution(input: ClinicInstitutionInput): Promise<ClinicInstitution> {
+    const data = readData()
+    const institution: ClinicInstitution = { id: id('clinic'), ...input, status: 'pending', createdAt: now() }
+    data.clinicInstitutions.unshift(institution)
+    pushLog(data, 'clinic_admin', input.name, '提交诊疗机构备案', input.licenseNo)
+    pushNode(data, '诊疗机构备案', '动物诊疗管理', false, input.name, institution.id, `${input.name} 待审核`)
+    writeData(data)
+    return clone(institution)
+  },
+
+  async reviewClinicInstitution(idValue: string, approved: boolean, remark: string): Promise<ClinicInstitution> {
+    const data = readData()
+    const institution = data.clinicInstitutions.find((item) => item.id === idValue)
+    if (!institution) throw new Error('诊疗机构备案不存在')
+    institution.status = approved ? 'approved' : 'rejected'
+    institution.reviewRemark = remark
+    institution.reviewedAt = now()
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', approved ? '审核通过诊疗机构备案' : '驳回诊疗机构备案', institution.name)
+    pushNode(data, '诊疗机构备案审核', '诊疗监管端', approved, '市级畜牧兽医监管员', institution.id, remark)
+    writeData(data)
+    return clone(institution)
+  },
+
+  async submitVeterinarian(input: VeterinarianInput): Promise<Veterinarian> {
+    const data = readData()
+    const institution = data.clinicInstitutions.find((item) => item.id === input.institutionId)
+    if (!institution) throw new Error('所属诊疗机构不存在')
+    const veterinarian: Veterinarian = { id: id('veterinarian'), ...input, status: 'pending', createdAt: now() }
+    data.veterinarians.unshift(veterinarian)
+    pushLog(data, 'clinic_admin', institution.name, '提交执业兽医备案', input.name)
+    pushNode(data, '执业兽医备案', '动物诊疗管理', false, institution.name, veterinarian.id, `${input.name} 待审核`)
+    writeData(data)
+    return clone(veterinarian)
+  },
+
+  async reviewVeterinarian(idValue: string, approved: boolean, remark: string): Promise<Veterinarian> {
+    const data = readData()
+    const veterinarian = data.veterinarians.find((item) => item.id === idValue)
+    if (!veterinarian) throw new Error('执业兽医备案不存在')
+    veterinarian.status = approved ? 'approved' : 'rejected'
+    veterinarian.reviewRemark = remark
+    veterinarian.reviewedAt = now()
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', approved ? '审核通过执业兽医备案' : '驳回执业兽医备案', veterinarian.name)
+    pushNode(data, '执业兽医备案审核', '诊疗监管端', approved, '市级畜牧兽医监管员', veterinarian.id, remark)
+    writeData(data)
+    return clone(veterinarian)
+  },
+
+  async createPetOwner(input: PetOwnerInput): Promise<PetOwner> {
+    const data = readData()
+    const owner: PetOwner = { id: id('owner'), ...input, createdAt: now() }
+    data.petOwners.unshift(owner)
+    pushLog(data, 'practicing_vet', '执业兽医', '建立宠物主人档案', input.name)
+    writeData(data)
+    return clone(owner)
+  },
+
+  async createPetProfile(input: PetProfileInput): Promise<PetProfile> {
+    const data = readData()
+    const owner = data.petOwners.find((item) => item.id === input.ownerId)
+    if (!owner) throw new Error('宠物主人档案不存在')
+    const pet: PetProfile = { id: id('pet'), ...input, createdAt: now() }
+    data.petProfiles.unshift(pet)
+    pushLog(data, 'practicing_vet', '执业兽医', '创建宠物档案', `${owner.name}-${input.name}`)
+    pushNode(data, '宠物建档', '动物诊疗管理', true, '执业兽医', pet.id, `${input.species} ${input.name}`)
+    writeData(data)
+    return clone(pet)
+  },
+
+  async createImmunizationRecord(input: ImmunizationInput): Promise<ImmunizationLedger> {
+    const data = readData()
+    const pet = data.petProfiles.find((item) => item.id === input.petId)
+    const veterinarian = data.veterinarians.find((item) => item.id === input.veterinarianId)
+    const institution = data.clinicInstitutions.find((item) => item.id === input.institutionId)
+    if (!pet || !veterinarian || !institution) throw new Error('免疫记录关联数据不完整')
+    if (veterinarian.status !== 'approved') throw new Error('未备案通过的执业兽医不能登记免疫')
+    if (institution.status !== 'approved') throw new Error('未备案通过的诊疗机构不能登记免疫')
+    const record: ImmunizationLedger = { id: id('immunization'), ...input, createdAt: now() }
+    data.immunizationLedgers.unshift(record)
+    pushLog(data, 'practicing_vet', veterinarian.name, '登记宠物免疫台账', pet.name)
+    pushNode(data, '宠物免疫台账', '动物诊疗管理', true, veterinarian.name, record.id, `${pet.name} 接种 ${input.vaccineName}`)
+    writeData(data)
+    return clone(record)
+  },
+
+  async stockInDrug(input: DrugStockInInput): Promise<DrugInventory> {
+    const data = readData()
+    const institution = data.clinicInstitutions.find((item) => item.id === input.institutionId)
+    if (!institution) throw new Error('诊疗机构不存在')
+    const inventory: DrugInventory = { id: id('drug'), ...input, createdAt: now() }
+    const record: DrugInOutRecord = { id: id('drug-record'), type: 'in', drugId: inventory.id, drugName: inventory.drugName, institutionId: inventory.institutionId, quantity: input.quantity, operator: institution.name, createdAt: now() }
+    data.drugInventories.unshift(inventory)
+    data.drugInOutRecords.unshift(record)
+    pushLog(data, 'clinic_admin', institution.name, '药品入库', `${input.drugName} ${input.quantity}`)
+    writeData(data)
+    return clone(inventory)
+  },
+
+  async issuePrescription(input: PrescriptionInput): Promise<Prescription> {
+    const data = readData()
+    const pet = data.petProfiles.find((item) => item.id === input.petId)
+    const drug = data.drugInventories.find((item) => item.id === input.drugId)
+    const veterinarian = data.veterinarians.find((item) => item.id === input.veterinarianId)
+    if (!pet || !drug || !veterinarian) throw new Error('处方关联数据不完整')
+    if (veterinarian.status !== 'approved') {
+      pushLog(data, 'practicing_vet', veterinarian.name, '处方开具被阻断', '未备案通过')
+      writeData(data)
+      throw new Error('未备案通过的执业兽医不能开具处方')
+    }
+    if (drug.quantity < input.quantity) {
+      pushLog(data, 'practicing_vet', veterinarian.name, '处方开具被阻断', '药品库存不足')
+      writeData(data)
+      throw new Error('药品库存不足，禁止开方')
+    }
+    drug.quantity -= input.quantity
+    const prescription: Prescription = { id: id('prescription'), prescriptionNo: no('CF'), petId: pet.id, diagnosis: input.diagnosis, drugId: drug.id, drugName: drug.drugName, dosage: input.dosage, quantity: input.quantity, veterinarianId: veterinarian.id, institutionId: veterinarian.institutionId, issuedAt: now() }
+    const outRecord: DrugInOutRecord = { id: id('drug-record'), type: 'out', drugId: drug.id, drugName: drug.drugName, institutionId: veterinarian.institutionId, quantity: input.quantity, relatedId: prescription.id, operator: veterinarian.name, createdAt: now() }
+    data.prescriptions.unshift(prescription)
+    data.drugInOutRecords.unshift(outRecord)
+    pushLog(data, 'practicing_vet', veterinarian.name, '开具处方笺并自动出库', prescription.prescriptionNo)
+    pushNode(data, '处方笺', '动物诊疗管理', true, veterinarian.name, prescription.id, `${pet.name} 使用 ${drug.drugName}`)
+    writeData(data)
+    return clone(prescription)
+  },
+
+  async createMedicalWaste(input: MedicalWasteInput): Promise<MedicalWasteRecord> {
+    const data = readData()
+    const sourceExists = input.sourceBusinessType === 'immunization'
+      ? data.immunizationLedgers.some((item) => item.id === input.sourceBusinessId)
+      : data.prescriptions.some((item) => item.id === input.sourceBusinessId)
+    if (!sourceExists) throw new Error('废弃物来源业务不存在')
+    const waste: MedicalWasteRecord = { id: id('waste'), wasteNo: no('ZLFW'), ...input, status: 'pending', createdAt: now() }
+    data.medicalWasteRecords.unshift(waste)
+    pushLog(data, 'clinic_admin', input.handoverPerson, '登记诊疗废弃物', waste.wasteNo)
+    writeData(data)
+    return clone(waste)
+  },
+
+  async completeMedicalWaste(input: CompleteMedicalWasteInput): Promise<MedicalWasteRecord> {
+    const data = readData()
+    const waste = data.medicalWasteRecords.find((item) => item.id === input.wasteId)
+    if (!waste) throw new Error('诊疗废弃物记录不存在')
+    waste.status = 'handled'
+    waste.handledAt = input.handledAt
+    waste.voucherNo = input.voucherNo
+    pushLog(data, 'clinic_admin', waste.handoverPerson, '完成诊疗废弃物处理', waste.wasteNo)
+    pushNode(data, '诊疗废弃物处理', '动物诊疗管理', true, waste.handoverPerson, waste.id, `${waste.type} ${waste.weight}kg`)
+    writeData(data)
+    return clone(waste)
+  },
+
+  async generateAnnualReport(institutionId: string, year: number): Promise<AnnualReport> {
+    const data = readData()
+    const institution = data.clinicInstitutions.find((item) => item.id === institutionId)
+    if (!institution) throw new Error('诊疗机构不存在')
+    if (institution.status !== 'approved') throw new Error('只有备案通过的诊疗机构才能生成年度报告')
+    const institutionVetIds = data.veterinarians.filter((item) => item.institutionId === institutionId && item.status === 'approved').map((item) => item.id)
+    const prescriptionIds = data.prescriptions.filter((item) => item.institutionId === institutionId && new Date(item.issuedAt).getFullYear() === year).map((item) => item.id)
+    const report: AnnualReport = {
+      id: id('annual'),
+      institutionId,
+      year,
+      status: 'generated',
+      veterinarianCount: institutionVetIds.length,
+      petCount: data.petProfiles.length,
+      immunizationCount: data.immunizationLedgers.filter((item) => item.institutionId === institutionId && new Date(item.immunizedAt).getFullYear() === year).length,
+      prescriptionCount: prescriptionIds.length,
+      drugStockInQuantity: data.drugInOutRecords.filter((item) => item.institutionId === institutionId && item.type === 'in' && new Date(item.createdAt).getFullYear() === year).reduce((sum, item) => sum + item.quantity, 0),
+      drugStockOutQuantity: data.drugInOutRecords.filter((item) => item.institutionId === institutionId && item.type === 'out' && new Date(item.createdAt).getFullYear() === year).reduce((sum, item) => sum + item.quantity, 0),
+      wasteHandledCount: data.medicalWasteRecords.filter((item) => item.status === 'handled' && item.handledAt && new Date(item.handledAt).getFullYear() === year).length,
+      generatedAt: now(),
+    }
+    data.annualReports = data.annualReports.filter((item) => !(item.institutionId === institutionId && item.year === year))
+    data.annualReports.unshift(report)
+    pushLog(data, 'clinic_admin', institution.name, '生成年度报告', `${year}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async submitAnnualReport(idValue: string): Promise<AnnualReport> {
+    const data = readData()
+    const report = data.annualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('年度报告不存在')
+    const institution = data.clinicInstitutions.find((item) => item.id === report.institutionId)
+    if (!institution || institution.status !== 'approved') throw new Error('只有备案通过的诊疗机构才能提交年度报告')
+    report.status = 'submitted'
+    report.submittedAt = now()
+    pushLog(data, 'clinic_admin', institution.name, '提交年度报告', `${report.year}`)
+    pushNode(data, '年度报告', '动物诊疗管理', true, institution.name, report.id, `${report.year} 年度报告已提交`)
+    writeData(data)
+    return clone(report)
+  },
 
   async releaseCarrierRestriction(idValue: string, disposalRemark: string) {
     const data = readData()

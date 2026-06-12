@@ -5,6 +5,9 @@ export const roleSessions: Record<UserRole, UserSession> = {
   vet: { role: 'vet', name: '官方兽医 王敏', homePath: '/vet/origin-todos' },
   slaughter: { role: 'slaughter', name: '皖北标准化屠宰中心', homePath: '/slaughter/entry-check' },
   regulator: { role: 'regulator', name: '市级畜牧兽医监管员', homePath: '/regulator/dashboard' },
+  clinic_admin: { role: 'clinic_admin', name: '安心动物诊疗中心管理员', homePath: '/clinic/admin/dashboard' },
+  practicing_vet: { role: 'practicing_vet', name: '执业兽医 陈晓宁', homePath: '/clinic/veterinarian/pets' },
+  pet_owner: { role: 'pet_owner', name: '宠物主人 李女士', homePath: '/clinic/owner/records' },
 }
 
 export function createSeedData(): AppData {
@@ -97,6 +100,16 @@ export function createSeedData(): AppData {
         createdAt: new Date().toISOString(),
       },
     ],
+    clinicInstitutions: [],
+    veterinarians: [],
+    petOwners: [],
+    petProfiles: [],
+    immunizationLedgers: [],
+    drugInventories: [],
+    prescriptions: [],
+    drugInOutRecords: [],
+    medicalWasteRecords: [],
+    annualReports: [],
     syncLogs: [],
     closedLoopNodes: [],
     operationLogs: [],
