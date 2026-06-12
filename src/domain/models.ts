@@ -1,4 +1,4 @@
-export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
+﻿export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
 
 export type BusinessStatus =
   | 'draft'
@@ -39,9 +39,9 @@ export type HarmlessSource = 'farm_death' | 'slaughter_unqualified' | 'entry_exc
 export type SealAction = 'receive' | 'issue' | 'use' | 'recycle' | 'destroy'
 export type FilingStatus = 'pending' | 'approved' | 'rejected'
 export type PracticeType = 'licensed_veterinarian' | 'assistant_veterinarian'
-export type DrugRecordType = 'in' | 'out'
-export type WasteStatus = 'pending' | 'handled'
-export type AnnualReportStatus = 'generated' | 'submitted'
+export type DrugRecordType = 'in' | 'out' | 'reversal'
+export type WasteStatus = 'draft' | 'pending' | 'handled' | 'voided'
+export type AnnualReportStatus = 'generated' | 'submitted' | 'withdrawn'
 export type WasteSourceBusinessType = 'immunization' | 'prescription'
 
 export interface UserSession {
@@ -279,6 +279,7 @@ export interface ClinicInstitution {
   type: string
   mapPoint: string
   status: FilingStatus
+  active: boolean
   reviewRemark?: string
   createdAt: string
   reviewedAt?: string
@@ -294,6 +295,7 @@ export interface Veterinarian {
   phone: string
   material: string
   status: FilingStatus
+  active: boolean
   reviewRemark?: string
   createdAt: string
   reviewedAt?: string
@@ -305,6 +307,7 @@ export interface PetOwner {
   phone: string
   address: string
   createdAt: string
+  active: boolean
 }
 
 export interface PetProfile {
@@ -317,6 +320,7 @@ export interface PetProfile {
   age: number
   identityNo: string
   createdAt: string
+  active: boolean
 }
 
 export interface ImmunizationLedger {
@@ -328,6 +332,7 @@ export interface ImmunizationLedger {
   nextImmunizedAt: string
   veterinarianId: string
   institutionId: string
+  status: 'draft' | 'active' | 'voided'
   createdAt: string
 }
 
@@ -342,6 +347,7 @@ export interface DrugInventory {
   quantity: number
   supplier: string
   traceCode: string
+  active: boolean
   createdAt: string
 }
 
@@ -356,6 +362,8 @@ export interface Prescription {
   quantity: number
   veterinarianId: string
   institutionId: string
+  status: 'active' | 'voided'
+  voidReason?: string
   issuedAt: string
 }
 
@@ -402,6 +410,8 @@ export interface AnnualReport {
   wasteHandledCount: number
   generatedAt: string
   submittedAt?: string
+  withdrawnAt?: string
+  withdrawReason?: string
 }
 
 export interface SyncLog {
@@ -502,3 +512,4 @@ export interface DrugStockInInput { institutionId: string; drugName: string; bat
 export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
 export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
 export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }
+

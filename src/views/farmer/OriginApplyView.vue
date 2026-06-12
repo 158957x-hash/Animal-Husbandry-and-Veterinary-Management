@@ -6,7 +6,7 @@ import { useAppStore } from '../../stores/app'
 
 const store = useAppStore()
 const router = useRouter()
-const precheckVisible = ref(true)
+const precheckVisible = ref(false)
 const form = reactive({
   batchId: store.data.farmBatches[0]?.id ?? '',
   quantity: 60,

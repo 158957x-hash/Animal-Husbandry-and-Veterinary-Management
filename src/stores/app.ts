@@ -214,6 +214,84 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
+    async updatePetProfile(id: string, input: Parameters<typeof mockApi.updatePetProfile>[1]) {
+      const result = await mockApi.updatePetProfile(id, input)
+      await this.refresh()
+      return result
+    },
+    async deletePetProfile(id: string) {
+      await mockApi.deletePetProfile(id)
+      await this.refresh()
+    },
+    async disablePetProfile(id: string) {
+      const result = await mockApi.disablePetProfile(id)
+      await this.refresh()
+      return result
+    },
+    async updateClinicInstitution(id: string, input: Parameters<typeof mockApi.updateClinicInstitution>[1]) {
+      const result = await mockApi.updateClinicInstitution(id, input)
+      await this.refresh()
+      return result
+    },
+    async disableClinicInstitution(id: string) {
+      const result = await mockApi.disableClinicInstitution(id)
+      await this.refresh()
+      return result
+    },
+    async updateVeterinarian(id: string, input: Parameters<typeof mockApi.updateVeterinarian>[1]) {
+      const result = await mockApi.updateVeterinarian(id, input)
+      await this.refresh()
+      return result
+    },
+    async disableVeterinarian(id: string) {
+      const result = await mockApi.disableVeterinarian(id)
+      await this.refresh()
+      return result
+    },
+    async voidPrescription(id: string, reason: string) {
+      const result = await mockApi.voidPrescription(id, reason)
+      await this.refresh()
+      return result
+    },
+    async withdrawAnnualReport(id: string, reason: string) {
+      const result = await mockApi.withdrawAnnualReport(id, reason)
+      await this.refresh()
+      return result
+    },
+    async updatePetOwner(id: string, input: Parameters<typeof mockApi.updatePetOwner>[1]) {
+      const result = await mockApi.updatePetOwner(id, input)
+      await this.refresh()
+      return result
+    },
+    async deletePetOwner(id: string) {
+      await mockApi.deletePetOwner(id)
+      await this.refresh()
+    },
+    async updateDrugInventory(id: string, input: Parameters<typeof mockApi.updateDrugInventory>[1]) {
+      const result = await mockApi.updateDrugInventory(id, input)
+      await this.refresh()
+      return result
+    },
+    async disableDrugInventory(id: string) {
+      const result = await mockApi.disableDrugInventory(id)
+      await this.refresh()
+      return result
+    },
+    async voidImmunizationRecord(id: string, reason: string) {
+      const result = await mockApi.voidImmunizationRecord(id, reason)
+      await this.refresh()
+      return result
+    },
+    async updateMedicalWaste(id: string, input: Parameters<typeof mockApi.updateMedicalWaste>[1]) {
+      const result = await mockApi.updateMedicalWaste(id, input)
+      await this.refresh()
+      return result
+    },
+    async voidMedicalWaste(id: string, reason: string) {
+      const result = await mockApi.voidMedicalWaste(id, reason)
+      await this.refresh()
+      return result
+    },
     async retrySyncLog(id: string) {
       const result = await mockApi.retrySyncLog(id)
       await this.refresh()
