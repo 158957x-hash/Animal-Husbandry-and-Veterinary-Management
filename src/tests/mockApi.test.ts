@@ -60,7 +60,7 @@ describe('mockApi 检疫屠宰闭环', () => {
       bannedDrugResult: 'negative',
     })
 
-    expect(slaughter.status).toBe('slaughter_submitted')
+    expect(slaughter.status).toBe('pending_accept')
 
     const product = await mockApi.approveSlaughterApplication(slaughter.id, {
       anteMortemPassed: true,
