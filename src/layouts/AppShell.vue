@@ -31,12 +31,18 @@ const menus = computed(() => {
     ],
     vet: [
       { label: '产地检疫待办', path: '/vet/origin-todos' },
+      { label: '屠宰检疫待办', path: '/vet/slaughter-todos' },
       { label: '屠宰检疫审核', path: '/vet/slaughter-audit' },
     ],
     slaughter: [
+      { label: '屠宰企业工作台', path: '/slaughter/dashboard' },
       { label: '入场查验', path: '/slaughter/entry-check' },
       { label: '待宰管理', path: '/slaughter/waiting-slaughter' },
+      { label: '非瘟/违禁药物自检', path: '/slaughter/self-check' },
       { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
+      { label: '肉品品质检验', path: '/slaughter/meat-quality' },
+      { label: '检疫验讫标志', path: '/slaughter/mark-management' },
+      { label: '三证扫码查询', path: '/slaughter/traceability-query' },
     ],
     regulator: [
       { label: '检疫监管', path: '/regulator/dashboard' },

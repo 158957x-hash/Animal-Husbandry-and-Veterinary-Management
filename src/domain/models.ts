@@ -48,6 +48,14 @@ export type AnnualReportStatus = 'generated' | 'submitted' | 'withdrawn'
 export type WasteSourceBusinessType = 'immunization' | 'prescription'
 export type InspectionAttachmentType = 'vehicle_photo' | 'ear_tag_photo' | 'loading_photo' | 'scene_photo' | 'other'
 
+export type SlaughterEntryStatus = 'pending_check' | 'checking' | 'entry_passed' | 'entry_rejected'
+export type SlaughterBatchStatus = 'pending_self_check' | 'self_check_passed' | 'self_check_failed' | 'pending_slaughter_apply' | 'slaughter_applied' | 'ante_mortem_checking' | 'ante_mortem_passed' | 'ante_mortem_failed' | 'post_mortem_checking' | 'post_mortem_passed' | 'post_mortem_failed' | 'pending_product_cert' | 'meat_quality_certificate_issued' | 'product_cert_issued' | 'abnormal'
+export type SelfCheckStatus = 'pending' | 'passed' | 'failed'
+export type SlaughterApplicationStatus = 'pending_accept' | 'accepted' | 'ante_mortem_checking' | 'post_mortem_checking' | 'pending_product_cert' | 'product_cert_issued' | 'returned' | 'abnormal'
+export type MarkType = 'card_ring' | 'sticker'
+export type MarkStatus = 'pending_review' | 'issued' | 'in_stock' | 'used' | 'returned' | 'voided'
+export type MarkApplicationStatus = 'pending_review' | 'approved' | 'rejected' | 'issued'
+
 export interface InspectionAttachment {
   id: string
   applicationNo: string
@@ -134,6 +142,9 @@ export interface QuarantineCertificate {
   origin: string
   destination: string
   vehiclePlateNo: string
+  carrier?: string
+  earTagRange?: string
+  applicationNo?: string
 }
 
 export interface RoutePoint {
@@ -204,8 +215,24 @@ export interface SlaughterQuarantineApplication {
   quantity: number
   africanSwineFeverResult: DetectionResult
   bannedDrugResult: DetectionResult
-  status: BusinessStatus
+  status: SlaughterApplicationStatus
   createdAt: string
+  batchId?: string
+  entryRecordId?: string
+  quarantineCertificateId?: string
+  animalType?: string
+  purpose?: string
+  plannedSlaughterTime?: string
+  contactPerson?: string
+  contactPhone?: string
+  remark?: string
+  africanSwineFeverTestPerson?: string
+  africanSwineFeverTestTime?: string
+  bannedDrugTestPerson?: string
+  bannedDrugTestTime?: string
+  submittedBy?: string
+  submittedAt?: string
+  updatedAt?: string
 }
 
 export interface WaitingSlaughterBatch {
@@ -216,6 +243,13 @@ export interface WaitingSlaughterBatch {
   animalType: string
   status: BusinessStatus
   createdAt: string
+  batchNo?: string
+  entryRecordId?: string
+  earTagRange?: string
+  waitingPenNo?: string
+  slaughterQuantity?: number
+  qualifiedCarcassQuantity?: number
+  unqualifiedQuantity?: number
 }
 
 export interface SlaughterAnteMortemCheck {
@@ -249,6 +283,12 @@ export interface ProductCertificate {
   weight: number
   issuedBy: string
   issuedAt: string
+  quarantineCertificateId?: string
+  meatQualityCertificateId?: string
+  productBatchNo?: string
+  batchId?: string
+  markRangeStart?: string
+  markRangeEnd?: string
 }
 
 export interface MeatQualityCertificate {
@@ -259,6 +299,13 @@ export interface MeatQualityCertificate {
   weight: number
   inspector: string
   issuedAt: string
+  batchId?: string
+  quarantineCertificateId?: string
+  productBatchNo?: string
+  conclusion?: string
+  qualifiedQuantity?: number
+  unqualifiedQuantity?: number
+  attachments?: string
 }
 
 export interface ThreeCertificateLink {
@@ -485,6 +532,118 @@ export interface AlertRecord {
   createdAt: string
 }
 
+// Slaughter entry record (replaces simple EntryCheckRecord for detailed flow)
+export interface SlaughterEntryRecord {
+  id: string
+  entryNo: string
+  quarantineCertificateId: string
+  transportTaskId: string
+  applicationId: string
+  slaughterhouseName: string
+  animalType: string
+  quantity: number
+  earTagRange: string
+  vehiclePlateNo: string
+  carrier: string
+  originFarm: string
+  originLocation: string
+  checkResults: ValidationResult[]
+  status: SlaughterEntryStatus
+  checkedBy: string
+  checkedAt: string
+  createdAt: string
+}
+
+// Slaughter batch (replaces simple WaitingSlaughterBatch)
+export interface SlaughterBatch {
+  id: string
+  batchNo: string
+  entryRecordId: string
+  quarantineCertificateId: string
+  animalType: string
+  entryQuantity: number
+  waitingQuantity: number
+  slaughterQuantity: number
+  qualifiedCarcassQuantity: number
+  unqualifiedQuantity: number
+  earTagRange: string
+  waitingPenNo: string
+  status: SlaughterBatchStatus
+  createdAt: string
+}
+
+// Self inspection (ASF + banned drugs)
+export interface SlaughterSelfInspection {
+  id: string
+  batchId: string
+  africanSwineFeverResult: DetectionResult
+  africanSwineFeverTestPerson: string
+  africanSwineFeverTestTime: string
+  bannedDrugResult: DetectionResult
+  bannedDrugTestPerson: string
+  bannedDrugTestTime: string
+  status: SelfCheckStatus
+  createdAt: string
+}
+
+// Quarantine mark
+export interface QuarantineMark {
+  id: string
+  markNo: string
+  markType: MarkType
+  ownerOrg: string
+  status: MarkStatus
+  qrCode: string
+  issuedAt: string
+  usedAt?: string
+  productCertificateId?: string
+  quarantineCertificateId?: string
+  meatQualityCertificateId?: string
+  slaughterBatchId?: string
+  productBatchNo?: string
+}
+
+// Mark inventory
+export interface QuarantineMarkInventory {
+  id: string
+  orgId: string
+  markType: MarkType
+  total: number
+  available: number
+  used: number
+  returned: number
+  voided: number
+}
+
+// Mark application
+export interface QuarantineMarkApplication {
+  id: string
+  applicationNo: string
+  orgId: string
+  orgName: string
+  markType: MarkType
+  quantity: number
+  reason: string
+  status: MarkApplicationStatus
+  appliedBy: string
+  approvedBy?: string
+  issuedRangeStart?: string
+  issuedRangeEnd?: string
+  createdAt: string
+}
+
+// Traceability record
+export interface TraceabilityRecord {
+  id: string
+  markNo: string
+  quarantineCertificateId: string
+  productCertificateId: string
+  meatQualityCertificateId: string
+  slaughterBatchId: string
+  productBatchNo: string
+  queriedAt: string
+}
+
 export interface AppData {
   farmBatches: FarmBatch[]
   vehicles: Vehicle[]
@@ -518,6 +677,13 @@ export interface AppData {
   operationLogs: OperationLog[]
   alerts: AlertRecord[]
   inspectionAttachments: InspectionAttachment[]
+  slaughterEntryRecords: SlaughterEntryRecord[]
+  slaughterBatches: SlaughterBatch[]
+  slaughterSelfInspections: SlaughterSelfInspection[]
+  quarantineMarks: QuarantineMark[]
+  quarantineMarkInventories: QuarantineMarkInventory[]
+  quarantineMarkApplications: QuarantineMarkApplication[]
+  traceabilityRecords: TraceabilityRecord[]
 }
 
 export interface OriginApplicationInput {
@@ -553,4 +719,51 @@ export interface DrugStockInInput { institutionId: string; drugName: string; bat
 export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
 export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
 export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }
+
+export interface SlaughterSelfInspectionInput {
+  batchId: string
+  africanSwineFeverResult: DetectionResult
+  africanSwineFeverTestPerson: string
+  africanSwineFeverTestTime: string
+  bannedDrugResult: DetectionResult
+  bannedDrugTestPerson: string
+  bannedDrugTestTime: string
+}
+export interface SlaughterQuarantineApplicationInput {
+  batchId: string
+  entryRecordId: string
+  quarantineCertificateId: string
+  quantity: number
+  purpose: string
+  plannedSlaughterTime: string
+  contactPerson: string
+  contactPhone: string
+  remark: string
+}
+export interface MeatQualityCertificateInputExtended {
+  batchId: string
+  quarantineCertificateId: string
+  productBatchNo: string
+  productName: string
+  weight: number
+  inspector: string
+  conclusion: string
+  qualifiedQuantity: number
+  unqualifiedQuantity: number
+}
+export interface QuarantineMarkApplicationInput {
+  markType: MarkType
+  quantity: number
+  reason: string
+  appliedBy: string
+}
+export interface UseQuarantineMarksInput {
+  batchId: string
+  productCertificateId: string
+  quarantineCertificateId: string
+  meatQualityCertificateId: string
+  markType: MarkType
+  quantity: number
+  useObject: string
+}
 

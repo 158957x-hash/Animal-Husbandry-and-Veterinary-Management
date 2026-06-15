@@ -32,6 +32,16 @@ import MedicalWasteView from '../views/clinic/MedicalWasteView.vue'
 import AnnualReportView from '../views/clinic/AnnualReportView.vue'
 import PetOwnerRecordsView from '../views/clinic/PetOwnerRecordsView.vue'
 import ClinicSupervisionView from '../views/clinic/ClinicSupervisionView.vue'
+import SlaughterDashboardView from '../views/slaughter/SlaughterDashboardView.vue'
+import SelfCheckView from '../views/slaughter/SelfCheckView.vue'
+import MeatQualityView from '../views/slaughter/MeatQualityView.vue'
+import MarkManagementView from '../views/slaughter/MarkManagementView.vue'
+import TraceabilityQueryView from '../views/slaughter/TraceabilityQueryView.vue'
+import SlaughterTodoView from '../views/vet/SlaughterTodoView.vue'
+import SlaughterAuditDetailView from '../views/vet/SlaughterAuditDetailView.vue'
+import SlaughterSupervisionView from '../views/regulator/SlaughterSupervisionView.vue'
+import TraceabilityTrackView from '../views/regulator/TraceabilityTrackView.vue'
+import MarkUsageView from '../views/regulator/MarkUsageView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
@@ -51,9 +61,16 @@ const router = createRouter({
         { path: 'vet/origin-todos', component: OriginTodoView, meta: { role: 'vet' } },
         { path: 'vet/origin-inspection/:id', component: OriginInspectionView, meta: { role: 'vet' } },
         { path: 'vet/slaughter-audit', component: SlaughterAuditView, meta: { role: 'vet' } },
+        { path: 'vet/slaughter-todos', component: SlaughterTodoView, meta: { role: 'vet' } },
+        { path: 'vet/slaughter-audit/:id', component: SlaughterAuditDetailView, meta: { role: 'vet' } },
         { path: 'slaughter/entry-check', component: EntryCheckView, meta: { role: 'slaughter' } },
         { path: 'slaughter/waiting-slaughter', component: WaitingSlaughterView, meta: { role: 'slaughter' } },
         { path: 'slaughter/slaughter-apply', component: SlaughterApplyView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/dashboard', component: SlaughterDashboardView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/self-check', component: SelfCheckView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/meat-quality', component: MeatQualityView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/mark-management', component: MarkManagementView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/traceability-query', component: TraceabilityQueryView, meta: { role: 'slaughter' } },
         { path: 'regulator/dashboard', component: DashboardView, meta: { role: 'regulator' } },
         { path: 'regulator/transport-map', component: TransportMapView, meta: { role: 'regulator' } },
         { path: 'regulator/certificate-spot-check', component: CertificateSpotCheckView, meta: { role: 'regulator' } },
@@ -65,6 +82,9 @@ const router = createRouter({
         { path: 'regulator/slaughter-statistics', component: SlaughterStatisticsView, meta: { role: 'regulator' } },
         { path: 'regulator/sync-logs', component: SyncLogView, meta: { role: 'regulator' } },
         { path: 'regulator/closed-loop', component: ClosedLoopOverviewView, meta: { role: 'regulator' } },
+        { path: 'regulator/slaughter-supervision', component: SlaughterSupervisionView, meta: { role: 'regulator' } },
+        { path: 'regulator/traceability-track', component: TraceabilityTrackView, meta: { role: 'regulator' } },
+        { path: 'regulator/mark-usage', component: MarkUsageView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-supervision', component: ClinicSupervisionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-institutions', component: ClinicInstitutionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-veterinarians', component: ClinicVeterinarianView, meta: { role: 'regulator' } },

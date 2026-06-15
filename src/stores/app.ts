@@ -41,7 +41,7 @@ export const useAppStore = defineStore('app', {
     latestCertificate: (state) => state.data.quarantineCertificates[0],
     latestEntryCheck: (state) => state.data.entryChecks[0],
     pendingOriginApplications: (state) => state.data.originApplications.filter((item) => item.status === 'submitted'),
-    pendingSlaughterApplications: (state) => state.data.slaughterApplications.filter((item) => item.status === 'slaughter_submitted'),
+    pendingSlaughterApplications: (state) => state.data.slaughterApplications.filter((item) => item.status === 'pending_accept'),
     pendingHarmlessTasks: (state) => state.data.harmlessTasks.filter((item) => item.status !== 'completed'),
   },
   actions: {
@@ -340,6 +340,76 @@ export const useAppStore = defineStore('app', {
       const result = await mockApi.retrySyncLog(id)
       await this.refresh()
       return result
+    },
+    async performSlaughterEntryCheck(input: EntryCheckInput) {
+      const result = await mockApi.performSlaughterEntryCheck(input)
+      await this.refresh()
+      return result
+    },
+    async getOriginCertificate(query: string) {
+      return await mockApi.getOriginCertificate(query)
+    },
+    async submitSelfInspection(input: import('../domain/models').SlaughterSelfInspectionInput) {
+      const result = await mockApi.submitSelfInspection(input)
+      await this.refresh()
+      return result
+    },
+    async submitSlaughterQuarantineApplication(input: import('../domain/models').SlaughterQuarantineApplicationInput) {
+      const result = await mockApi.submitSlaughterQuarantineApplication(input)
+      await this.refresh()
+      return result
+    },
+    async acceptSlaughterApplication(id: string) {
+      const result = await mockApi.acceptSlaughterApplication(id)
+      await this.refresh()
+      return result
+    },
+    async submitPreSlaughterCheck(applicationId: string, input: { checks: Record<string, boolean>; remark: string }) {
+      const result = await mockApi.submitPreSlaughterCheck(applicationId, input)
+      await this.refresh()
+      return result
+    },
+    async submitPostSlaughterCheck(applicationId: string, input: { qualifiedQuantity: number; unqualifiedQuantity: number; productWeight: number; checks: Record<string, boolean>; remark: string }) {
+      const result = await mockApi.submitPostSlaughterCheck(applicationId, input)
+      await this.refresh()
+      return result
+    },
+    async createMeatQualityCertificateExtended(input: import('../domain/models').MeatQualityCertificateInputExtended) {
+      const result = await mockApi.createMeatQualityCertificateExtended(input)
+      await this.refresh()
+      return result
+    },
+    async issueProductQuarantineCertificate(applicationId: string, input: { productName: string; productBatchNo: string; weight: number; markType: import('../domain/models').MarkType; useObject: string }) {
+      const result = await mockApi.issueProductQuarantineCertificate(applicationId, input)
+      await this.refresh()
+      return result
+    },
+    async applyQuarantineMarks(input: import('../domain/models').QuarantineMarkApplicationInput) {
+      const result = await mockApi.applyQuarantineMarks(input)
+      await this.refresh()
+      return result
+    },
+    async approveQuarantineMarkApplication(id: string) {
+      const result = await mockApi.approveQuarantineMarkApplication(id)
+      await this.refresh()
+      return result
+    },
+    async issueQuarantineMarks(id: string) {
+      const result = await mockApi.issueQuarantineMarks(id)
+      await this.refresh()
+      return result
+    },
+    async getQuarantineMarkInventory() {
+      return await mockApi.getQuarantineMarkInventory()
+    },
+    async getQuarantineMarkUsageRecords() {
+      return await mockApi.getQuarantineMarkUsageRecords()
+    },
+    async getTraceabilityByMarkNo(markNo: string) {
+      return await mockApi.getTraceabilityByMarkNo(markNo)
+    },
+    async getThreeCertificatesByProductCertificate(productCertificateId: string) {
+      return await mockApi.getThreeCertificatesByProductCertificate(productCertificateId)
     },
   },
 })

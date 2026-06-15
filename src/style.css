@@ -4,12 +4,51 @@
 
 :root {
   font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
-  color: #18251f;
-  background: #071411;
+  color: var(--text-primary);
+  background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 主色 */
+  --color-primary: #0B5F3A;
+  --color-primary-light: #16A34A;
+  --color-primary-bg: #EAF7EF;
+
+  /* 辅助色 */
+  --color-info: #2563EB;
+  --color-info-bg: #EFF6FF;
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FFF7ED;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+
+  /* 中性色 */
+  --color-bg: #F4F8F5;
+  --color-card: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-divider: #EEF2F0;
+
+  /* 文字色 */
+  --text-primary: #111827;
+  --text-regular: #374151;
+  --text-secondary: #6B7280;
+  --text-placeholder: #9CA3AF;
+
+  /* 圆角 */
+  --radius-page: 16px;
+  --radius-card: 12px;
+  --radius-control: 6px;
+
+  /* 阴影 */
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+
+  /* 布局 */
+  --sidebar-width: 252px;
+  --header-height: 104px;
+  --page-padding: 24px;
+  --card-padding: 16px;
 }
 
 * {
@@ -20,7 +59,7 @@ body {
   margin: 0;
   min-width: 1180px;
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.28), transparent 32%), #071411;
+  background: var(--color-bg);
 }
 
 button {
@@ -131,8 +170,8 @@ button {
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  background: #edf5ef;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  background: var(--color-bg);
 }
 
 .sidebar {
@@ -140,7 +179,7 @@ button {
   flex-direction: column;
   padding: 24px;
   color: #e9fff1;
-  background: linear-gradient(180deg, #07251d, #0b1614);
+  background: #062E22;
 }
 
 .brand {
@@ -210,10 +249,10 @@ button {
   align-items: center;
   margin-bottom: 20px;
   padding: 18px 24px;
-  border-radius: 12px;
+  border-radius: var(--radius-page);
   color: #eafff1;
-  background: linear-gradient(135deg, #0b3b2c, #11653e);
-  box-shadow: 0 8px 24px rgba(9, 75, 47, 0.18);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-card);
 }
 
 .topbar h1 {
@@ -315,9 +354,9 @@ button {
 }
 
 .panel-card {
-  border: 0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 2px 12px rgba(15, 64, 41, 0.06) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 .full-width,
@@ -345,18 +384,18 @@ button {
   gap: 18px;
   margin: 0;
   padding: 8px 0;
-  border-bottom: 1px solid #edf1ee;
+  border-bottom: 1px solid var(--color-divider);
   font-size: 14px;
   line-height: 1.6;
 }
 
 .info-list span {
-  color: #667a70;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .info-list b {
-  color: #1a2e24;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -370,8 +409,8 @@ button {
   gap: 10px;
   align-items: flex-start;
   padding: 8px 12px;
-  border-radius: 8px;
-  background: #f5faf7;
+  border-radius: 6px;
+  background: var(--color-bg);
 }
 
 .check-row p,
@@ -495,8 +534,8 @@ button {
 
 .task-item {
   padding: 12px;
-  border-radius: 10px;
-  background: #f6faf8;
+  border-radius: 8px;
+  background: var(--color-bg);
   margin-bottom: 8px;
 }
 
@@ -506,23 +545,26 @@ button {
 
 .alert-item {
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 8px;
-  background: #eff6ff;
+  background: var(--color-info-bg);
 }
 
-.alert-item.warning { background: #fff7ed; }
-.alert-item.danger { background: #fef2f2; }
+.alert-item.warning { background: var(--color-warning-bg); }
+.alert-item.danger { background: var(--color-danger-bg); }
 
 .kpi-grid {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 
 .kpi-card {
-  background: linear-gradient(135deg, #103d2d, #16834c);
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
+  background: var(--color-card);
+  color: var(--text-primary);
+  padding: var(--card-padding);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary-light);
+  box-shadow: var(--shadow-card);
 }
 
 .kpi-card span,
@@ -532,19 +574,20 @@ button {
 
 .kpi-card span {
   font-size: 13px;
-  opacity: 0.85;
+  color: var(--text-secondary);
 }
 
 .kpi-card b {
   margin-top: 6px;
   font-size: 28px;
+  color: var(--text-primary);
 }
 
 .kpi-card small {
   display: block;
   margin-top: 4px;
   font-size: 12px;
-  opacity: 0.7;
+  color: var(--text-placeholder);
 }
 
 .chain-card {
@@ -559,8 +602,8 @@ button {
 
 .product-cert {
   padding: 12px;
-  border-radius: 10px;
-  background: #f6faf8;
+  border-radius: 8px;
+  background: var(--color-bg);
   margin-bottom: 8px;
 }
 
