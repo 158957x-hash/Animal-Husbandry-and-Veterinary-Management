@@ -27,6 +27,9 @@ const timeline = computed(() => {
   return base
 })
 
+const purposeMap: Record<string, string> = { slaughter: '屠宰', breeding: '继续饲养', trade: '交易', exhibition: '展示' }
+const purposeText = computed(() => purposeMap[application.value?.purpose || ''] || application.value?.purpose || '-')
+
 const statusDescription = computed(() => {
   const status = application.value?.status
   if (status === 'draft') return '当前申报尚未提交，可返回列表编辑、提交或删除草稿。'
@@ -47,9 +50,15 @@ const statusDescription = computed(() => {
       <div class="info-list">
         <p><span>申报编号</span><b>{{ application.applicationNo }}</b></p>
         <p><span>动物种类</span><b>{{ application.animalType }}</b></p>
-        <p><span>数量</span><b>{{ application.quantity }}</b></p>
+        <p><span>申报数量</span><b>{{ application.quantity }}</b></p>
+        <p><span>检疫用途</span><b>{{ purposeText }}</b></p>
+        <p><span>启运时间</span><b>{{ application.departureTime }}</b></p>
+        <p><span>联系人</span><b>{{ application.contactPerson }}</b></p>
+        <p><span>联系电话</span><b>{{ application.contactPhone }}</b></p>
         <p><span>目的地</span><b>{{ application.destination }}</b></p>
+        <p><span>目的地详细地址</span><b>{{ application.destinationAddress }}</b></p>
         <p><span>承运人</span><b>{{ application.carrier }}</b></p>
+        <p><span>备注</span><b>{{ application.remark || '无' }}</b></p>
         <p><span>提交时间</span><b>{{ application.submittedAt ? formatTime(application.submittedAt) : '未提交' }}</b></p>
       </div>
       <el-divider />

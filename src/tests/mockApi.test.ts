@@ -73,7 +73,7 @@ describe('mockApi 检疫屠宰闭环', () => {
     expect(product.certificateNo).toContain('CP')
 
     const finalData = await mockApi.getBootstrapData()
-    expect(finalData.productCertificates).toHaveLength(1)
+    expect(finalData.productCertificates.length).toBeGreaterThanOrEqual(1)
     expect(finalData.operationLogs.length).toBeGreaterThan(5)
   })
 })

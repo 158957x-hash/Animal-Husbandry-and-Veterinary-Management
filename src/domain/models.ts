@@ -1,4 +1,4 @@
-﻿export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
+export type UserRole = 'farmer' | 'vet' | 'slaughter' | 'regulator' | 'clinic_admin' | 'practicing_vet' | 'pet_owner'
 
 export type OriginPurpose = 'slaughter' | 'breeding' | 'trade' | 'exhibition'
 export type BusinessStatus =
@@ -46,6 +46,20 @@ export type DrugRecordType = 'in' | 'out' | 'reversal'
 export type WasteStatus = 'draft' | 'pending' | 'handled' | 'voided'
 export type AnnualReportStatus = 'generated' | 'submitted' | 'withdrawn'
 export type WasteSourceBusinessType = 'immunization' | 'prescription'
+export type InspectionAttachmentType = 'vehicle_photo' | 'ear_tag_photo' | 'loading_photo' | 'scene_photo' | 'other'
+
+export interface InspectionAttachment {
+  id: string
+  applicationNo: string
+  type: InspectionAttachmentType
+  typeName: string
+  fileName: string
+  fileSize: number
+  fileType: string
+  dataUrl?: string
+  uploadedBy: string
+  uploadedAt: string
+}
 
 export interface UserSession {
   role: UserRole
@@ -503,6 +517,7 @@ export interface AppData {
   closedLoopNodes: ClosedLoopNode[]
   operationLogs: OperationLog[]
   alerts: AlertRecord[]
+  inspectionAttachments: InspectionAttachment[]
 }
 
 export interface OriginApplicationInput {

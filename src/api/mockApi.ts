@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AlertRecord,
   AnnualReport,
   AnteMortemInput,
@@ -92,7 +92,18 @@ function clone<T>(value: T): T {
 
 function ensureData(data: AppData): AppData {
   const seed = createSeedData()
-  return { ...seed, ...data }
+  const merged = { ...seed, ...data }
+  // For array fields: if old data has empty array but seed has items, use seed data
+  for (const key of Object.keys(seed) as (keyof AppData)[]) {
+    if (Array.isArray(seed[key]) && Array.isArray(merged[key]) && (merged[key] as unknown[]).length === 0 && (seed[key] as unknown[]).length > 0) {
+      (merged as Record<string, unknown>)[key] = seed[key]
+    }
+    // Ensure any new array fields from seed are present when old data lacks them entirely
+    if (Array.isArray(seed[key]) && !Array.isArray(merged[key])) {
+      (merged as Record<string, unknown>)[key] = seed[key]
+    }
+  }
+  return merged
 }
 
 function readData(): AppData {
