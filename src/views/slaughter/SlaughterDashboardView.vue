@@ -24,24 +24,6 @@ const batchStatusText: Record<SlaughterBatchStatus, string> = {
   abnormal: '异常',
 }
 
-const batchStatusType: Record<SlaughterBatchStatus, 'info' | 'success' | 'warning' | 'danger' | 'primary'> = {
-  pending_self_check: 'warning',
-  self_check_passed: 'success',
-  self_check_failed: 'danger',
-  pending_slaughter_apply: 'warning',
-  slaughter_applied: 'primary',
-  ante_mortem_checking: 'warning',
-  ante_mortem_passed: 'success',
-  ante_mortem_failed: 'danger',
-  post_mortem_checking: 'warning',
-  post_mortem_passed: 'success',
-  post_mortem_failed: 'danger',
-  pending_product_cert: 'warning',
-  meat_quality_certificate_issued: 'success',
-  product_cert_issued: 'success',
-  abnormal: 'danger',
-}
-
 const todayEntryCount = computed(() => {
   const today = new Date().toLocaleDateString('zh-CN')
   return store.data.slaughterEntryRecords.filter((item) => new Date(item.createdAt).toLocaleDateString('zh-CN') === today).length

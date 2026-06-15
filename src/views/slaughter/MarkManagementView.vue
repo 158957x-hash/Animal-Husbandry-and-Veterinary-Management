@@ -35,15 +35,6 @@ const applicationStatusType: Record<MarkApplicationStatus, 'info' | 'success' | 
   issued: 'success',
 }
 
-const markStatusText: Record<string, string> = {
-  pending_review: '待审核',
-  issued: '已发放',
-  in_stock: '在库',
-  used: '已使用',
-  returned: '已退回',
-  voided: '已作废',
-}
-
 const usedMarks = computed(() => store.data.quarantineMarks.filter((item) => item.status === 'used'))
 
 async function submitApplication() {

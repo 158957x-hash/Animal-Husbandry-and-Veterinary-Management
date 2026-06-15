@@ -72,7 +72,7 @@ async function submitInspection() {
         <el-table-column prop="waitingPenNo" label="待宰圈号" width="100" />
         <el-table-column prop="earTagRange" label="耳标号段" min-width="160" />
         <el-table-column label="状态" width="110">
-          <template #default="{ row }">
+          <template #default>
             <el-tag type="warning" size="small">待自检</el-tag>
           </template>
         </el-table-column>
@@ -123,7 +123,7 @@ async function submitInspection() {
     </el-card>
 
     <el-dialog v-model="dialogVisible" title="填报自检结果" width="560px" destroy-on-close>
-      <el-form label-position="top" v-if="currentBatch">
+      <el-form v-if="currentBatch" label-position="top">
         <el-form-item label="批次编号">
           <el-input :model-value="currentBatch.batchNo" disabled />
         </el-form-item>

@@ -124,7 +124,6 @@ async function reject() {
 
 <template>
   <section v-if="application" class="insp-page">
-
     <!-- ==================== 已驳回 ==================== -->
     <template v-if="isRejected">
       <div class="page-header">

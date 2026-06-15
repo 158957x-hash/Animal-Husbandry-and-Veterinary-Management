@@ -130,7 +130,7 @@ async function submitCertificate() {
     </el-card>
 
     <el-dialog v-model="dialogVisible" title="填报肉品品质检验" width="580px" destroy-on-close>
-      <el-form label-position="top" v-if="currentBatch">
+      <el-form v-if="currentBatch" label-position="top">
         <el-form-item label="批次编号">
           <el-input :model-value="currentBatch.batchNo" disabled />
         </el-form-item>
