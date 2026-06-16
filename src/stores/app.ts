@@ -22,6 +22,9 @@ import type {
   ProductCertificateInput,
   SlaughterApplicationInput,
   SlaughterAuditInput,
+  SlaughterEntryConfirmInput,
+  SlaughterEntryExceptionInput,
+  SlaughterEntryReturnInput,
   TransportExceptionInput,
   UserRole,
   UserSession,
@@ -41,7 +44,7 @@ export const useAppStore = defineStore('app', {
     latestCertificate: (state) => state.data.quarantineCertificates[0],
     latestEntryCheck: (state) => state.data.entryChecks[0],
     pendingOriginApplications: (state) => state.data.originApplications.filter((item) => item.status === 'submitted'),
-    pendingSlaughterApplications: (state) => state.data.slaughterApplications.filter((item) => item.status === 'pending_accept'),
+    pendingSlaughterApplications: (state) => state.data.slaughterApplications.filter((item) => item.status === 'submitted_pending_accept'),
     pendingHarmlessTasks: (state) => state.data.harmlessTasks.filter((item) => item.status !== 'completed'),
   },
   actions: {
@@ -346,6 +349,21 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
+    async confirmSlaughterEntry(id: string, input: SlaughterEntryConfirmInput) {
+      const result = await mockApi.confirmSlaughterEntry(id, input)
+      await this.refresh()
+      return result
+    },
+    async registerSlaughterEntryException(id: string, input: SlaughterEntryExceptionInput) {
+      const result = await mockApi.registerSlaughterEntryException(id, input)
+      await this.refresh()
+      return result
+    },
+    async returnSlaughterEntry(id: string, input: SlaughterEntryReturnInput) {
+      const result = await mockApi.returnSlaughterEntry(id, input)
+      await this.refresh()
+      return result
+    },
     async getOriginCertificate(query: string) {
       return await mockApi.getOriginCertificate(query)
     },
@@ -389,6 +407,11 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
+    async applyQuarantineMarkReturn(input: import('../domain/models').QuarantineMarkReturnApplicationInput) {
+      const result = await mockApi.applyQuarantineMarkReturn(input)
+      await this.refresh()
+      return result
+    },
     async approveQuarantineMarkApplication(id: string) {
       const result = await mockApi.approveQuarantineMarkApplication(id)
       await this.refresh()
@@ -396,6 +419,11 @@ export const useAppStore = defineStore('app', {
     },
     async issueQuarantineMarks(id: string) {
       const result = await mockApi.issueQuarantineMarks(id)
+      await this.refresh()
+      return result
+    },
+    async completeQuarantineMarkReturn(id: string) {
+      const result = await mockApi.completeQuarantineMarkReturn(id)
       await this.refresh()
       return result
     },
@@ -410,6 +438,34 @@ export const useAppStore = defineStore('app', {
     },
     async getThreeCertificatesByProductCertificate(productCertificateId: string) {
       return await mockApi.getThreeCertificatesByProductCertificate(productCertificateId)
+    },
+    async submitAnteMortemCheckDetail(input: import('../domain/models').AnteMortemSubmitInput) {
+      const result = await mockApi.submitAnteMortemCheckDetail(input)
+      await this.refresh()
+      return result
+    },
+    async submitMeatQualityCheckDetail(input: import('../domain/models').MeatQualitySubmitInput) {
+      const result = await mockApi.submitMeatQualityCheckDetail(input)
+      await this.refresh()
+      return result
+    },
+    async submitPostMortemCheckDetail(input: import('../domain/models').PostMortemSubmitInput) {
+      const result = await mockApi.submitPostMortemCheckDetail(input)
+      await this.refresh()
+      return result
+    },
+    async issueProductCertificateForBatch(input: import('../domain/models').ProductCertIssueInput) {
+      const result = await mockApi.issueProductCertificateForBatch(input)
+      await this.refresh()
+      return result
+    },
+    async submitMarkUsage(input: import('../domain/models').MarkUsageSubmitInput) {
+      const result = await mockApi.submitMarkUsage(input)
+      await this.refresh()
+      return result
+    },
+    async getTraceabilityByProductBatch(productBatchNo: string) {
+      return await mockApi.getTraceabilityByProductBatch(productBatchNo)
     },
   },
 })

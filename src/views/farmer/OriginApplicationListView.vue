@@ -9,13 +9,25 @@ import type { OriginQuarantineApplication } from '../../domain/models'
 
 const store = useAppStore()
 const router = useRouter()
-const keyword = ref('')
-const statusFilter = ref('')
+const keywordInput = ref('')
+const statusFilterInput = ref('')
+const appliedKeyword = ref('')
+const appliedStatus = ref('')
 const applications = computed(() => store.data.originApplications.filter((item) => {
-  const matchedKeyword = !keyword.value || item.applicationNo.includes(keyword.value) || item.animalType.includes(keyword.value) || item.destination.includes(keyword.value) || plateNo(item).includes(keyword.value)
-  const matchedStatus = !statusFilter.value || item.status === statusFilter.value
+  const matchedKeyword = !appliedKeyword.value || item.applicationNo.includes(appliedKeyword.value) || item.animalType.includes(appliedKeyword.value) || item.destination.includes(appliedKeyword.value) || plateNo(item).includes(appliedKeyword.value)
+  const matchedStatus = !appliedStatus.value || item.status === appliedStatus.value
   return matchedKeyword && matchedStatus
 }))
+
+function searchApplications() {
+  appliedKeyword.value = keywordInput.value.trim()
+  appliedStatus.value = statusFilterInput.value
+}
+
+async function refreshApplications() {
+  await store.refresh()
+  searchApplications()
+}
 
 function plateNo(row: OriginQuarantineApplication) {
   return store.data.vehicles.find((item) => item.id === row.vehicleId)?.plateNo || '-'
@@ -54,21 +66,20 @@ function edit(row: OriginQuarantineApplication) {
 </script>
 
 <template>
-  <div class="page-grid">
+  <div class="gov-page">
     <el-card class="panel-card">
-      <div class="card-header-line">
+      <div class="page-hero">
         <div>
           <h2>我的产地检疫申报</h2>
           <p>集中查看申报进度，并根据当前状态办理提交、撤回、查看证明和运输任务等事项。</p>
         </div>
-        <div class="action-inline">
-          <el-button @click="store.refresh()">刷新</el-button>
+        <div class="page-hero-actions">
           <el-button type="success" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
         </div>
       </div>
-      <div class="action-inline">
-        <el-input v-model="keyword" placeholder="按编号、动物、目的地、车牌筛选" clearable />
-        <el-select v-model="statusFilter" placeholder="状态筛选" clearable>
+      <div class="page-toolbar">
+        <el-input v-model="keywordInput" class="filter-keyword" placeholder="按编号、动物、目的地、车牌筛选" clearable @keyup.enter="searchApplications" />
+        <el-select v-model="statusFilterInput" class="filter-short" placeholder="状态筛选" clearable>
           <el-option label="草稿" value="draft" />
           <el-option label="已提交" value="submitted" />
           <el-option label="待官方兽医审核" value="origin_reviewing" />
@@ -78,7 +89,11 @@ function edit(row: OriginQuarantineApplication) {
           <el-option label="已到达" value="arrived" />
           <el-option label="已作废" value="voided" />
         </el-select>
-        <el-button>导出</el-button>
+        <div class="toolbar-actions">
+          <el-button type="primary" @click="searchApplications">搜索</el-button>
+          <el-button @click="refreshApplications">刷新</el-button>
+          <el-button>导出</el-button>
+        </div>
       </div>
     </el-card>
 
@@ -95,28 +110,30 @@ function edit(row: OriginQuarantineApplication) {
         <el-table-column label="当前状态" width="140"><template #default="{ row }"><el-tag :type="statusType[row.status]">{{ statusText[row.status] }}</el-tag></template></el-table-column>
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="view(row)">查看</el-button>
-            <template v-if="row.status === 'draft'">
-              <el-button size="small" @click="edit(row)">编辑</el-button>
-              <el-button size="small" type="success" @click="submitDraft(row)">提交</el-button>
-              <el-button size="small" type="danger" @click="deleteDraft(row)">删除</el-button>
-            </template>
-            <template v-else-if="['submitted', 'origin_reviewing'].includes(row.status)">
-              <el-button v-if="row.status === 'submitted'" size="small" type="warning" @click="withdraw(row)">撤回</el-button>
-            </template>
-            <template v-else-if="row.status === 'rejected'">
-              <el-button size="small" type="warning" @click="view(row)">查看原因</el-button>
-              <el-button size="small" type="success" @click="edit(row)">编辑重提</el-button>
-            </template>
-            <template v-else-if="row.status === 'certificate_issued'">
-              <el-button size="small" type="success" @click="view(row)">查看证明</el-button>
-              <el-button size="small" @click="view(row)">运输任务</el-button>
-              <el-button size="small" type="warning" :disabled="row.voidRequested" @click="requestVoid(row)">{{ row.voidRequested ? '已申请作废' : '申请作废' }}</el-button>
-            </template>
-            <template v-else-if="row.status === 'transporting'">
-              <el-button size="small" @click="view(row)">查看轨迹</el-button>
-              <el-button size="small" @click="view(row)">落地状态</el-button>
-            </template>
+            <div class="table-actions">
+              <el-button size="small" @click="view(row)">查看</el-button>
+              <template v-if="row.status === 'draft'">
+                <el-button size="small" @click="edit(row)">编辑</el-button>
+                <el-button size="small" type="success" @click="submitDraft(row)">提交</el-button>
+                <el-button size="small" type="danger" @click="deleteDraft(row)">删除</el-button>
+              </template>
+              <template v-else-if="['submitted', 'origin_reviewing'].includes(row.status)">
+                <el-button v-if="row.status === 'submitted'" size="small" type="warning" @click="withdraw(row)">撤回</el-button>
+              </template>
+              <template v-else-if="row.status === 'rejected'">
+                <el-button size="small" type="warning" @click="view(row)">查看原因</el-button>
+                <el-button size="small" type="success" @click="edit(row)">编辑重提</el-button>
+              </template>
+              <template v-else-if="row.status === 'certificate_issued'">
+                <el-button size="small" type="success" @click="view(row)">查看证明</el-button>
+                <el-button size="small" @click="view(row)">运输任务</el-button>
+                <el-button size="small" type="warning" :disabled="row.voidRequested" @click="requestVoid(row)">{{ row.voidRequested ? '已申请作废' : '申请作废' }}</el-button>
+              </template>
+              <template v-else-if="row.status === 'transporting'">
+                <el-button size="small" @click="view(row)">查看轨迹</el-button>
+                <el-button size="small" @click="view(row)">落地状态</el-button>
+              </template>
+            </div>
           </template>
         </el-table-column>
       </el-table>

@@ -8,6 +8,7 @@ const store = useAppStore()
 const route = useRoute()
 const router = useRouter()
 const assistantVisible = ref(false)
+const openMenuGroups = ref<Record<string, boolean>>({})
 
 const roleText = computed(() => {
   const map = {
@@ -31,37 +32,71 @@ const menus = computed(() => {
     ],
     vet: [
       { label: '产地检疫待办', path: '/vet/origin-todos' },
-      { label: '屠宰检疫待办', path: '/vet/slaughter-todos' },
-      { label: '屠宰检疫审核', path: '/vet/slaughter-audit' },
+      { label: '宰前检疫', path: '/vet/slaughter-todos' },
+      { label: '宰后检疫', path: '/vet/post-mortem-check' },
     ],
     slaughter: [
       { label: '屠宰企业工作台', path: '/slaughter/dashboard' },
       { label: '入场查验', path: '/slaughter/entry-check' },
       { label: '待宰管理', path: '/slaughter/waiting-slaughter' },
-      { label: '非瘟/违禁药物自检', path: '/slaughter/self-check' },
-      { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
+      // { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
+      { label: '宰后管理', path: '/slaughter/slaughter-records' },
       { label: '肉品品质检验', path: '/slaughter/meat-quality' },
       { label: '检疫验讫标志', path: '/slaughter/mark-management' },
       { label: '三证扫码查询', path: '/slaughter/traceability-query' },
     ],
     regulator: [
-      { label: '检疫监管', path: '/regulator/dashboard' },
-      { label: '诊疗监管', path: '/regulator/clinic-supervision' },
-      { label: '调运监管一张图', path: '/regulator/transport-map' },
-      { label: '产地证明抽查', path: '/regulator/certificate-spot-check' },
-      { label: '落地报告抽查', path: '/regulator/landing-report-spot-check' },
-      { label: '产地统计分析', path: '/regulator/origin-statistics' },
-      { label: '承运限制管理', path: '/regulator/carrier-restrictions' },
-      { label: '无害化处理', path: '/regulator/harmless-treatment' },
-      { label: '证章管理', path: '/regulator/seal-management' },
-      { label: '屠宰统计分析', path: '/regulator/slaughter-statistics' },
-      { label: '接口同步日志', path: '/regulator/sync-logs' },
-      { label: '闭环校验总览', path: '/regulator/closed-loop' },
-      { label: '诊疗机构审核', path: '/regulator/clinic-institutions' },
-      { label: '执业兽医审核', path: '/regulator/clinic-veterinarians' },
-      { label: '年度报告查看', path: '/regulator/clinic-reports' },
-      { label: '药品处方监管', path: '/regulator/clinic-drug-supervision' },
-      { label: '废弃物监管', path: '/regulator/clinic-waste-supervision' },
+      {
+        label: '监管总览',
+        children: [
+          { label: '检疫监管', path: '/regulator/dashboard' },
+          { label: '闭环校验总览', path: '/regulator/closed-loop' },
+        ],
+      },
+      {
+        label: '检疫调运监管',
+        children: [
+          { label: '调运监管一张图', path: '/regulator/transport-map' },
+          { label: '产地证明抽查', path: '/regulator/certificate-spot-check' },
+          { label: '落地报告抽查', path: '/regulator/landing-report-spot-check' },
+          { label: '产地统计分析', path: '/regulator/origin-statistics' },
+          { label: '承运限制管理', path: '/regulator/carrier-restrictions' },
+        ],
+      },
+      {
+        label: '屠宰闭环监管',
+        children: [
+          { label: '无害化处理', path: '/regulator/harmless-treatment' },
+          { label: '证章管理', path: '/regulator/seal-management' },
+          { label: '屠宰统计分析', path: '/regulator/slaughter-statistics' },
+        ],
+      },
+      {
+        label: '检疫验讫标志管理',
+        children: [
+          { label: '申领/退回审核', path: '/regulator/quarantine-mark/review' },
+          { label: '标志发放', path: '/regulator/quarantine-mark/issue' },
+          { label: '标志库存', path: '/regulator/quarantine-mark/inventory' },
+          { label: '标志退回', path: '/regulator/quarantine-mark/return' },
+        ],
+      },
+      {
+        label: '诊疗机构监管',
+        children: [
+          { label: '诊疗监管', path: '/regulator/clinic-supervision' },
+          { label: '诊疗机构审核', path: '/regulator/clinic-institutions' },
+          { label: '执业兽医审核', path: '/regulator/clinic-veterinarians' },
+          { label: '年度报告查看', path: '/regulator/clinic-reports' },
+          { label: '药品处方监管', path: '/regulator/clinic-drug-supervision' },
+          { label: '废弃物监管', path: '/regulator/clinic-waste-supervision' },
+        ],
+      },
+      {
+        label: '系统支撑',
+        children: [
+          { label: '接口同步日志', path: '/regulator/sync-logs' },
+        ],
+      },
     ],
     clinic_admin: [
       { label: '动物诊疗工作台', path: '/clinic/admin/dashboard' },
@@ -83,6 +118,22 @@ const menus = computed(() => {
 
   return store.currentRole ? (config[store.currentRole as keyof typeof config] ?? []) : []
 })
+
+function isPathActive(path: string) {
+  return route.path === path || route.path.startsWith(`${path}/`)
+}
+
+function isGroupActive(menu: any) {
+  return Array.isArray(menu.children) && menu.children.some((child: any) => isPathActive(child.path))
+}
+
+function isGroupOpen(menu: any) {
+  return openMenuGroups.value[menu.label] ?? isGroupActive(menu)
+}
+
+function toggleGroup(menu: any) {
+  openMenuGroups.value[menu.label] = !isGroupOpen(menu)
+}
 
 async function logout() {
   await store.logout()
@@ -111,15 +162,34 @@ async function refreshData() {
         </div>
       </div>
       <nav class="nav-list">
-        <button
-          v-for="menu in menus"
-          :key="menu.path"
-          class="nav-item"
-          :class="{ active: route.path === menu.path || route.path.startsWith(`${menu.path}/`) }"
-          @click="router.push(menu.path)"
-        >
-          {{ menu.label }}
-        </button>
+        <template v-for="menu in menus" :key="menu.label">
+          <div v-if="'children' in menu" class="nav-group" :class="{ active: isGroupActive(menu) }">
+            <button class="nav-group-title" type="button" @click="toggleGroup(menu)">
+              <span>{{ menu.label }}</span>
+              <span class="nav-group-arrow" :class="{ open: isGroupOpen(menu) }">⌄</span>
+            </button>
+            <div v-if="isGroupOpen(menu)" class="nav-group-children">
+              <button
+                v-for="child in menu.children"
+                :key="child.path"
+                class="nav-item nav-sub-item"
+                :class="{ active: isPathActive(child.path) }"
+                @click="router.push(child.path)"
+              >
+                {{ child.label }}
+              </button>
+            </div>
+          </div>
+          <button
+            v-else
+            :key="menu.path"
+            class="nav-item"
+            :class="{ active: isPathActive(menu.path) }"
+            @click="router.push(menu.path)"
+          >
+            {{ menu.label }}
+          </button>
+        </template>
       </nav>
       <div class="sidebar-footer">
         <el-button class="full-btn" @click="logout">返回角色选择</el-button>

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
 import { statusText, statusType } from '../../domain/stateMachine'
 import { formatTime } from '../../lib/format'
+import certImage from '../../../image/动物检疫证书.png'
 
 const store = useAppStore()
 const route = useRoute()
@@ -44,9 +45,9 @@ const statusDescription = computed(() => {
 </script>
 
 <template>
-  <section v-if="application" class="page-grid two-col">
+  <section v-if="application" class="gov-page two-col">
     <el-card class="panel-card certificate-card">
-      <template #header><div class="card-header-line"><strong>申报详情</strong><el-tag :type="statusType[application.status]">{{ statusText[application.status] }}</el-tag></div></template>
+      <template #header><div class="card-title"><strong>申报详情</strong><el-tag :type="statusType[application.status]">{{ statusText[application.status] }}</el-tag></div></template>
       <div class="info-list">
         <p><span>申报编号</span><b>{{ application.applicationNo }}</b></p>
         <p><span>动物种类</span><b>{{ application.animalType }}</b></p>
@@ -62,20 +63,20 @@ const statusDescription = computed(() => {
         <p><span>提交时间</span><b>{{ application.submittedAt ? formatTime(application.submittedAt) : '未提交' }}</b></p>
       </div>
       <el-divider />
-      <h3>自动校验结果</h3>
-      <div class="check-list">
+      <h3 class="detail-section-title">自动校验结果</h3>
+      <div class="check-list detail-section-content">
         <div v-for="check in application.validationResults" :key="check.label" class="check-row">
           <el-tag :type="check.passed ? 'success' : 'danger'">{{ check.passed ? '通过' : '异常' }}</el-tag>
           <div><b>{{ check.label }}</b><p>{{ check.message }}</p></div>
         </div>
       </div>
       <el-divider />
-      <h3>流程时间线</h3>
-      <el-timeline>
+      <h3 class="detail-section-title">流程时间线</h3>
+      <el-timeline class="detail-timeline">
         <el-timeline-item v-for="item in timeline" :key="item.title" :timestamp="formatTime(item.time)"><b>{{ item.title }}</b><p>{{ item.description }}</p></el-timeline-item>
       </el-timeline>
       <el-divider />
-      <h3>操作日志</h3>
+      <h3 class="detail-section-title">操作日志</h3>
       <div class="info-list"><p v-for="log in logs" :key="log.id"><span>{{ formatTime(log.createdAt) }}</span><b>{{ log.actor }}｜{{ log.action }}</b></p><p v-if="!logs.length"><span>暂无</span><b>当前申报暂无独立操作日志</b></p></div>
     </el-card>
 
@@ -83,14 +84,16 @@ const statusDescription = computed(() => {
       <el-card class="panel-card">
         <template #header><strong>当前状态说明</strong></template>
         <el-alert :type="application.status === 'rejected' ? 'error' : application.status === 'draft' ? 'info' : 'success'" :closable="false" :title="statusDescription" />
-        <div v-if="application.status === 'rejected'" class="action-inline" style="margin-top: 16px"><el-button type="success" @click="router.push(`/farmer/origin-apply/${application.id}`)">编辑后重新提交</el-button></div>
-        <div v-if="application.status === 'draft'" class="action-inline" style="margin-top: 16px"><el-button @click="router.push(`/farmer/origin-apply/${application.id}`)">继续编辑</el-button><el-button type="success" @click="router.push('/farmer/origin-applications')">返回列表提交</el-button></div>
+        <div v-if="application.status === 'rejected'" class="action-footer"><el-button type="success" @click="router.push(`/farmer/origin-apply/${application.id}`)">编辑后重新提交</el-button></div>
+        <div v-if="application.status === 'draft'" class="action-footer"><el-button @click="router.push(`/farmer/origin-apply/${application.id}`)">继续编辑</el-button><el-button type="success" @click="router.push('/farmer/origin-applications')">返回列表提交</el-button></div>
       </el-card>
 
       <el-card v-if="certificate" class="panel-card certificate-paper">
-        <template #header><strong>电子检疫证明</strong></template>
-        <div class="qr-box">{{ certificate.certificateNo.slice(-6) }}</div>
-        <div class="info-list">
+        <template #header><strong>动物检疫合格证明</strong></template>
+        <div class="cert-image-box">
+          <img :src="certImage" alt="动物检疫合格证明" />
+        </div>
+        <div class="cert-image-info">
           <p><span>证明编号</span><b>{{ certificate.certificateNo }}</b></p>
           <p><span>签发兽医</span><b>{{ certificate.issuedBy }}</b></p>
           <p><span>出证时间</span><b>{{ formatTime(certificate.validFrom) }}</b></p>
@@ -108,7 +111,7 @@ const statusDescription = computed(() => {
           <p><span>运输状态</span><b>{{ statusText[transport.status] }}</b></p>
           <p><span>落地报告</span><b>{{ landingReport ? landingReport.status : '待提交' }}</b></p>
         </div>
-        <el-timeline>
+        <el-timeline class="detail-timeline transport-timeline">
           <el-timeline-item v-for="point in transport.route" :key="point.name" :timestamp="point.time" :type="point.status === 'risk' ? 'danger' : point.status === 'done' ? 'success' : 'primary'"><b>{{ point.name }}</b><p>{{ point.description }}</p></el-timeline-item>
         </el-timeline>
       </el-card>

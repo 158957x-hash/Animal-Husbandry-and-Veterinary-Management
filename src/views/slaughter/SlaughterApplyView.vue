@@ -89,24 +89,40 @@ async function submit() {
 
 /* ---- 已有申报列表 ---- */
 const statusLabelMap: Record<SlaughterApplicationStatus, string> = {
-  pending_accept: '待受理',
-  accepted: '已受理',
-  ante_mortem_checking: '宰前检查中',
-  post_mortem_checking: '宰后检疫中',
-  pending_product_cert: '待产品出证',
-  product_cert_issued: '已出证',
+  draft: '草稿',
+  submitted_pending_accept: '已提交待受理',
   returned: '已退回',
+  accepted_pending_pre_check: '已受理/待宰前检查',
+  pre_check_passed: '宰前检查通过',
+  pre_check_failed: '宰前检查不通过',
+  auto_slaughter_completed: '已自动生成屠宰完成记录',
+  post_product_generated: '已生成宰后产品批次',
+  post_check_passed: '宰后检疫合格',
+  post_check_failed: '宰后检疫不合格',
+  quality_cert_generated: '肉品品质检验合格证已生成',
+  product_cert_pending: '待产品出证',
+  product_cert_issued: '已出产品证',
+  mark_used: '已使用检疫验讫标志',
+  completed: '已完成',
   abnormal: '异常',
 }
 
 const statusTagType: Record<SlaughterApplicationStatus, 'info' | 'success' | 'warning' | 'danger' | 'primary'> = {
-  pending_accept: 'warning',
-  accepted: 'primary',
-  ante_mortem_checking: 'warning',
-  post_mortem_checking: 'warning',
-  pending_product_cert: 'info',
-  product_cert_issued: 'success',
+  draft: 'info',
+  submitted_pending_accept: 'warning',
   returned: 'danger',
+  accepted_pending_pre_check: 'primary',
+  pre_check_passed: 'success',
+  pre_check_failed: 'danger',
+  auto_slaughter_completed: 'warning',
+  post_product_generated: 'warning',
+  post_check_passed: 'success',
+  post_check_failed: 'danger',
+  quality_cert_generated: 'info',
+  product_cert_pending: 'warning',
+  product_cert_issued: 'success',
+  mark_used: 'success',
+  completed: 'success',
   abnormal: 'danger',
 }
 
@@ -114,12 +130,15 @@ const detectionLabel = (v?: DetectionResult) => (v === 'negative' ? '阴性' : v
 </script>
 
 <template>
-  <div class="page-grid">
-    <!-- 标题栏 -->
-    <div class="topbar">
-      <h1>屠宰检疫申报</h1>
-      <p>对自检通过的待宰批次提交屠宰检疫申报，由官方兽医受理审核</p>
-    </div>
+  <div class="gov-page">
+    <el-card class="panel-card">
+      <div class="page-hero">
+        <div>
+          <h2>屠宰检疫申报</h2>
+          <p>对自检通过的待宰批次提交屠宰检疫申报，由官方兽医受理审核。</p>
+        </div>
+      </div>
+    </el-card>
 
     <!-- 申报区域 -->
     <el-card v-if="applicableBatches.length" class="panel-card">
@@ -224,7 +243,7 @@ const detectionLabel = (v?: DetectionResult) => (v === 'negative' ? '阴性' : v
     <!-- 已有申报列表 -->
     <el-card class="panel-card">
       <template #header><strong>屠宰检疫申报记录</strong></template>
-      <el-table :data="store.data.slaughterApplications" stripe border style="width: 100%">
+      <el-table :data="store.data.slaughterApplications" stripe border>
         <el-table-column prop="applicationNo" label="申报编号" min-width="140" />
         <el-table-column prop="animalType" label="动物种类" width="100" />
         <el-table-column prop="quantity" label="数量(头)" width="90" align="center" />

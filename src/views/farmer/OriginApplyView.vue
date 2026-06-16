@@ -73,38 +73,45 @@ async function submit() {
 </script>
 
 <template>
-  <section class="page-grid two-col">
+  <section class="gov-page two-col">
     <el-card class="panel-card">
-      <template #header><strong>{{ editingApplication ? editingApplication.status === 'rejected' ? '编辑后重新提交产地检疫申报' : '编辑产地检疫申报草稿' : '新增产地检疫申报' }}</strong></template>
+      <template #header>
+        <div class="card-title">
+          <strong>{{ editingApplication ? editingApplication.status === 'rejected' ? '编辑后重新提交产地检疫申报' : '编辑产地检疫申报草稿' : '新增产地检疫申报' }}</strong>
+          <small>按产地检疫申报要求补齐批次、车辆、目的地和联系人信息</small>
+        </div>
+      </template>
       <el-alert v-if="editingApplication?.status === 'rejected'" type="error" :closable="false" :title="`驳回原因：${editingApplication.rejectReason || '未填写'}`" />
-      <el-form label-position="top" style="margin-top: 12px">
-        <el-form-item label="养殖批次">
-          <el-select v-model="form.batchId" class="full-width">
-            <el-option v-for="batch in store.data.farmBatches" :key="batch.id" :label="`${batch.farmName} / ${batch.animalType} / 存栏 ${batch.stock}`" :value="batch.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="申报数量"><el-input-number v-model="form.quantity" :min="1" :max="9999" class="full-width" /></el-form-item>
-        <el-form-item label="检疫用途">
-          <el-select v-model="form.purpose" class="full-width">
-            <el-option label="屠宰" value="slaughter" />
-            <el-option label="继续饲养" value="breeding" />
-            <el-option label="交易" value="trade" />
-            <el-option label="展示" value="exhibition" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="启运时间"><el-input v-model="form.departureTime" /></el-form-item>
-        <el-form-item label="联系人"><el-input v-model="form.contactPerson" /></el-form-item>
-        <el-form-item label="联系电话"><el-input v-model="form.contactPhone" /></el-form-item>
-        <el-form-item label="目的地"><el-input v-model="form.destination" /></el-form-item>
-        <el-form-item label="目的地详细地址"><el-input v-model="form.destinationAddress" /></el-form-item>
-        <el-form-item label="运输车辆">
-          <el-select v-model="form.vehicleId" class="full-width">
-            <el-option v-for="vehicle in store.data.vehicles" :key="vehicle.id" :label="`${vehicle.plateNo} / ${vehicle.carrier} / ${vehicle.channel}`" :value="vehicle.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="承运人"><el-input :model-value="selectedVehicle?.carrier || ''" disabled /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item>
-        <div class="action-inline">
+      <el-form label-position="top" class="form-section">
+        <div class="form-grid">
+          <el-form-item label="养殖批次">
+            <el-select v-model="form.batchId" class="full-width">
+              <el-option v-for="batch in store.data.farmBatches" :key="batch.id" :label="`${batch.farmName} / ${batch.animalType} / 存栏 ${batch.stock}`" :value="batch.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="申报数量"><el-input-number v-model="form.quantity" :min="1" :max="9999" class="full-width" /></el-form-item>
+          <el-form-item label="检疫用途">
+            <el-select v-model="form.purpose" class="full-width">
+              <el-option label="屠宰" value="slaughter" />
+              <el-option label="继续饲养" value="breeding" />
+              <el-option label="交易" value="trade" />
+              <el-option label="展示" value="exhibition" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="启运时间"><el-input v-model="form.departureTime" /></el-form-item>
+          <el-form-item label="联系人"><el-input v-model="form.contactPerson" /></el-form-item>
+          <el-form-item label="联系电话"><el-input v-model="form.contactPhone" /></el-form-item>
+          <el-form-item label="目的地"><el-input v-model="form.destination" /></el-form-item>
+          <el-form-item label="目的地详细地址" class="full-line"><el-input v-model="form.destinationAddress" /></el-form-item>
+          <el-form-item label="运输车辆">
+            <el-select v-model="form.vehicleId" class="full-width">
+              <el-option v-for="vehicle in store.data.vehicles" :key="vehicle.id" :label="`${vehicle.plateNo} / ${vehicle.carrier} / ${vehicle.channel}`" :value="vehicle.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="承运人"><el-input :model-value="selectedVehicle?.carrier || ''" disabled /></el-form-item>
+          <el-form-item label="备注" class="full-line"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item>
+        </div>
+        <div class="action-footer">
           <el-button @click="router.push('/farmer/origin-applications')">返回列表</el-button>
           <el-button @click="saveDraft">保存草稿</el-button>
           <el-button :disabled="hasPrecheckError" type="success" @click="submit">提交申报</el-button>
@@ -123,8 +130,8 @@ async function submit() {
         </div>
       </el-card>
       <el-card class="panel-card">
-        <template #header><div class="card-header-line"><strong>申报前自查清单</strong><el-button size="small" @click="store.refresh()">重新自查</el-button></div></template>
-        <el-alert v-if="hasPrecheckError" type="error" :closable="false" title="存在自查异常，系统不会提交到官方兽医待办，请先整改异常项。" style="margin-bottom: 12px" />
+        <template #header><div class="card-title"><strong>申报前自查清单</strong><el-button size="small" @click="store.refresh()">重新自查</el-button></div></template>
+        <el-alert v-if="hasPrecheckError" type="error" :closable="false" title="存在自查异常，系统不会提交到官方兽医待办，请先整改异常项。" />
         <div class="check-list">
           <div v-for="check in previewChecks" :key="check.label" class="check-row">
             <el-tag :type="check.passed ? 'success' : 'danger'">{{ check.passed ? '通过' : '异常' }}</el-tag>

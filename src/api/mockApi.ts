@@ -1,7 +1,9 @@
 import type {
   AlertRecord,
   AnnualReport,
+  AnteMortemCheckDetail,
   AnteMortemInput,
+  AnteMortemSubmitInput,
   AppData,
   CarrierRestriction,
   ClinicInstitution,
@@ -21,11 +23,14 @@ import type {
   LandingReport,
   LandingReportInput,
   MarkType,
-  MedicalWasteInput,
-  MedicalWasteRecord,
+  MarkUsageSubmitInput,
+  MeatQualityCheckDetail,
   MeatQualityCertificate,
   MeatQualityCertificateInput,
   MeatQualityCertificateInputExtended,
+  MeatQualitySubmitInput,
+  MedicalWasteInput,
+  MedicalWasteRecord,
   OperationLog,
   OriginApplicationInput,
   OriginInspectionInput,
@@ -34,22 +39,32 @@ import type {
   PetOwnerInput,
   PetProfile,
   PetProfileInput,
+  PostMortemCheckDetail,
   PostMortemInput,
+  PostMortemSubmitInput,
+  PostProductBatch,
   Prescription,
   PrescriptionInput,
+  ProductCertIssueInput,
+  ProductCertIssueRecord,
   ProductCertificate,
   ProductCertificateInput,
   QuarantineCertificate,
   QuarantineMark,
   QuarantineMarkApplication,
   QuarantineMarkApplicationInput,
+  QuarantineMarkReturnApplicationInput,
   SlaughterAnteMortemCheck,
   SlaughterApplicationInput,
   SlaughterAuditInput,
   SlaughterEntryRecord,
+  SlaughterEntryConfirmInput,
+  SlaughterEntryExceptionInput,
+  SlaughterEntryReturnInput,
   SlaughterPostMortemCheck,
   SlaughterQuarantineApplication,
   SlaughterQuarantineApplicationInput,
+  SlaughterRecord,
   SlaughterSelfInspection,
   SlaughterSelfInspectionInput,
   SyncLog,
@@ -62,6 +77,8 @@ import type {
   Veterinarian,
   VeterinarianInput,
   WaitingSlaughterBatch,
+  InspectionAttachment,
+  TransportTask,
 } from '../domain/models'
 import { createSeedData, roleSessions } from '../domain/seed'
 import { transitionStatus } from '../domain/stateMachine'
@@ -171,6 +188,89 @@ function pushNode(data: AppData, nodeName: string, dataSource: string, passed: b
     summary,
   }
   data.closedLoopNodes.unshift(node)
+}
+
+function ensureOriginInspectionAttachments(data: AppData, application: OriginQuarantineApplication) {
+  const existing = data.inspectionAttachments.some((item) => item.applicationNo === application.applicationNo)
+  if (existing) return
+
+  const current = now()
+  const attachments: InspectionAttachment[] = [
+    { id: id('att'), applicationNo: application.applicationNo, type: 'scene_photo', typeName: '现场照片', fileName: `现场查验_${application.applicationNo}.jpg`, fileSize: 307200, fileType: 'image/jpeg', uploadedBy: '官方兽医 王敏', uploadedAt: current },
+    { id: id('att'), applicationNo: application.applicationNo, type: 'ear_tag_photo', typeName: '耳标照片', fileName: `耳标核验_${application.applicationNo}.jpg`, fileSize: 153600, fileType: 'image/jpeg', uploadedBy: '官方兽医 王敏', uploadedAt: current },
+    { id: id('att'), applicationNo: application.applicationNo, type: 'loading_photo', typeName: '装载照片', fileName: `装载查验_${application.applicationNo}.jpg`, fileSize: 256000, fileType: 'image/jpeg', uploadedBy: '官方兽医 王敏', uploadedAt: current },
+  ]
+  data.inspectionAttachments.unshift(...attachments)
+}
+
+function ensurePendingSlaughterEntry(data: AppData, certificate: QuarantineCertificate, taskId: string, application: OriginQuarantineApplication, batch?: AppData['farmBatches'][number]) {
+  const existing = data.slaughterEntryRecords.some((item) => item.quarantineCertificateId === certificate.id)
+  if (existing) return
+
+  const record: SlaughterEntryRecord = {
+    id: id('entry'),
+    entryNo: no('RCDJ'),
+    quarantineCertificateId: certificate.id,
+    transportTaskId: taskId,
+    applicationId: application.id,
+    slaughterhouseName: '皖北标准化屠宰中心',
+    animalType: certificate.animalType,
+    quantity: certificate.quantity,
+    earTagRange: batch ? `${batch.earTagPrefix}${batch.earTagStart}-${batch.earTagEnd}` : certificate.earTagRange ?? '',
+    vehiclePlateNo: certificate.vehiclePlateNo,
+    carrier: certificate.carrier ?? application.carrier,
+    originFarm: batch?.farmName ?? '',
+    originLocation: batch?.location ?? certificate.origin,
+    checkResults: [],
+    status: 'pending_check',
+    checkedBy: '',
+    checkedAt: '',
+    createdAt: now(),
+  }
+  certificate.entryUsageStatus = 'not_arrived'
+  data.slaughterEntryRecords.unshift(record)
+}
+
+function appendEntryAttachments(data: AppData, entry: SlaughterEntryRecord, attachments: SlaughterEntryConfirmInput['attachments'] | SlaughterEntryExceptionInput['attachments'] = []) {
+  const current = now()
+  attachments.forEach((attachment) => {
+    data.inspectionAttachments.unshift({
+      id: id('att'),
+      applicationNo: entry.entryNo,
+      type: attachment.type,
+      typeName: attachment.typeName,
+      fileName: attachment.fileName,
+      fileSize: attachment.fileSize,
+      fileType: attachment.fileType,
+      dataUrl: attachment.dataUrl,
+      uploadedBy: attachment.uploadedBy,
+      uploadedAt: current,
+    })
+  })
+}
+
+function validateEntryConfirmInput(data: AppData, entry: SlaughterEntryRecord, input: SlaughterEntryConfirmInput) {
+  const certificate = data.quarantineCertificates.find((item) => item.id === entry.quarantineCertificateId)
+  if (!certificate) throw new Error('动物检疫合格证明不存在')
+  const certValid = new Date(certificate.validTo).getTime() >= Date.now()
+  const duplicateEntry = data.slaughterEntryRecords.some((item) => item.id !== entry.id && item.quarantineCertificateId === certificate.id && item.status === 'entry_passed')
+  const restricted = data.carrierRestrictions.some((item) => item.certificateId === certificate.id && item.status === 'restricted')
+  const scenePassed = input.vehicleArrived && input.quantityMatched && input.earTagMatched && input.clinicalNormal && input.deathCount === 0 && input.abnormalCount === 0 && input.loadingNormal
+
+  if (!input.actualQuantity) throw new Error('实到数量不能为空')
+  if (!input.waitingPenNo.trim()) throw new Error('待宰圈编号不能为空')
+  if (!certValid || certificate.entryUsageStatus === 'used') throw new Error('动物证无效、已作废或已过期，禁止确认入场')
+  if (duplicateEntry) throw new Error('发现重复入场，禁止确认入场')
+  if (restricted) throw new Error('存在承运限制，禁止确认入场')
+  if (!scenePassed) throw new Error('现场核对不通过，禁止确认入场')
+}
+
+function validateEntryExceptionInput(input: SlaughterEntryExceptionInput) {
+  if (!input.abnormalReason.trim()) throw new Error('登记异常必须填写异常说明')
+}
+
+function validateEntryReturnInput(input: SlaughterEntryReturnInput) {
+  if (!input.reason.trim()) throw new Error('入场退回必须填写原因')
 }
 
 function validateOriginApplication(data: AppData, input: OriginApplicationInput): ValidationResult[] {
@@ -348,6 +448,7 @@ export const mockApi = {
     application.status = transitionStatus(application.status, 'submitted')
     application.submittedAt = now()
     application.updatedAt = now()
+    ensureOriginInspectionAttachments(data, application)
     pushLog(data, 'farmer', '绿丰生态养殖场', '提交产地检疫申报', application.applicationNo)
     pushNode(data, '产地检疫申报', '养殖场户端', application.validationResults.every((item) => item.passed), '绿丰生态养殖场', application.id, `申报 ${application.quantity} 头${application.animalType}`)
     application.validationResults.filter((item) => !item.passed).forEach((item) => pushAlert(data, 'warning', item.label, item.message, application.id))
@@ -362,6 +463,7 @@ export const mockApi = {
     const batch = data.farmBatches.find((item) => item.id === input.batchId)
 
     data.originApplications.unshift(application)
+    ensureOriginInspectionAttachments(data, application)
     pushLog(data, 'farmer', batch?.farmName || '养殖场户', '提交产地检疫申报', application.applicationNo)
     pushNode(data, '产地检疫申报', '养殖场户端', application.validationResults.every((item) => item.passed), batch?.farmName || '养殖场户', application.id, `申报 ${application.quantity} 头${application.animalType}`)
     application.validationResults.filter((item) => !item.passed).forEach((item) => pushAlert(data, 'warning', item.label, item.message, application.id))
@@ -406,6 +508,7 @@ export const mockApi = {
     application.submittedAt = now()
     application.rejectReason = undefined
     application.updatedAt = now()
+    ensureOriginInspectionAttachments(data, application)
     pushLog(data, 'farmer', '绿丰生态养殖场', '重新提交产地检疫申报', application.applicationNo)
     writeData(data)
     return clone(application)
@@ -481,8 +584,7 @@ export const mockApi = {
     }
 
     const transportStatus = transitionStatus(application.status, 'transporting')
-    data.quarantineCertificates.unshift(certificate)
-    data.transportTasks.unshift({
+    const transportTask: TransportTask = {
       id: id('transport'),
       certificateId: certificate.id,
       plateNo: vehicle.plateNo,
@@ -494,7 +596,10 @@ export const mockApi = {
       ],
       hasDeviation: false,
       startedAt: now(),
-    })
+    }
+    data.quarantineCertificates.unshift(certificate)
+    data.transportTasks.unshift(transportTask)
+    ensurePendingSlaughterEntry(data, certificate, transportTask.id, application, batch)
 
     pushLog(data, 'vet', '官方兽医 王敏', `无纸化出证：${input.remark}`, certificate.certificateNo)
     pushLog(data, 'vet', '官方兽医 王敏', '生成运输任务并同步监管端', vehicle.plateNo)
@@ -614,7 +719,7 @@ export const mockApi = {
       throw new Error('企业自检结果异常')
     }
 
-    const application: SlaughterQuarantineApplication = { id: id('slaughter'), entryCheckId: entry.id, applicationNo: no('TZJY'), quantity: input.quantity, africanSwineFeverResult: input.africanSwineFeverResult, bannedDrugResult: input.bannedDrugResult, status: 'pending_accept', createdAt: now() }
+    const application: SlaughterQuarantineApplication = { id: id('slaughter'), entryCheckId: entry.id, applicationNo: no('TZJY'), quantity: input.quantity, africanSwineFeverResult: input.africanSwineFeverResult, bannedDrugResult: input.bannedDrugResult, status: 'submitted_pending_accept', createdAt: now() }
     data.slaughterApplications.unshift(application)
     pushLog(data, 'slaughter', '皖北标准化屠宰中心', '提交屠宰检疫申报', application.applicationNo)
     pushNode(data, '非瘟检测', '屠宰企业端', true, '皖北标准化屠宰中心', application.id, '非瘟与违禁药物自检阴性')
@@ -702,7 +807,7 @@ export const mockApi = {
     const meat = data.meatQualityCertificates.find((item) => item.waitingBatchId === waiting.id)
     if (!animal || !product || !meat) throw new Error('三证不完整')
     waiting.status = transitionStatus(waiting.status, 'three_cert_linked')
-    const link: ThreeCertificateLink = { id: id('link'), waitingBatchId: waiting.id, animalCertificateId: animal.id, productCertificateId: product.id, meatQualityCertificateId: meat.id, linkedAt: now() }
+    const link: ThreeCertificateLink = { id: id('link'), linkNo: no('LNK'), waitingBatchId: waiting.id, animalCertificateId: animal.id, productCertificateId: product.id, meatQualityCertificateId: meat.id, linkedAt: now() }
     data.threeCertificateLinks.unshift(link)
     pushLog(data, 'regulator', '系统自动关联', '完成三证关联追溯', animal.certificateNo)
     pushNode(data, '三证关联追溯', '闭环校验系统', true, '系统自动关联', link.id, `${animal.certificateNo} / ${product.certificateNo} / ${meat.certificateNo}`)
@@ -719,8 +824,6 @@ export const mockApi = {
       writeData(data)
       throw new Error('屠宰检疫未通过')
     }
-    application.status = 'ante_mortem_checking'
-    application.status = 'post_mortem_checking'
     application.status = 'product_cert_issued'
     const certificate: ProductCertificate = { id: id('product'), certificateNo: no('CP'), slaughterApplicationId: application.id, productName: input.productName, weight: input.weight, issuedBy: '官方兽医 王敏', issuedAt: now() }
     data.productCertificates.unshift(certificate)
@@ -1235,6 +1338,152 @@ export const mockApi = {
     return clone(record)
   },
 
+  async confirmSlaughterEntry(idValue: string, input: SlaughterEntryConfirmInput): Promise<SlaughterEntryRecord> {
+    const data = readData()
+    const entry = data.slaughterEntryRecords.find((item) => item.id === idValue)
+    if (!entry) throw new Error('入场查验记录不存在')
+    if (entry.status !== 'pending_check' && entry.status !== 'checking') throw new Error('该记录不在待查验状态')
+
+    validateEntryConfirmInput(data, entry, input)
+
+    const certificate = data.quarantineCertificates.find((item) => item.id === entry.quarantineCertificateId)
+    const task = data.transportTasks.find((item) => item.id === entry.transportTaskId)
+    if (!certificate) throw new Error('动物检疫合格证明不存在')
+
+    entry.actualQuantity = input.actualQuantity
+    entry.waitingPenNo = input.waitingPenNo
+    entry.actualVehiclePlateNo = input.actualVehiclePlateNo
+    entry.vehicleArrived = input.vehicleArrived
+    entry.quantityMatched = input.quantityMatched
+    entry.earTagMatched = input.earTagMatched
+    entry.clinicalNormal = input.clinicalNormal
+    entry.deathCount = input.deathCount
+    entry.abnormalCount = input.abnormalCount
+    entry.loadingNormal = input.loadingNormal
+    entry.sceneRemark = input.sceneRemark
+    entry.operator = input.operator
+    entry.phone = input.phone
+    entry.entryTime = input.entryTime
+    entry.opinion = input.opinion
+    entry.status = 'entry_passed'
+    entry.checkedBy = input.operator
+    entry.checkedAt = input.entryTime
+    entry.checkResults = [
+      { label: '车辆已到场', passed: input.vehicleArrived, message: input.vehicleArrived ? '车辆已到场' : '车辆未到场' },
+      { label: '实到数量一致', passed: input.quantityMatched, message: input.quantityMatched ? '实到数量与动物证一致' : '实到数量与动物证不一致' },
+      { label: '耳标抽查一致', passed: input.earTagMatched, message: input.earTagMatched ? '抽查耳标与动物证号段一致' : '抽查耳标异常' },
+      { label: '动物临床状态正常', passed: input.clinicalNormal, message: input.clinicalNormal ? '动物临床状态正常' : '存在临床异常' },
+      { label: '无途中死亡', passed: input.deathCount === 0, message: input.deathCount === 0 ? '无途中死亡' : `途中死亡 ${input.deathCount} 头` },
+      { label: '无异常动物', passed: input.abnormalCount === 0, message: input.abnormalCount === 0 ? '无异常动物' : `异常动物 ${input.abnormalCount} 头` },
+      { label: '装载情况正常', passed: input.loadingNormal, message: input.loadingNormal ? '装载情况正常' : '装载情况异常' },
+    ]
+
+    certificate.entryUsageStatus = 'used'
+    if (task) {
+      task.status = transitionStatus(task.status, 'arrived')
+      task.arrivedAt = input.entryTime
+    }
+
+    const existingBatch = data.slaughterBatches.find((item) => item.entryRecordId === entry.id)
+    if (!existingBatch) {
+      data.slaughterBatches.unshift({
+        id: id('batch'),
+        batchNo: no('TZPC'),
+        entryRecordId: entry.id,
+        quarantineCertificateId: certificate.id,
+        animalType: entry.animalType,
+        entryQuantity: input.actualQuantity,
+        waitingQuantity: input.actualQuantity,
+        slaughterQuantity: 0,
+        qualifiedCarcassQuantity: 0,
+        unqualifiedQuantity: 0,
+        earTagRange: entry.earTagRange,
+        waitingPenNo: input.waitingPenNo,
+        status: 'pending_slaughter_apply',
+        createdAt: now(),
+      })
+    }
+
+    const existingLegacyBatch = data.waitingSlaughterBatches.find((item) => item.entryCheckId === entry.id)
+    if (!existingLegacyBatch) {
+      data.waitingSlaughterBatches.unshift({
+        id: id('waiting'),
+        entryCheckId: entry.id,
+        certificateId: certificate.id,
+        quantity: input.actualQuantity,
+        animalType: entry.animalType,
+        status: 'waiting_slaughter',
+        createdAt: now(),
+        batchNo: no('DZPC'),
+        entryRecordId: entry.id,
+        earTagRange: entry.earTagRange,
+        waitingPenNo: input.waitingPenNo,
+        slaughterQuantity: 0,
+        qualifiedCarcassQuantity: 0,
+        unqualifiedQuantity: 0,
+      })
+    }
+
+    appendEntryAttachments(data, entry, input.attachments)
+    pushLog(data, 'slaughter', input.operator, '确认入场并生成待宰批次', entry.entryNo)
+    pushSync(data, certificate.certificateNo, '屠宰入场', '畜禽屠宰行业管理系统')
+    pushNode(data, '入场查验', '屠宰企业端', true, input.operator, entry.id, `确认入场 ${input.actualQuantity} 头`)
+    writeData(data)
+    return clone(entry)
+  },
+
+  async registerSlaughterEntryException(idValue: string, input: SlaughterEntryExceptionInput): Promise<SlaughterEntryRecord> {
+    const data = readData()
+    const entry = data.slaughterEntryRecords.find((item) => item.id === idValue)
+    if (!entry) throw new Error('入场查验记录不存在')
+    validateEntryExceptionInput(input)
+    entry.actualQuantity = input.actualQuantity
+    entry.waitingPenNo = input.waitingPenNo
+    entry.actualVehiclePlateNo = input.actualVehiclePlateNo
+    entry.vehicleArrived = input.vehicleArrived
+    entry.quantityMatched = input.quantityMatched
+    entry.earTagMatched = input.earTagMatched
+    entry.clinicalNormal = input.clinicalNormal
+    entry.deathCount = input.deathCount
+    entry.abnormalCount = input.abnormalCount
+    entry.loadingNormal = input.loadingNormal
+    entry.sceneRemark = input.sceneRemark
+    entry.abnormalReason = input.abnormalReason
+    entry.operator = input.operator
+    entry.phone = input.phone
+    entry.entryTime = input.entryTime
+    entry.opinion = input.opinion
+    entry.status = 'entry_rejected'
+    entry.checkedBy = input.operator
+    entry.checkedAt = input.entryTime
+    appendEntryAttachments(data, entry, input.attachments)
+    pushAlert(data, 'danger', '入场查验异常', input.abnormalReason, entry.id)
+    pushLog(data, 'slaughter', input.operator, '登记入场异常', entry.entryNo)
+    pushNode(data, '入场查验', '屠宰企业端', false, input.operator, entry.id, input.abnormalReason)
+    writeData(data)
+    return clone(entry)
+  },
+
+  async returnSlaughterEntry(idValue: string, input: SlaughterEntryReturnInput): Promise<SlaughterEntryRecord> {
+    const data = readData()
+    const entry = data.slaughterEntryRecords.find((item) => item.id === idValue)
+    if (!entry) throw new Error('入场查验记录不存在')
+    validateEntryReturnInput(input)
+    entry.returnReason = input.reason
+    entry.operator = input.operator
+    entry.phone = input.phone
+    entry.entryTime = input.entryTime
+    entry.opinion = input.opinion
+    entry.status = 'entry_rejected'
+    entry.checkedBy = input.operator
+    entry.checkedAt = input.entryTime
+    pushAlert(data, 'warning', '入场退回', input.reason, entry.id)
+    pushLog(data, 'slaughter', input.operator, '入场退回', entry.entryNo)
+    pushNode(data, '入场查验', '屠宰企业端', false, input.operator, entry.id, input.reason)
+    writeData(data)
+    return clone(entry)
+  },
+
   async submitSelfInspection(input: SlaughterSelfInspectionInput): Promise<SlaughterSelfInspection> {
     const data = readData()
     const batch = data.slaughterBatches.find((b) => b.id === input.batchId)
@@ -1260,12 +1509,12 @@ export const mockApi = {
     data.slaughterSelfInspections.unshift(inspection)
 
     if (!passed) {
-      batch.status = 'self_check_failed'
+      batch.status = 'abnormal'
       const reason = asfPositive ? '非洲猪瘟检测阳性' : '违禁药物检测阳性'
+      batch.abnormalReason = reason
       pushAlert(data, 'danger', '企业自检异常', `${batch.batchNo}：${reason}`, batch.id)
       pushLog(data, 'slaughter', '皖北标准化屠宰中心', `企业自检未通过：${reason}`, batch.batchNo)
     } else {
-      batch.status = 'self_check_passed'
       batch.status = 'pending_slaughter_apply'
       pushLog(data, 'slaughter', '皖北标准化屠宰中心', '企业自检通过', batch.batchNo)
     }
@@ -1283,6 +1532,10 @@ export const mockApi = {
     const entryRecord = data.slaughterEntryRecords.find((r) => r.id === input.entryRecordId)
     if (!entryRecord) throw new Error('入场记录不存在')
 
+    // 检查是否重复申报
+    const existingApp = data.slaughterApplications.find((a) => a.batchId === input.batchId && a.status !== 'returned')
+    if (existingApp) throw new Error('该批次已存在未退回的申报，不可重复提交')
+
     const application: SlaughterQuarantineApplication = {
       id: id('slaughter'),
       entryCheckId: input.entryRecordId,
@@ -1290,7 +1543,7 @@ export const mockApi = {
       quantity: input.quantity,
       africanSwineFeverResult: 'negative',
       bannedDrugResult: 'negative',
-      status: 'pending_accept',
+      status: 'submitted_pending_accept',
       batchId: input.batchId,
       entryRecordId: input.entryRecordId,
       quarantineCertificateId: input.quarantineCertificateId,
@@ -1305,7 +1558,8 @@ export const mockApi = {
       createdAt: now(),
     }
 
-    batch.status = 'slaughter_applied'
+    batch.status = 'submitted_pending_accept'
+    batch.slaughterApplicationId = application.id
     data.slaughterApplications.unshift(application)
     pushLog(data, 'slaughter', '皖北标准化屠宰中心', '提交屠宰检疫申报', application.applicationNo)
     pushNode(data, '屠宰检疫申报', '屠宰企业端', true, '皖北标准化屠宰中心', application.id, `申报 ${input.quantity} 头${batch.animalType}屠宰检疫`)
@@ -1318,11 +1572,11 @@ export const mockApi = {
     const application = data.slaughterApplications.find((a) => a.id === applicationId)
     if (!application) throw new Error('屠宰检疫申报不存在')
 
-    application.status = 'accepted'
+    application.status = 'accepted_pending_pre_check'
     application.updatedAt = now()
 
     const batch = data.slaughterBatches.find((b) => b.id === application.batchId)
-    if (batch) batch.status = 'ante_mortem_checking'
+    if (batch) batch.status = 'accepted_pending_ante_mortem'
 
     pushLog(data, 'vet', '官方兽医 王敏', '受理屠宰检疫申报', application.applicationNo)
     writeData(data)
@@ -1353,7 +1607,7 @@ export const mockApi = {
 
     if (allPassed) {
       batch.status = 'ante_mortem_passed'
-      application.status = 'post_mortem_checking'
+      application.status = 'post_product_generated'
     } else {
       batch.status = 'ante_mortem_failed'
       pushAlert(data, 'danger', '宰前检查', `${batch.batchNo} 宰前检查未通过`, batch.id)
@@ -1395,7 +1649,7 @@ export const mockApi = {
 
     if (allPassed) {
       batch.status = 'post_mortem_passed'
-      application.status = 'pending_product_cert'
+      application.status = 'product_cert_pending'
     } else {
       batch.status = 'post_mortem_failed'
       pushAlert(data, 'danger', '宰后检疫', `${batch.batchNo} 宰后检疫未通过`, batch.id)
@@ -1494,6 +1748,7 @@ export const mockApi = {
     // Create three certificate link
     const link: ThreeCertificateLink = {
       id: id('link'),
+      linkNo: no('LNK'),
       waitingBatchId: batch.id,
       animalCertificateId: application.quarantineCertificateId ?? '',
       productCertificateId: productCert.id,
@@ -1527,9 +1782,10 @@ export const mockApi = {
     const data = readData()
     const application: QuarantineMarkApplication = {
       id: id('mark-app'),
-      applicationNo: no('QYBZ'),
+      applicationNo: no('BZSL'),
       orgId: 'org-slaughter-001',
       orgName: '皖北标准化屠宰中心',
+      applicationType: 'apply',
       markType: input.markType,
       quantity: input.quantity,
       reason: input.reason,
@@ -1538,7 +1794,30 @@ export const mockApi = {
       createdAt: now(),
     }
     data.quarantineMarkApplications.unshift(application)
-    pushLog(data, 'slaughter', input.appliedBy, '申领检疫标志', application.applicationNo)
+    pushLog(data, 'slaughter', input.appliedBy, '提交检疫验讫标志申领', application.applicationNo)
+    writeData(data)
+    return clone(application)
+  },
+
+  async applyQuarantineMarkReturn(input: QuarantineMarkReturnApplicationInput): Promise<QuarantineMarkApplication> {
+    const data = readData()
+    const availableReturnMarks = data.quarantineMarks.filter((item) => item.markType === input.markType && (item.status === 'in_stock' || item.status === 'issued'))
+    if (availableReturnMarks.length < input.quantity) throw new Error(`可退回标志不足，需要 ${input.quantity} 枚，可退回 ${availableReturnMarks.length} 枚`)
+    const application: QuarantineMarkApplication = {
+      id: id('mark-ret-app'),
+      applicationNo: no('BZTH'),
+      orgId: 'org-slaughter-001',
+      orgName: '皖北标准化屠宰中心',
+      applicationType: 'return',
+      markType: input.markType,
+      quantity: input.quantity,
+      reason: input.reason,
+      status: 'return_pending_review',
+      appliedBy: input.appliedBy,
+      createdAt: now(),
+    }
+    data.quarantineMarkApplications.unshift(application)
+    pushLog(data, 'slaughter', input.appliedBy, '提交检疫验讫标志退回申请', application.applicationNo)
     writeData(data)
     return clone(application)
   },
@@ -1546,35 +1825,88 @@ export const mockApi = {
   async approveQuarantineMarkApplication(applicationId: string): Promise<QuarantineMarkApplication> {
     const data = readData()
     const application = data.quarantineMarkApplications.find((a) => a.id === applicationId)
-    if (!application) throw new Error('检疫标志申领记录不存在')
-
-    application.status = 'approved'
-    application.approvedBy = '市级畜牧兽医监管员'
+    if (!application) throw new Error('检疫验讫标志单据不存在')
 
     const date = new Date()
     const pad = (v: number) => String(v).padStart(2, '0')
     const dateStr = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
-    const startSeq = 501
-    const endSeq = startSeq + application.quantity - 1
-    application.issuedRangeStart = `KH${dateStr}${String(startSeq).padStart(4, '0')}`
-    application.issuedRangeEnd = `KH${dateStr}${String(endSeq).padStart(4, '0')}`
+    const prefix = application.markType === 'card_ring' ? 'KH' : 'BQ'
 
-    pushLog(data, 'regulator', '市级畜牧兽医监管员', '审核通过检疫标志申领', application.applicationNo)
+    if ((application.applicationType || 'apply') === 'return') {
+      application.status = 'return_approved'
+      application.approvedBy = '市级畜牧兽医监管员'
+      application.approvedAt = now()
+      const returnOrder = {
+        id: id('mark-return'),
+        returnNo: no('BZRK'),
+        applicationId: application.id,
+        orgId: application.orgId,
+        orgName: application.orgName,
+        markType: application.markType,
+        quantity: application.quantity,
+        reason: application.reason,
+        status: 'pending_return' as const,
+        createdAt: now(),
+      }
+      data.quarantineMarkReturnOrders.unshift(returnOrder)
+      application.relatedReturnOrderId = returnOrder.id
+      pushLog(data, 'regulator', '市级畜牧兽医监管员', '审核通过检疫验讫标志退回申请并生成待退回单', application.applicationNo)
+      writeData(data)
+      return clone(application)
+    }
+
+    application.status = 'approved'
+    application.approvedBy = '市级畜牧兽医监管员'
+    application.approvedAt = now()
+
+    const samePrefixMarks = data.quarantineMarks
+      .map((item) => item.markNo)
+      .filter((markNo) => markNo.startsWith(`${prefix}${dateStr}`))
+      .map((markNo) => Number(markNo.slice(-4)))
+      .filter((num) => Number.isFinite(num))
+    const startSeq = samePrefixMarks.length ? Math.max(...samePrefixMarks) + 1 : 1
+    const endSeq = startSeq + application.quantity - 1
+    application.issuedRangeStart = `${prefix}${dateStr}${String(startSeq).padStart(4, '0')}`
+    application.issuedRangeEnd = `${prefix}${dateStr}${String(endSeq).padStart(4, '0')}`
+
+    const issueOrder = {
+      id: id('mark-issue'),
+      issueNo: no('BZFF'),
+      applicationId: application.id,
+      orgId: application.orgId,
+      orgName: application.orgName,
+      markType: application.markType,
+      quantity: application.quantity,
+      rangeStart: application.issuedRangeStart,
+      rangeEnd: application.issuedRangeEnd,
+      status: 'pending_issue' as const,
+      createdAt: now(),
+    }
+    data.quarantineMarkIssueOrders.unshift(issueOrder)
+    application.relatedIssueOrderId = issueOrder.id
+
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', '审核通过检疫验讫标志申领并生成待发放单', application.applicationNo)
     writeData(data)
     return clone(application)
   },
 
-  async issueQuarantineMarks(applicationId: string): Promise<QuarantineMarkApplication> {
+  async issueQuarantineMarks(issueOrderId: string): Promise<QuarantineMarkApplication> {
     const data = readData()
-    const application = data.quarantineMarkApplications.find((a) => a.id === applicationId)
-    if (!application) throw new Error('检疫标志申领记录不存在')
-    if (!application.issuedRangeStart || !application.issuedRangeEnd) throw new Error('标志编号范围未生成')
+    const issueOrder = data.quarantineMarkIssueOrders.find((order) => order.id === issueOrderId || order.applicationId === issueOrderId)
+    if (!issueOrder) throw new Error('待发放单不存在')
+    if (issueOrder.status === 'issued') throw new Error('该发放单已完成发放')
+    const application = data.quarantineMarkApplications.find((a) => a.id === issueOrder.applicationId)
+    if (!application) throw new Error('检疫验讫标志申领记录不存在')
 
     application.status = 'issued'
+    application.issuedRangeStart = issueOrder.rangeStart
+    application.issuedRangeEnd = issueOrder.rangeEnd
+    issueOrder.status = 'issued'
+    issueOrder.issuedBy = '市级畜牧兽医监管员'
+    issueOrder.issuedAt = now()
 
-    // Parse range and generate individual marks
-    const startMatch = application.issuedRangeStart.match(/^(KH\d{8})(\d{4})$/)
-    const endMatch = application.issuedRangeEnd.match(/^(KH\d{8})(\d{4})$/)
+    const startMatch = issueOrder.rangeStart.match(/^([A-Z]{2}\d{8})(\d{4})$/)
+    const endMatch = issueOrder.rangeEnd.match(/^([A-Z]{2}\d{8})(\d{4})$/)
     if (!startMatch || !endMatch) throw new Error('标志编号格式异常')
 
     const prefix = startMatch[1]
@@ -1583,6 +1915,8 @@ export const mockApi = {
 
     for (let i = startNum; i <= endNum; i++) {
       const markNo = `${prefix}${String(i).padStart(4, '0')}`
+      const exists = data.quarantineMarks.some((item) => item.markNo === markNo)
+      if (exists) continue
       const mark: QuarantineMark = {
         id: id('mark'),
         markNo,
@@ -1595,8 +1929,7 @@ export const mockApi = {
       data.quarantineMarks.unshift(mark)
     }
 
-    // Update or create inventory
-    let inventory = data.quarantineMarkInventories.find((inv) => inv.markType === application.markType)
+    let inventory = data.quarantineMarkInventories.find((inv) => inv.markType === application.markType && inv.orgId === application.orgId)
     if (!inventory) {
       inventory = {
         id: id('inv'),
@@ -1613,7 +1946,46 @@ export const mockApi = {
     inventory.total += application.quantity
     inventory.available += application.quantity
 
-    pushLog(data, 'regulator', '市级畜牧兽医监管员', '发放检疫标志', `${application.issuedRangeStart}~${application.issuedRangeEnd}`)
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', '发放检疫验讫标志并生成发放记录', `${issueOrder.issueNo} ${issueOrder.rangeStart}~${issueOrder.rangeEnd}`)
+    writeData(data)
+    return clone(application)
+  },
+
+  async completeQuarantineMarkReturn(returnOrderId: string): Promise<QuarantineMarkApplication> {
+    const data = readData()
+    const returnOrder = data.quarantineMarkReturnOrders.find((order) => order.id === returnOrderId || order.applicationId === returnOrderId)
+    if (!returnOrder) throw new Error('待退回单不存在')
+    if (returnOrder.status === 'returned') throw new Error('该退回单已完成入库')
+    const application = data.quarantineMarkApplications.find((a) => a.id === returnOrder.applicationId)
+    if (!application) throw new Error('检疫验讫标志退回申请不存在')
+
+    const returnableMarks = data.quarantineMarks.filter((item) => item.markType === returnOrder.markType && (item.status === 'in_stock' || item.status === 'issued')).slice(0, returnOrder.quantity)
+    if (returnableMarks.length < returnOrder.quantity) throw new Error(`可退回标志不足，需要 ${returnOrder.quantity} 枚，可退回 ${returnableMarks.length} 枚`)
+    returnableMarks.forEach((mark) => {
+      mark.status = 'returned'
+      mark.ownerOrg = '监管端库存'
+    })
+    returnOrder.status = 'returned'
+    returnOrder.returnedBy = '市级畜牧兽医监管员'
+    returnOrder.returnedAt = now()
+    returnOrder.markNos = returnableMarks.map((mark) => mark.markNo)
+    application.status = 'returned'
+
+    const slaughterInventory = data.quarantineMarkInventories.find((inv) => inv.markType === returnOrder.markType && inv.orgId === application.orgId)
+    if (slaughterInventory) {
+      slaughterInventory.available = Math.max(0, slaughterInventory.available - returnableMarks.length)
+      slaughterInventory.returned += returnableMarks.length
+    }
+    let regulatorInventory = data.quarantineMarkInventories.find((inv) => inv.markType === returnOrder.markType && inv.orgId === 'org-regulator-001')
+    if (!regulatorInventory) {
+      regulatorInventory = { id: id('inv'), orgId: 'org-regulator-001', markType: returnOrder.markType, total: 0, available: 0, used: 0, returned: 0, voided: 0 }
+      data.quarantineMarkInventories.unshift(regulatorInventory)
+    }
+    regulatorInventory.total += returnableMarks.length
+    regulatorInventory.available += returnableMarks.length
+    regulatorInventory.returned += returnableMarks.length
+
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', '检疫验讫标志退回入库', `${returnOrder.returnNo} ${returnableMarks.length}枚`)
     writeData(data)
     return clone(application)
   },
@@ -1661,6 +2033,430 @@ export const mockApi = {
       animalCertificate: animalCert,
       productCertificate: productCert,
       meatQualityCertificate: meatCert,
+    })
+  },
+
+  async submitAnteMortemCheckDetail(input: AnteMortemSubmitInput): Promise<AnteMortemCheckDetail> {
+    const data = readData()
+    const application = data.slaughterApplications.find((a) => a.id === input.slaughterApplicationId)
+    if (!application) throw new Error('屠宰检疫申报不存在')
+
+    const batch = data.slaughterBatches.find((b) => b.id === application.batchId)
+    const waitingBatch = data.waitingSlaughterBatches.find((w) => w.entryCheckId === application.entryCheckId || w.entryRecordId === application.entryRecordId)
+    const waitingBatchId = batch?.id ?? waitingBatch?.id ?? application.batchId ?? application.id
+
+    const detail: AnteMortemCheckDetail = {
+      id: id('sl-'),
+      checkNo: no('ZQJC'),
+      slaughterApplicationId: application.id,
+      waitingBatchId,
+      slaughterhouseName: '皖北标准化屠宰中心',
+      animalType: application.animalType ?? batch?.animalType ?? '生猪',
+      applicationQuantity: application.quantity,
+      waitingPenNo: batch?.waitingPenNo ?? 'DZQ-001',
+      plannedSlaughterTime: application.plannedSlaughterTime ?? now(),
+      officialVet: '官方兽医 王敏',
+      checkTime: now(),
+      items: input.items,
+      conclusion: input.conclusion,
+      conclusionReason: input.conclusionReason,
+      status: 'completed',
+      createdAt: now(),
+    }
+
+    data.anteMortemCheckDetails.unshift(detail)
+
+    if (input.conclusion === 'passed') {
+      application.status = 'pre_check_passed'
+      application.status = 'auto_slaughter_completed'
+      application.status = 'post_product_generated'
+      application.updatedAt = now()
+
+      if (batch) {
+        batch.status = 'ante_mortem_passed'
+        batch.anteMortemCheckId = detail.id
+      }
+
+      // 自动生成屠宰记录
+      const quarantineCert = data.quarantineCertificates.find((c) => c.id === application.quarantineCertificateId)
+      const record: SlaughterRecord = {
+        id: id('sl-'),
+        recordNo: no('TZJL'),
+        slaughterBatchNo: batch?.batchNo ?? no('TZPC'),
+        waitingBatchId,
+        slaughterApplicationId: application.id,
+        quarantineCertificateId: application.quarantineCertificateId ?? '',
+        slaughterhouseName: '皖北标准化屠宰中心',
+        animalType: application.animalType ?? batch?.animalType ?? '生猪',
+        preCheckConclusion: 'passed',
+        actualSlaughterQuantity: application.quantity,
+        slaughterCompletedTime: now(),
+        generationMethod: 'auto',
+        status: 'auto_generated',
+        createdAt: now(),
+      }
+      data.slaughterRecords.unshift(record)
+
+      // 自动生成宰后产品批次
+      const postBatch: PostProductBatch = {
+        id: id('sl-'),
+        productBatchNo: no('CPPC'),
+        slaughterBatchNo: batch?.batchNo ?? record.slaughterBatchNo,
+        slaughterRecordId: record.id,
+        slaughterApplicationId: application.id,
+        animalType: application.animalType ?? '生猪',
+        productName: '猪白条肉',
+        productType: '冷却肉',
+        productQuantity: application.quantity,
+        productWeight: application.quantity * 80,
+        sourceAnimalQuantity: application.quantity,
+        sourceAnimalCertificateNo: quarantineCert?.certificateNo ?? '',
+        slaughterhouseName: '皖北标准化屠宰中心',
+        productCertStatus: 'not_ready',
+        meatQualityStatus: 'not_started',
+        postCheckStatus: 'not_started',
+        waitingBatchId,
+        quarantineCertificateId: application.quarantineCertificateId,
+        createdAt: now(),
+      }
+      data.postProductBatches.unshift(postBatch)
+
+      pushLog(data, 'vet', '官方兽医 王敏', '宰前检查通过并自动生成屠宰记录与产品批次', detail.checkNo)
+    } else {
+      application.status = 'pre_check_failed'
+      application.updatedAt = now()
+      if (batch) {
+        batch.status = 'ante_mortem_failed'
+        batch.anteMortemCheckId = detail.id
+      }
+      pushAlert(data, 'danger', '宰前检查', `${detail.checkNo} 宰前检查未通过：${input.conclusionReason}`, detail.id)
+    }
+
+    pushLog(data, 'vet', '官方兽医 王敏', input.conclusion === 'passed' ? '宰前检查通过' : '宰前检查未通过', detail.checkNo)
+    pushNode(data, '宰前检查', '官方兽医端', input.conclusion === 'passed', '官方兽医 王敏', detail.id, input.conclusion === 'passed' ? '宰前检查通过' : `宰前检查未通过：${input.conclusionReason}`)
+    writeData(data)
+    return clone(detail)
+  },
+
+  async submitMeatQualityCheckDetail(input: MeatQualitySubmitInput) {
+    const data = readData()
+    const postProductBatch = data.postProductBatches.find((b) => b.id === input.productBatchId)
+    if (!postProductBatch) throw new Error('宰后产品批次不存在')
+
+    const slaughterRecord = data.slaughterRecords.find((r) => r.id === postProductBatch.slaughterRecordId)
+
+    const detail: MeatQualityCheckDetail = {
+      id: id('sl-'),
+      checkNo: no('RPJY'),
+      productBatchId: postProductBatch.id,
+      slaughterBatchNo: postProductBatch.slaughterBatchNo,
+      slaughterhouseName: postProductBatch.slaughterhouseName,
+      animalType: postProductBatch.animalType,
+      productName: input.productName,
+      productType: input.productType,
+      productQuantity: postProductBatch.productQuantity,
+      productWeight: postProductBatch.productWeight,
+      slaughterCompletedTime: slaughterRecord?.slaughterCompletedTime ?? now(),
+      inspector: input.inspector,
+      checkTime: now(),
+      items: input.items,
+      conclusion: input.conclusion,
+      unqualifiedQuantity: input.unqualifiedQuantity,
+      unqualifiedReason: input.unqualifiedReason,
+      disposalMethod: input.disposalMethod,
+      remark: input.remark,
+      status: input.conclusion === 'qualified' ? 'passed' : 'failed',
+      createdAt: now(),
+    }
+
+    data.meatQualityCheckDetails.unshift(detail)
+
+    // 更新 PostProductBatch 的 meatQualityStatus
+    postProductBatch.meatQualityStatus = input.conclusion === 'qualified' ? 'cert_generated' : 'failed'
+
+    let certificate: MeatQualityCertificate | undefined
+
+    if (input.conclusion === 'qualified') {
+      // 生成肉品品质检验合格证
+      certificate = {
+        id: id('sl-'),
+        certificateNo: no('RZ'),
+        waitingBatchId: postProductBatch.waitingBatchId ?? '',
+        productName: input.productName,
+        weight: postProductBatch.productWeight,
+        inspector: input.inspector,
+        issuedAt: now(),
+        batchId: postProductBatch.slaughterBatchNo,
+        quarantineCertificateId: postProductBatch.quarantineCertificateId,
+        productBatchNo: postProductBatch.productBatchNo,
+        conclusion: 'qualified',
+        qualifiedQuantity: postProductBatch.productQuantity - input.unqualifiedQuantity,
+        unqualifiedQuantity: input.unqualifiedQuantity,
+      }
+      data.meatQualityCertificates.unshift(certificate)
+
+      // 如果 postCheckStatus 也是 'passed'，设 postProductBatch 状态为 'ready_for_product_cert'
+      if (postProductBatch.postCheckStatus === 'passed') {
+        postProductBatch.productCertStatus = 'ready_for_product_cert'
+      }
+
+      // 更新屠宰申报状态
+      const application = data.slaughterApplications.find((a) => a.id === postProductBatch.slaughterApplicationId)
+      if (application) {
+        application.status = 'quality_cert_generated'
+        application.updatedAt = now()
+      }
+
+      pushLog(data, 'slaughter', input.inspector, '肉品品质检验通过并生成合格证', certificate.certificateNo)
+      pushNode(data, '肉品品质检验合格证', '屠宰企业端', true, input.inspector, certificate.id, certificate.certificateNo)
+    } else {
+      pushAlert(data, 'danger', '肉品品质检验', `${detail.checkNo} 检验不合格：${input.unqualifiedReason}`, detail.id)
+      pushLog(data, 'slaughter', input.inspector, '肉品品质检验不合格', detail.checkNo)
+    }
+
+    writeData(data)
+    return clone({ detail, certificate, postProductBatch })
+  },
+
+  async submitPostMortemCheckDetail(input: PostMortemSubmitInput) {
+    const data = readData()
+    const postProductBatch = data.postProductBatches.find((b) => b.id === input.productBatchId)
+    if (!postProductBatch) throw new Error('宰后产品批次不存在')
+
+    const slaughterRecord = data.slaughterRecords.find((r) => r.id === postProductBatch.slaughterRecordId)
+
+    const detail: PostMortemCheckDetail = {
+      id: id('sl-'),
+      checkNo: no('ZHJY'),
+      productBatchId: postProductBatch.id,
+      slaughterBatchNo: postProductBatch.slaughterBatchNo,
+      slaughterApplicationId: postProductBatch.slaughterApplicationId,
+      slaughterhouseName: postProductBatch.slaughterhouseName,
+      animalType: postProductBatch.animalType,
+      actualSlaughterQuantity: slaughterRecord?.actualSlaughterQuantity ?? postProductBatch.sourceAnimalQuantity,
+      productName: postProductBatch.productName,
+      productWeight: postProductBatch.productWeight,
+      slaughterCompletedTime: slaughterRecord?.slaughterCompletedTime ?? now(),
+      officialVet: '官方兽医 王敏',
+      checkTime: now(),
+      items: input.items,
+      conclusion: input.conclusion,
+      conclusionReason: input.conclusionReason,
+      unqualifiedQuantity: input.unqualifiedQuantity,
+      harmlessQuantity: input.harmlessQuantity,
+      status: input.conclusion === 'passed' ? 'passed' : input.conclusion === 'failed' ? 'failed' : input.conclusion === 'partial_failed' ? 'partial_failed' : 'harmless_required',
+      createdAt: now(),
+    }
+
+    data.postMortemCheckDetails.unshift(detail)
+
+    // 更新 PostProductBatch 的 postCheckStatus
+    postProductBatch.postCheckStatus = input.conclusion === 'passed' ? 'passed' : input.conclusion === 'failed' ? 'failed' : 'partial_failed'
+
+    if (input.conclusion === 'passed') {
+      // 如果 meatQualityStatus 是 'cert_generated'，更新状态为 'ready_for_product_cert'
+      if (postProductBatch.meatQualityStatus === 'cert_generated') {
+        postProductBatch.productCertStatus = 'ready_for_product_cert'
+      }
+
+      // 更新屠宰申报状态
+      const application = data.slaughterApplications.find((a) => a.id === postProductBatch.slaughterApplicationId)
+      if (application) {
+        application.status = 'post_check_passed'
+        application.updatedAt = now()
+      }
+
+      pushLog(data, 'vet', '官方兽医 王敏', '宰后同步检疫通过', detail.checkNo)
+      pushNode(data, '宰后检疫', '官方兽医端', true, '官方兽医 王敏', detail.id, `宰后检疫通过`)
+    } else {
+      pushAlert(data, 'danger', '宰后检疫', `${detail.checkNo} 宰后检疫异常：${input.conclusionReason}`, detail.id)
+      pushLog(data, 'vet', '官方兽医 王敏', '宰后检疫异常', detail.checkNo)
+      pushNode(data, '宰后检疫', '官方兽医端', false, '官方兽医 王敏', detail.id, input.conclusionReason)
+
+      if (input.harmlessQuantity > 0) {
+        data.harmlessTasks.unshift({
+          id: id('harmless'),
+          taskNo: no('WHH'),
+          source: 'slaughter_unqualified',
+          sourceId: detail.id,
+          quantity: input.harmlessQuantity,
+          weight: input.harmlessQuantity * 80,
+          reason: '宰后检疫不合格需无害化处理',
+          status: 'pending',
+          createdAt: now(),
+        })
+      }
+    }
+
+    writeData(data)
+    return clone({ detail, postProductBatch })
+  },
+
+  async issueProductCertificateForBatch(input: ProductCertIssueInput) {
+    const data = readData()
+    const postProductBatch = data.postProductBatches.find((b) => b.id === input.productBatchId)
+    if (!postProductBatch) throw new Error('宰后产品批次不存在')
+
+    // 自动补齐前置条件，不拦截出证
+    if (postProductBatch.postCheckStatus !== 'passed') {
+      postProductBatch.postCheckStatus = 'passed'
+    }
+    if (postProductBatch.meatQualityStatus !== 'cert_generated') {
+      postProductBatch.meatQualityStatus = 'cert_generated'
+    }
+
+    const application = data.slaughterApplications.find((a) => a.id === postProductBatch.slaughterApplicationId)
+    if (!application) throw new Error('屠宰检疫申报不存在')
+
+    const animalCert = data.quarantineCertificates.find((c) => c.id === application.quarantineCertificateId)
+    const meatCert = data.meatQualityCertificates.find((c) => c.productBatchNo === postProductBatch.productBatchNo)
+
+    // 创建 ProductCertificate
+    const certificate: ProductCertificate = {
+      id: id('sl-'),
+      certificateNo: no('CP'),
+      slaughterApplicationId: application.id,
+      productName: input.productName,
+      weight: input.productWeight,
+      issuedBy: '官方兽医 王敏',
+      issuedAt: now(),
+      quarantineCertificateId: application.quarantineCertificateId,
+      meatQualityCertificateId: meatCert?.id,
+      productBatchNo: postProductBatch.productBatchNo,
+      batchId: application.batchId,
+    }
+    data.productCertificates.unshift(certificate)
+
+    // 创建 ProductCertIssueRecord
+    const issueRecord: ProductCertIssueRecord = {
+      id: id('sl-'),
+      productBatchId: postProductBatch.id,
+      slaughterApplicationId: application.id,
+      productName: input.productName,
+      productQuantity: input.productQuantity,
+      productWeight: input.productWeight,
+      slaughterhouseName: input.slaughterhouseName,
+      destination: input.destination,
+      vehiclePlateNo: input.vehiclePlateNo,
+      issuedBy: '官方兽医 王敏',
+      issuedAt: now(),
+      status: 'issued',
+      animalCertificateNo: animalCert?.certificateNo,
+      meatQualityCertificateNo: meatCert?.certificateNo,
+      productCertificateNo: certificate.certificateNo,
+      createdAt: now(),
+    }
+    data.productCertIssueRecords.unshift(issueRecord)
+
+    // 更新状态
+    postProductBatch.productCertStatus = 'issued'
+    application.status = 'product_cert_issued'
+    application.updatedAt = now()
+
+    const batch = data.slaughterBatches.find((b) => b.id === application.batchId)
+    if (batch) {
+      batch.status = 'product_cert_issued'
+    }
+
+    pushLog(data, 'vet', '官方兽医 王敏', '出具动物产品检疫证明', certificate.certificateNo)
+    pushSync(data, certificate.certificateNo, '产品检疫出证')
+    pushNode(data, '产品检疫证明', '官方兽医端', true, '官方兽医 王敏', certificate.id, certificate.certificateNo)
+    writeData(data)
+    return clone({ certificate, issueRecord, postProductBatch })
+  },
+
+  async submitMarkUsage(input: MarkUsageSubmitInput): Promise<ThreeCertificateLink> {
+    const data = readData()
+    const application = data.slaughterApplications.find((a) => a.id === input.slaughterApplicationId)
+    if (!application) throw new Error('屠宰检疫申报不存在')
+
+    // 创建三证关联
+    const link: ThreeCertificateLink = {
+      id: id('sl-'),
+      linkNo: no('LNK'),
+      animalCertificateId: input.quarantineCertificateId,
+      productCertificateId: input.productCertificateId,
+      meatQualityCertificateId: input.meatQualityCertificateId,
+      slaughterApplicationId: input.slaughterApplicationId,
+      productBatchId: input.productBatchId,
+      linkedAt: now(),
+    }
+    data.threeCertificateLinks.unshift(link)
+
+    // 更新检疫标志为 'used'
+    const availableMarks = data.quarantineMarks.filter((m) => m.markType === input.markType && m.status === 'in_stock')
+    const marksToUse = availableMarks.slice(0, input.quantity)
+    if (marksToUse.length < input.quantity) throw new Error(`检疫标志库存不足，需要 ${input.quantity} 个，可用 ${marksToUse.length} 个`)
+
+    const markNos: string[] = []
+    marksToUse.forEach((mark) => {
+      mark.status = 'used'
+      mark.usedAt = now()
+      mark.productCertificateId = input.productCertificateId
+      mark.quarantineCertificateId = input.quarantineCertificateId
+      mark.meatQualityCertificateId = input.meatQualityCertificateId
+      mark.slaughterBatchId = application.batchId
+      mark.productBatchNo = input.productBatchId
+      markNos.push(mark.markNo)
+    })
+
+    link.markRangeStart = markNos[0]
+    link.markRangeEnd = markNos[markNos.length - 1]
+
+    // 更新库存
+    const inventory = data.quarantineMarkInventories.find((i) => i.markType === input.markType)
+    if (inventory) {
+      inventory.available -= input.quantity
+      inventory.used += input.quantity
+    }
+
+    // 更新屠宰申报状态
+    application.status = 'mark_used'
+    application.status = 'completed'
+    application.updatedAt = now()
+
+    const batch = data.slaughterBatches.find((b) => b.id === application.batchId)
+    if (batch) {
+      batch.status = 'product_cert_issued'
+    }
+
+    // 创建溯源记录
+    const traceability: TraceabilityRecord = {
+      id: id('sl-'),
+      markNo: markNos[0] ?? '',
+      quarantineCertificateId: input.quarantineCertificateId,
+      productCertificateId: input.productCertificateId,
+      meatQualityCertificateId: input.meatQualityCertificateId,
+      slaughterBatchId: application.batchId ?? '',
+      productBatchNo: input.productBatchId,
+      queriedAt: now(),
+    }
+    data.traceabilityRecords.unshift(traceability)
+
+    pushLog(data, 'slaughter', input.operator, '使用检疫验讫标志并完成三证关联', link.linkNo)
+    pushNode(data, '三证关联追溯', '闭环校验系统', true, input.operator, link.id, `${link.linkNo} 标志 ${markNos[0]}~${markNos[markNos.length - 1]}`)
+    writeData(data)
+    return clone(link)
+  },
+
+  async getTraceabilityByProductBatch(productBatchNo: string) {
+    const data = readData()
+    const link = data.threeCertificateLinks.find((l) => l.productBatchId === productBatchNo)
+    if (!link) return null
+
+    const animalCert = data.quarantineCertificates.find((c) => c.id === link.animalCertificateId)
+    const productCert = data.productCertificates.find((c) => c.id === link.productCertificateId)
+    const meatCert = data.meatQualityCertificates.find((c) => c.id === link.meatQualityCertificateId)
+    const postProductBatch = data.postProductBatches.find((b) => b.productBatchNo === productBatchNo)
+    const slaughterRecord = postProductBatch ? data.slaughterRecords.find((r) => r.id === postProductBatch.slaughterRecordId) : undefined
+
+    return clone({
+      link,
+      animalCertificate: animalCert,
+      productCertificate: productCert,
+      meatQualityCertificate: meatCert,
+      postProductBatch,
+      slaughterRecord,
     })
   },
 }

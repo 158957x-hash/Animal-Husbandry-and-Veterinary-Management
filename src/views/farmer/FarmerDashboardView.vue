@@ -18,14 +18,14 @@ const farmerAlerts = computed(() => store.data.alerts.filter((item) => !item.res
 </script>
 
 <template>
-  <div class="page-grid">
+  <div class="gov-page">
     <el-card class="panel-card">
-      <div class="card-header-line">
+      <div class="page-hero">
         <div>
           <h2>养殖场户工作台</h2>
           <p>集中查看存栏、申报、出证、运输和预警情况，及时办理待办事项。</p>
         </div>
-        <div class="action-inline">
+        <div class="page-hero-actions">
           <el-button @click="router.push('/farmer/origin-applications')">查看全部申报</el-button>
           <el-button type="success" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
         </div>
@@ -43,7 +43,7 @@ const farmerAlerts = computed(() => store.data.alerts.filter((item) => !item.res
     </div>
 
     <el-card class="panel-card">
-      <template #header><b>最近申报记录</b></template>
+      <template #header><div class="card-title"><b>最近申报记录</b><small>展示最近 6 条产地检疫申报</small></div></template>
       <el-table :data="recentApplications" stripe>
         <el-table-column type="index" label="序号" width="70" />
         <el-table-column prop="applicationNo" label="申报编号" min-width="160" />

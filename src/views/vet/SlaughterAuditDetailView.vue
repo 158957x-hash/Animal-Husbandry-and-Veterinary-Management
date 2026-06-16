@@ -3,10 +3,10 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document } from '@element-plus/icons-vue'
-import QRCode from 'qrcode'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
-import type { MarkType, SlaughterApplicationStatus } from '../../domain/models'
+import type { MarkType } from '../../domain/models'
+import certImage from '../../../image/动物检疫证书.png'
 
 const store = useAppStore()
 const route = useRoute()
@@ -22,21 +22,31 @@ const meatCert = computed(() => application.value ? store.data.meatQualityCertif
 const threeCertLink = computed(() => application.value ? store.data.threeCertificateLinks.find((l) => l.waitingBatchId === application.value!.batchId) : undefined)
 
 /* ---- 状态判断 ---- */
-const statusLabelMap: Record<SlaughterApplicationStatus, string> = {
-  pending_accept: '待受理',
-  accepted: '已受理',
-  ante_mortem_checking: '宰前检查中',
-  post_mortem_checking: '宰后检疫中',
-  pending_product_cert: '待产品出证',
-  product_cert_issued: '已出证',
+const statusLabelMap: Record<string, string> = {
+  submitted_pending_accept: '已提交待受理',
+  accepted_pending_pre_check: '已受理/待宰前检查',
+  pre_check_passed: '宰前检查通过',
+  pre_check_failed: '宰前检查不通过',
+  auto_slaughter_completed: '已自动生成屠宰完成记录',
+  post_product_generated: '已生成宰后产品批次',
+  post_check_passed: '宰后检疫合格',
+  post_check_failed: '宰后检疫不合格',
+  quality_cert_generated: '肉品品质检验合格证已生成',
+  product_cert_pending: '待产品出证',
+  product_cert_issued: '已出产品证',
+  mark_used: '已使用检疫验讫标志',
+  completed: '已完成',
   returned: '已退回',
   abnormal: '异常',
 }
 
-const isPendingAccept = computed(() => application.value?.status === 'pending_accept')
-const isAnteMortemChecking = computed(() => application.value?.status === 'ante_mortem_checking')
-const isPostMortemChecking = computed(() => application.value?.status === 'post_mortem_checking')
-const isPendingProductCert = computed(() => application.value?.status === 'pending_product_cert')
+const isPendingAccept = computed(() => application.value?.status === 'submitted_pending_accept')
+const isAcceptedPendingPreCheck = computed(() => application.value?.status === 'accepted_pending_pre_check')
+const isPreCheckPassed = computed(() => application.value?.status === 'pre_check_passed')
+const isPostProductGenerated = computed(() => application.value?.status === 'post_product_generated')
+const isPostCheckPassed = computed(() => application.value?.status === 'post_check_passed')
+const isQualityCertGenerated = computed(() => application.value?.status === 'quality_cert_generated')
+const isProductCertPending = computed(() => application.value?.status === 'product_cert_pending')
 const isProductCertIssued = computed(() => application.value?.status === 'product_cert_issued')
 
 /* ---- 身份核验（默认已通过） ---- */
@@ -57,36 +67,31 @@ const acceptChecks = computed(() => {
 })
 const acceptChecksAllPassed = computed(() => acceptChecks.value.every((c) => c.passed))
 
-/* ---- 宰前检查清单 ---- */
-const anteChecks = reactive({
-  clinicalNormal: false,
-  bodyTempNormal: false,
-  breathingNormal: false,
-  spiritNormal: false,
-  skinNormal: false,
-  excrementNormal: false,
-  earTagMatch: false,
-  noEpidemicSign: false,
-})
-const anteCheckPassed = computed(() => Object.values(anteChecks).every(Boolean))
-const anteRemark = ref('')
+/* ---- 宰前检查表单 ---- */
+interface AnteCheckItem {
+  label: string
+  result: 'normal' | 'abnormal' | ''
+  remark: string
+}
+const anteCheckItems = ref<AnteCheckItem[]>([
+  { label: '动物精神状态是否正常', result: '', remark: '' },
+  { label: '临床表现是否正常', result: '', remark: '' },
+  { label: '是否存在疑似疫病症状', result: '', remark: '' },
+  { label: '是否存在异常死亡', result: '', remark: '' },
+  { label: '是否存在急宰动物', result: '', remark: '' },
+  { label: '数量是否与申报一致', result: '', remark: '' },
+  { label: '耳标抽查是否一致', result: '', remark: '' },
+  { label: '待宰圈卫生是否符合要求', result: '', remark: '' },
+  { label: '装卸及待宰情况是否符合要求', result: '', remark: '' },
+])
+const anteCheckConclusion = ref('')
+const anteCheckConclusionReason = ref('')
 
-/* ---- 宰后检疫表单 ---- */
-const postForm = reactive({
-  qualifiedQuantity: 0,
-  unqualifiedQuantity: 0,
-  productWeight: 0,
+/* ---- 宰后产品批次 ---- */
+const postProductBatches = computed(() => {
+  if (!application.value) return []
+  return store.data.postProductBatches?.filter((b: any) => b.slaughterApplicationId === application.value!.id) || []
 })
-const postChecks = reactive({
-  carcassInspection: false,
-  visceralInspection: false,
-  lymphNodeInspection: false,
-  parasiticInspection: false,
-  trichinellaInspection: false,
-  overallJudgment: false,
-})
-const postCheckPassed = computed(() => Object.values(postChecks).every(Boolean))
-const postRemark = ref('')
 
 /* ---- 产品出证表单 ---- */
 const certForm = reactive({
@@ -99,25 +104,19 @@ const certForm = reactive({
 
 /* ---- 出证确认弹窗 ---- */
 const certDialog = ref(false)
-const certQrDataUrl = ref('')
 
 function openCertDialog() {
   if (!certForm.productName || !certForm.weight || !certForm.productBatchNo) {
     return ElMessage.warning('请填写完整的产品出证信息')
   }
   certDialog.value = true
-  const certNo = `CPJY${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`
-  QRCode.toDataURL(certNo, { width: 140, margin: 2, color: { dark: '#1a1a1a' } }).then((url) => { certQrDataUrl.value = url }).catch(() => {})
 }
 
 /* ---- 已出证查看证书弹窗 ---- */
 const viewCertDialog = ref(false)
-const viewCertQrDataUrl = ref('')
 
 function openViewCertDialog() {
   viewCertDialog.value = true
-  const certNo = productCert.value?.certificateNo || '-'
-  QRCode.toDataURL(certNo, { width: 140, margin: 2, color: { dark: '#1a1a1a' } }).then((url) => { viewCertQrDataUrl.value = url }).catch(() => {})
 }
 
 /* ---- 三证查看弹窗 ---- */
@@ -144,30 +143,59 @@ async function handleReturn() {
   router.push('/vet/slaughter-todos')
 }
 
-async function submitAnteCheck() {
+async function handleAnteCheckPass() {
   if (!application.value) return
-  if (!anteCheckPassed.value) return ElMessage.warning('请完成所有宰前检查项')
-  await store.submitPreSlaughterCheck(application.value.id, {
-    checks: { ...anteChecks },
-    remark: anteRemark.value || '宰前检查合格',
+  if (anteCheckItems.value.some((item) => !item.result)) return ElMessage.warning('请完成所有宰前检查项')
+  await store.submitAnteMortemCheckDetail({
+    slaughterApplicationId: application.value.id,
+    items: anteCheckItems.value.map((item) => ({
+      label: item.label,
+      result: (item.result || 'normal') as 'normal' | 'abnormal',
+      remark: item.remark,
+      attachment: '',
+    })),
+    conclusion: 'passed',
+    conclusionReason: anteCheckConclusionReason.value,
   })
-  ElMessage.success('宰前检查已提交，进入宰后检疫阶段')
+  ElMessage.success('宰前检查已通过')
   router.push('/vet/slaughter-todos')
 }
 
-async function submitPostCheck() {
+async function handleAnteCheckFail() {
   if (!application.value) return
-  if (!postCheckPassed.value) return ElMessage.warning('请完成所有宰后检疫项')
-  if (!postForm.qualifiedQuantity && !postForm.unqualifiedQuantity) return ElMessage.warning('请填写实际屠宰数量')
-  await store.submitPostSlaughterCheck(application.value.id, {
-    qualifiedQuantity: postForm.qualifiedQuantity,
-    unqualifiedQuantity: postForm.unqualifiedQuantity,
-    productWeight: postForm.productWeight,
-    checks: { ...postChecks },
-    remark: postRemark.value || '宰后检疫合格',
+  if (anteCheckItems.value.some((item) => !item.result)) return ElMessage.warning('请完成所有宰前检查项')
+  if (!anteCheckConclusion.value) return ElMessage.warning('请选择检查结论')
+  if (!anteCheckConclusionReason.value) return ElMessage.warning('不通过时请填写结论原因')
+  await store.submitAnteMortemCheckDetail({
+    slaughterApplicationId: application.value.id,
+    items: anteCheckItems.value.map((item) => ({
+      label: item.label,
+      result: (item.result || 'normal') as 'normal' | 'abnormal',
+      remark: item.remark,
+      attachment: '',
+    })),
+    conclusion: 'failed',
+    conclusionReason: anteCheckConclusionReason.value,
   })
-  ElMessage.success('宰后检疫已提交，进入产品出证阶段')
+  ElMessage.success('宰前检查不通过，已记录')
   router.push('/vet/slaughter-todos')
+}
+
+async function handleSaveAnteCheck() {
+  if (!application.value) return
+  if (!anteCheckConclusion.value) return ElMessage.warning('请选择宰前检查结论')
+  await store.submitAnteMortemCheckDetail({
+    slaughterApplicationId: application.value.id,
+    items: anteCheckItems.value.map((item) => ({
+      label: item.label,
+      result: (item.result || 'normal') as 'normal' | 'abnormal',
+      remark: item.remark,
+      attachment: '',
+    })),
+    conclusion: (anteCheckConclusion.value || 'failed') as 'passed' | 'failed' | 'partial_exception' | 'harmless',
+    conclusionReason: anteCheckConclusionReason.value,
+  })
+  ElMessage.success('检查记录已保存')
 }
 
 async function issueProductCert() {
@@ -224,52 +252,84 @@ const markUsage = computed(() => {
 
     <!-- 三栏布局 -->
     <div class="three-col-layout">
-      <!-- ========== 左栏：来源与入场信息 ========== -->
+      <!-- ========== 左栏：申报内容（与屠宰端一致） ========== -->
       <div class="col-side">
-        <!-- 入场登记信息 -->
+        <!-- 一、关联待宰批次 -->
         <el-card class="panel-card compact-card">
-          <template #header><strong>入场登记信息</strong></template>
+          <template #header><strong>关联待宰批次</strong></template>
           <div class="info-list compact">
-            <p><span>入场编号</span><b>{{ entryRecord?.entryNo || '-' }}</b></p>
-            <p><span>动物证编号</span><b>{{ relatedCert?.certificateNo || '-' }}</b></p>
-            <p><span>养殖场</span><b>{{ entryRecord?.originFarm || '-' }}</b></p>
-            <p><span>动物种类</span><b>{{ entryRecord?.animalType || application.animalType || '-' }}</b></p>
-            <p><span>数量</span><b>{{ entryRecord?.quantity || application.quantity }}头</b></p>
-            <p><span>耳标号段</span><b>{{ entryRecord?.earTagRange || batch?.earTagRange || '-' }}</b></p>
-            <p><span>运输车辆</span><b>{{ entryRecord?.vehiclePlateNo || '-' }}</b></p>
-            <p><span>承运人</span><b>{{ entryRecord?.carrier || '-' }}</b></p>
+            <p><span>待宰批次编号</span><b>{{ batch?.batchNo || '-' }}</b></p>
+            <p><span>入场登记编号</span><b>{{ entryRecord?.entryNo || '-' }}</b></p>
+            <p><span>动物检疫合格证明编号</span><b>{{ relatedCert?.certificateNo || '-' }}</b></p>
+            <p><span>来源养殖场</span><b>{{ entryRecord?.originFarm || '-' }}</b></p>
+            <p><span>动物种类</span><b>{{ batch?.animalType || application.animalType || '-' }}</b></p>
+            <p><span>实到数量</span><b>{{ batch?.entryQuantity || application.quantity }} 头</b></p>
+            <p><span>耳标号段</span><b>{{ batch?.earTagRange || entryRecord?.earTagRange || '-' }}</b></p>
+            <p><span>待宰圈编号</span><b>{{ batch?.waitingPenNo || '-' }}</b></p>
+            <p><span>入场时间</span><b>{{ formatTime(batch?.entryTime || batch?.createdAt) }}</b></p>
+            <p><span>入场经办人</span><b>{{ entryRecord?.operator || entryRecord?.checkedBy || '-' }}</b></p>
+            <p><span>当前状态</span><b><el-tag type="warning" size="small">已提交待受理</el-tag></b></p>
           </div>
         </el-card>
 
-        <!-- 入场核验结果 -->
+        <!-- 二、动物证与入场信息 -->
         <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>入场核验结果</strong><el-tag v-if="entryRecord?.status === 'entry_passed'" type="success" size="small" style="float:right">已通过</el-tag><el-tag v-else type="danger" size="small" style="float:right">未通过</el-tag></template>
-          <div v-if="entryRecord?.checkResults?.length" class="check-list-compact">
-            <div v-for="check in entryRecord.checkResults" :key="check.label" class="check-row-compact">
-              <el-tag :type="check.passed ? 'success' : 'danger'" size="small">{{ check.passed ? '通过' : '异常' }}</el-tag>
-              <span>{{ check.label }}</span>
+          <template #header><strong>动物证与入场信息</strong></template>
+          <div v-if="relatedCert" class="info-list compact">
+            <p><span>动物检疫合格证明编号</span><b>{{ relatedCert.certificateNo }}</b></p>
+            <p><span>启运地</span><b>{{ relatedCert.origin }}</b></p>
+            <p><span>目的地</span><b>{{ relatedCert.destination }}</b></p>
+            <p><span>承运车辆</span><b>{{ relatedCert.vehiclePlateNo || '-' }}</b></p>
+            <p><span>承运人</span><b>{{ relatedCert.carrier || '-' }}</b></p>
+            <p><span>出证官方兽医</span><b>{{ relatedCert.issuedBy || '-' }}</b></p>
+            <p><span>出证时间</span><b>{{ formatTime(relatedCert.validFrom) }}</b></p>
+            <p><span>有效期至</span><b>{{ formatTime(relatedCert.validTo) }}</b></p>
+          </div>
+          <el-empty v-else description="暂无动物证信息" :image-size="40" />
+        </el-card>
+
+        <!-- 三、申报条件 -->
+        <el-card class="panel-card compact-card" style="margin-top:8px">
+          <template #header><strong>申报条件</strong></template>
+          <div class="condition-grid">
+            <div class="cond-row"><span>入场查验状态</span><el-tag :type="entryRecord?.status === 'entry_passed' ? 'success' : 'danger'" size="small">{{ entryRecord?.status === 'entry_passed' ? '已通过' : '未通过' }}</el-tag></div>
+            <div class="cond-row"><span>动物证状态</span><el-tag :type="!!relatedCert && new Date(relatedCert!.validTo).getTime() > Date.now() ? 'success' : 'danger'" size="small">{{ !!relatedCert && new Date(relatedCert!.validTo).getTime() > Date.now() ? '有效' : '过期' }}</el-tag></div>
+            <div class="cond-row"><span>非瘟检测</span><el-tag :type="application.africanSwineFeverResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.africanSwineFeverResult === 'negative' ? '阴性' : '阳性' }}</el-tag></div>
+            <div class="cond-row"><span>违禁药物检测</span><el-tag :type="application.bannedDrugResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.bannedDrugResult === 'negative' ? '阴性' : '阳性' }}</el-tag></div>
+          </div>
+        </el-card>
+
+        <!-- 四、自检资料 -->
+        <el-card class="panel-card compact-card" style="margin-top:8px">
+          <template #header><strong>自检资料</strong></template>
+          <div class="self-check-section">
+            <div class="section-title">非洲猪瘟检测</div>
+            <div class="info-list compact">
+              <p><span>检测结果</span><b><el-tag :type="application.africanSwineFeverResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.africanSwineFeverResult === 'negative' ? '阴性（合格）' : '阳性（不合格）' }}</el-tag></b></p>
+              <p><span>检测时间</span><b>{{ formatTime(application.africanSwineFeverTestTime) }}</b></p>
+              <p><span>检测人员</span><b>{{ application.africanSwineFeverTestPerson || '-' }}</b></p>
+              <p><span>检测报告</span><b><el-tag type="success" size="small">已上传</el-tag></b></p>
+            </div>
+            <div class="section-title" style="margin-top:10px">违禁药物自检</div>
+            <div class="info-list compact">
+              <p><span>检测结果</span><b><el-tag :type="application.bannedDrugResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.bannedDrugResult === 'negative' ? '阴性（合格）' : '阳性（不合格）' }}</el-tag></b></p>
+              <p><span>检测时间</span><b>{{ formatTime(application.bannedDrugTestTime) }}</b></p>
+              <p><span>检测人员</span><b>{{ application.bannedDrugTestPerson || '-' }}</b></p>
+              <p><span>自检报告</span><b><el-tag type="success" size="small">已上传</el-tag></b></p>
             </div>
           </div>
-          <el-empty v-else description="暂无核验结果" :image-size="40" />
         </el-card>
 
-        <!-- 非瘟检测结果 -->
+        <!-- 五、屠宰检疫申报信息 -->
         <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>非瘟检测结果</strong></template>
+          <template #header><strong>屠宰检疫申报信息</strong></template>
           <div class="info-list compact">
-            <p><span>检测结果</span><b><el-tag :type="application.africanSwineFeverResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.africanSwineFeverResult === 'negative' ? '阴性' : '阳性' }}</el-tag></b></p>
-            <p><span>检测人</span><b>{{ application.africanSwineFeverTestPerson || '-' }}</b></p>
-            <p><span>检测时间</span><b>{{ formatTime(application.africanSwineFeverTestTime) }}</b></p>
-          </div>
-        </el-card>
-
-        <!-- 违禁药物自检结果 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>违禁药物自检结果</strong></template>
-          <div class="info-list compact">
-            <p><span>检测结果</span><b><el-tag :type="application.bannedDrugResult === 'negative' ? 'success' : 'danger'" size="small">{{ application.bannedDrugResult === 'negative' ? '阴性' : '阳性' }}</el-tag></b></p>
-            <p><span>检测人</span><b>{{ application.bannedDrugTestPerson || '-' }}</b></p>
-            <p><span>检测时间</span><b>{{ formatTime(application.bannedDrugTestTime) }}</b></p>
+            <p><span>申报类型</span><b>{{ application.purpose === '急宰' ? '急宰申报' : '正常屠宰检疫' }}</b></p>
+            <p><span>申报数量</span><b>{{ application.quantity }} 头</b></p>
+            <p><span>计划屠宰时间</span><b>{{ formatTime(application.plannedSlaughterTime) }}</b></p>
+            <p><span>联系人</span><b>{{ application.contactPerson || '-' }}</b></p>
+            <p><span>联系电话</span><b>{{ application.contactPhone || '-' }}</b></p>
+            <p v-if="application.remark"><span>申报说明</span><b>{{ application.remark }}</b></p>
           </div>
         </el-card>
       </div>
@@ -308,56 +368,68 @@ const markUsage = computed(() => {
           </div>
         </el-card>
 
-        <!-- 宰前检查中 -->
-        <el-card v-if="isAnteMortemChecking" class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>宰前检查</strong><el-tag v-if="anteCheckPassed" type="success" size="small" style="float:right">合格</el-tag><el-tag v-else type="warning" size="small" style="float:right">未完成</el-tag></template>
-          <div class="site-check-list">
-            <el-checkbox v-model="anteChecks.clinicalNormal">临床检查正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.bodyTempNormal">体温正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.breathingNormal">呼吸正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.spiritNormal">精神状态正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.skinNormal">皮肤外观正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.excrementNormal">排泄物正常</el-checkbox>
-            <el-checkbox v-model="anteChecks.earTagMatch">耳标与申报一致</el-checkbox>
-            <el-checkbox v-model="anteChecks.noEpidemicSign">无疫病征兆</el-checkbox>
+        <!-- 宰前检查 -->
+        <el-card v-if="isAcceptedPendingPreCheck" class="panel-card compact-card" style="margin-top:8px">
+          <template #header><strong>宰前检查</strong></template>
+          <div class="ante-check-form">
+            <div v-for="(item, idx) in anteCheckItems" :key="idx" class="ante-check-row">
+              <div class="ante-check-label">{{ idx + 1 }}. {{ item.label }}</div>
+              <div class="ante-check-controls">
+                <el-radio-group v-model="item.result" size="small">
+                  <el-radio value="normal">正常</el-radio>
+                  <el-radio value="abnormal">异常</el-radio>
+                </el-radio-group>
+                <el-input v-model="item.remark" placeholder="备注（选填）" size="small" style="width:160px" />
+              </div>
+            </div>
           </div>
-          <div style="margin-top:10px">
-            <el-input v-model="anteRemark" placeholder="查验意见（选填）" size="small" />
+          <el-divider />
+          <div class="ante-check-conclusion">
+            <span style="font-weight:600;margin-right:12px">宰前检查结论：</span>
+            <el-radio-group v-model="anteCheckConclusion" size="small">
+              <el-radio value="passed_allow">通过允许屠宰</el-radio>
+              <el-radio value="failed_forbid">不通过禁止屠宰</el-radio>
+              <el-radio value="partial_abnormal">部分异常</el-radio>
+              <el-radio value="harmless_treatment">转无害化处理</el-radio>
+            </el-radio-group>
           </div>
-          <div style="margin-top:12px">
-            <el-button type="success" :disabled="!anteCheckPassed" @click="submitAnteCheck">提交宰前检查</el-button>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <el-button type="success" @click="handleAnteCheckPass">宰前检查通过</el-button>
+            <el-button type="danger" @click="handleAnteCheckFail">宰前检查不通过</el-button>
+            <el-button @click="handleSaveAnteCheck">保存检查记录</el-button>
           </div>
         </el-card>
 
-        <!-- 宰后检疫中 -->
-        <el-card v-if="isPostMortemChecking" class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>宰后检疫</strong><el-tag v-if="postCheckPassed" type="success" size="small" style="float:right">合格</el-tag><el-tag v-else type="warning" size="small" style="float:right">未完成</el-tag></template>
-          <el-form label-position="left" label-width="120px" size="small" style="margin-bottom:12px">
-            <el-form-item label="实际屠宰数量"><el-input-number v-model="postForm.qualifiedQuantity" :min="0" /> 头</el-form-item>
-            <el-form-item label="合格胴体数量"><el-input-number v-model="postForm.qualifiedQuantity" :min="0" disabled /> 头</el-form-item>
-            <el-form-item label="不合格数量"><el-input-number v-model="postForm.unqualifiedQuantity" :min="0" /> 头</el-form-item>
-            <el-form-item label="产品重量"><el-input-number v-model="postForm.productWeight" :min="0" /> kg</el-form-item>
-          </el-form>
-          <el-divider content-position="left">检疫检查清单</el-divider>
-          <div class="site-check-list">
-            <el-checkbox v-model="postChecks.carcassInspection">胴体检查合格</el-checkbox>
-            <el-checkbox v-model="postChecks.visceralInspection">内脏检查合格</el-checkbox>
-            <el-checkbox v-model="postChecks.lymphNodeInspection">淋巴结检查合格</el-checkbox>
-            <el-checkbox v-model="postChecks.parasiticInspection">寄生虫检查合格</el-checkbox>
-            <el-checkbox v-model="postChecks.trichinellaInspection">旋毛虫检查合格</el-checkbox>
-            <el-checkbox v-model="postChecks.overallJudgment">综合判定合格</el-checkbox>
-          </div>
-          <div style="margin-top:10px">
-            <el-input v-model="postRemark" placeholder="检疫意见（选填）" size="small" />
-          </div>
-          <div style="margin-top:12px">
-            <el-button type="success" :disabled="!postCheckPassed" @click="submitPostCheck">提交宰后检疫</el-button>
-          </div>
+        <!-- 宰后产品批次 -->
+        <el-card v-if="isPostProductGenerated" class="panel-card compact-card" style="margin-top:8px">
+          <template #header><strong>宰后产品批次</strong></template>
+          <template v-if="postProductBatches.length > 0">
+            <div v-for="(pb, pidx) in postProductBatches" :key="pb.id || pidx" class="batch-item" style="border:1px solid #ebeef5;border-radius:4px;padding:8px;margin-bottom:8px">
+              <div class="info-list compact">
+                <p><span>产品批次号</span><b>{{ pb.productBatchNo || '-' }}</b></p>
+                <p><span>产品名称</span><b>{{ pb.productName || '-' }}</b></p>
+                <p><span>数量</span><b>{{ pb.productQuantity || '-' }}</b></p>
+                <p><span>重量</span><b>{{ pb.productWeight ? pb.productWeight + ' kg' : '-' }}</b></p>
+                <p><span>生成时间</span><b>{{ formatTime(pb.createdAt) }}</b></p>
+              </div>
+            </div>
+          </template>
+          <el-empty v-else description="暂无产品批次数据" :image-size="40" />
         </el-card>
 
         <!-- 待产品出证 -->
-        <el-card v-if="isPendingProductCert" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isProductCertPending" class="panel-card compact-card" style="margin-top:8px">
           <template #header><strong>产品出证</strong></template>
+          <template v-if="postProductBatches.length > 0">
+            <div v-for="(pb, pidx) in postProductBatches" :key="pb.id || pidx" class="batch-item" style="border:1px solid #ebeef5;border-radius:4px;padding:8px;margin-bottom:8px">
+              <div class="info-list compact">
+                <p><span>产品批次号</span><b>{{ pb.productBatchNo || '-' }}</b></p>
+                <p><span>产品名称</span><b>{{ pb.productName || '-' }}</b></p>
+                <p><span>重量</span><b>{{ pb.productWeight ? pb.productWeight + ' kg' : '-' }}</b></p>
+              </div>
+            </div>
+          </template>
+          <el-empty v-else description="暂无产品批次数据" :image-size="40" />
           <el-form label-position="left" label-width="120px" size="small">
             <el-form-item label="产品名称"><el-input v-model="certForm.productName" /></el-form-item>
             <el-form-item label="产品批次号"><el-input v-model="certForm.productBatchNo" placeholder="请输入产品批次号" /></el-form-item>
@@ -398,104 +470,41 @@ const markUsage = computed(() => {
         </el-card>
       </div>
 
-      <!-- ========== 右栏：产品出证与三证关联 ========== -->
+      <!-- ========== 右栏：产地检疫证书 ========== -->
       <div class="col-side">
-        <!-- 肉品品质检验合格证摘要 -->
         <el-card class="panel-card compact-card">
-          <template #header><strong>肉品品质检验合格证</strong></template>
-          <template v-if="meatCert">
-            <div class="info-list compact">
-              <p><span>证明编号</span><b>{{ meatCert.certificateNo }}</b></p>
-              <p><span>产品名称</span><b>{{ meatCert.productName }}</b></p>
-              <p><span>重量</span><b>{{ meatCert.weight }} kg</b></p>
-              <p><span>检验员</span><b>{{ meatCert.inspector }}</b></p>
-              <p><span>检验结论</span><b><el-tag :type="meatCert.conclusion === '合格' ? 'success' : 'danger'" size="small">{{ meatCert.conclusion || '-' }}</el-tag></b></p>
-              <p><span>签发日期</span><b>{{ formatTime(meatCert.issuedAt) }}</b></p>
+          <template #header><strong>产地检疫证书</strong></template>
+          <div v-if="relatedCert" style="text-align:center;padding:16px;background:#fff;border:1px solid #e0e0e0;border-radius:4px">
+            <img :src="certImage" alt="动物检疫合格证明" style="width:100%;max-width:260px;display:block;margin:0 auto" />
+            <div class="info-list compact" style="margin-top:12px;text-align:left">
+              <p><span>证号</span><b>{{ relatedCert.certificateNo }}</b></p>
+              <p><span>启运地</span><b>{{ relatedCert.origin }}</b></p>
+              <p><span>目的地</span><b>{{ relatedCert.destination }}</b></p>
+              <p><span>有效期至</span><b>{{ formatTime(relatedCert.validTo) }}</b></p>
             </div>
-          </template>
-          <el-empty v-else description="暂未出具" :image-size="40" />
-        </el-card>
-
-        <!-- 动物产品检疫证明预览 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>动物产品检疫证明</strong></template>
-          <template v-if="productCert">
-            <div class="info-list compact">
-              <p><span>证明编号</span><b>{{ productCert.certificateNo }}</b></p>
-              <p><span>产品名称</span><b>{{ productCert.productName }}</b></p>
-              <p><span>重量</span><b>{{ productCert.weight }} kg</b></p>
-              <p><span>签发兽医</span><b>{{ productCert.issuedBy }}</b></p>
-              <p><span>签发日期</span><b>{{ formatTime(productCert.issuedAt) }}</b></p>
-            </div>
-          </template>
-          <el-empty v-else description="暂未出具" :image-size="40" />
-        </el-card>
-
-        <!-- 检疫验讫标志使用情况 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>检疫验讫标志</strong></template>
-          <template v-if="productCert?.markRangeStart">
-            <div class="info-list compact">
-              <p><span>标志类型</span><b>{{ certForm.markType === 'card_ring' ? '卡环标志' : '标签标志' }}</b></p>
-              <p><span>标志编号段</span><b>{{ productCert.markRangeStart }}~{{ productCert.markRangeEnd }}</b></p>
-              <p><span>使用数量</span><b>{{ markUsage?.used || '-' }}</b></p>
-              <p><span>库存数量</span><b>{{ markUsage?.inStock || '-' }}</b></p>
-            </div>
-          </template>
-          <el-empty v-else description="暂未使用" :image-size="40" />
-        </el-card>
-
-        <!-- 三证关联状态 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
-          <template #header><strong>三证关联状态</strong></template>
-          <template v-if="threeCertLink">
-            <div class="info-list compact">
-              <p><span>关联状态</span><b><el-tag type="success" size="small">已关联</el-tag></b></p>
-              <p><span>动物检疫证</span><b>{{ relatedCert?.certificateNo || '-' }}</b></p>
-              <p><span>产品检疫证</span><b>{{ productCert?.certificateNo || '-' }}</b></p>
-              <p><span>肉品品质证</span><b>{{ meatCert?.certificateNo || '-' }}</b></p>
-              <p><span>关联时间</span><b>{{ formatTime(threeCertLink.linkedAt) }}</b></p>
-            </div>
-          </template>
-          <el-empty v-else description="暂未关联" :image-size="40" />
+          </div>
+          <el-empty v-else description="暂无产地检疫证书" :image-size="40" />
         </el-card>
       </div>
     </div>
 
     <!-- ========== 弹窗：出证确认 ========== -->
     <el-dialog v-model="certDialog" title="确认出证" width="580px" :close-on-click-modal="false">
-      <div class="cert-document">
-        <div class="cert-header">
-          <div class="cert-emblem">&#9733;</div>
-          <h2>动物产品检疫合格证明</h2>
-          <p class="cert-subtitle">Animal Product Quarantine Certificate</p>
-        </div>
-        <div class="cert-body">
-          <div class="cert-no-row">
-            <span>证号：{{ previewCertNo }}</span>
-          </div>
-          <table class="cert-table">
-            <tr><td class="label">产品名称</td><td>{{ certForm.productName }}</td><td class="label">产品重量</td><td>{{ certForm.weight }} kg</td></tr>
-            <tr><td class="label">产品批次号</td><td>{{ certForm.productBatchNo || '-' }}</td><td class="label">标志类型</td><td>{{ certForm.markType === 'card_ring' ? '卡环标志' : '标签标志' }}</td></tr>
-            <tr><td class="label">屠宰企业</td><td colspan="3">{{ entryRecord?.slaughterhouseName || '-' }}</td></tr>
-            <tr><td class="label">签发兽医</td><td>官方兽医 王敏</td><td class="label">签发日期</td><td>{{ formatTime(new Date().toISOString()) }}</td></tr>
-            <tr><td class="label">关联动物证编号</td><td colspan="3">{{ relatedCert?.certificateNo || '-' }}</td></tr>
-            <tr><td class="label">关联肉品品质证</td><td colspan="3">{{ meatCert?.certificateNo || '-' }}</td></tr>
-            <tr><td class="label">标志编号段</td><td colspan="3">{{ productCert?.markRangeStart || '-' }}~{{ productCert?.markRangeEnd || '-' }}</td></tr>
-          </table>
-        </div>
-        <div class="cert-footer">
-          <div class="cert-qr">
-            <img v-if="certQrDataUrl" :src="certQrDataUrl" alt="二维码" style="width:100px;height:100px" />
-          </div>
-          <div class="cert-stamp">
-            <div class="stamp-circle">
-              <span>利辛县</span>
-              <span>动物卫生</span>
-              <span>监督所</span>
-            </div>
-          </div>
-        </div>
+      <div class="cert-image-box">
+        <img :src="certImage" alt="动物产品检疫合格证明" />
+      </div>
+      <div class="cert-image-info">
+        <p><span>证号</span><b>{{ previewCertNo }}</b></p>
+        <p><span>产品名称</span><b>{{ certForm.productName }}</b></p>
+        <p><span>产品重量</span><b>{{ certForm.weight }} kg</b></p>
+        <p><span>产品批次号</span><b>{{ certForm.productBatchNo || '-' }}</b></p>
+        <p><span>标志类型</span><b>{{ certForm.markType === 'card_ring' ? '卡环标志' : '标签标志' }}</b></p>
+        <p><span>屠宰企业</span><b>{{ entryRecord?.slaughterhouseName || '-' }}</b></p>
+        <p><span>签发兽医</span><b>官方兽医 王敏</b></p>
+        <p><span>签发日期</span><b>{{ formatTime(new Date().toISOString()) }}</b></p>
+        <p><span>关联动物证编号</span><b>{{ relatedCert?.certificateNo || '-' }}</b></p>
+        <p><span>关联肉品品质证</span><b>{{ meatCert?.certificateNo || '-' }}</b></p>
+        <p><span>标志编号段</span><b>{{ productCert?.markRangeStart || '-' }}~{{ productCert?.markRangeEnd || '-' }}</b></p>
       </div>
       <template #footer>
         <el-button @click="certDialog = false">取消</el-button>
@@ -505,38 +514,20 @@ const markUsage = computed(() => {
 
     <!-- ========== 弹窗：查看已出证证书 ========== -->
     <el-dialog v-model="viewCertDialog" title="动物产品检疫合格证明" width="580px">
-      <div class="cert-document">
-        <div class="cert-header">
-          <div class="cert-emblem">&#9733;</div>
-          <h2>动物产品检疫合格证明</h2>
-          <p class="cert-subtitle">Animal Product Quarantine Certificate</p>
-        </div>
-        <div class="cert-body">
-          <div class="cert-no-row">
-            <span>证号：{{ productCert?.certificateNo || '-' }}</span>
-          </div>
-          <table class="cert-table">
-            <tr><td class="label">产品名称</td><td>{{ productCert?.productName || '-' }}</td><td class="label">产品重量</td><td>{{ productCert?.weight || '-' }} kg</td></tr>
-            <tr><td class="label">产品批次号</td><td>{{ productCert?.productBatchNo || '-' }}</td><td class="label">标志类型</td><td>{{ certForm.markType === 'card_ring' ? '卡环标志' : '标签标志' }}</td></tr>
-            <tr><td class="label">屠宰企业</td><td colspan="3">{{ entryRecord?.slaughterhouseName || '-' }}</td></tr>
-            <tr><td class="label">签发兽医</td><td>{{ productCert?.issuedBy || '-' }}</td><td class="label">签发日期</td><td>{{ formatTime(productCert?.issuedAt) }}</td></tr>
-            <tr><td class="label">关联动物证编号</td><td colspan="3">{{ relatedCert?.certificateNo || '-' }}</td></tr>
-            <tr><td class="label">关联肉品品质证</td><td colspan="3">{{ meatCert?.certificateNo || '-' }}</td></tr>
-            <tr><td class="label">标志编号段</td><td colspan="3">{{ productCert?.markRangeStart || '-' }}~{{ productCert?.markRangeEnd || '-' }}</td></tr>
-          </table>
-        </div>
-        <div class="cert-footer">
-          <div class="cert-qr">
-            <img v-if="viewCertQrDataUrl" :src="viewCertQrDataUrl" alt="二维码" style="width:100px;height:100px" />
-          </div>
-          <div class="cert-stamp">
-            <div class="stamp-circle">
-              <span>利辛县</span>
-              <span>动物卫生</span>
-              <span>监督所</span>
-            </div>
-          </div>
-        </div>
+      <div class="cert-image-box">
+        <img :src="certImage" alt="动物产品检疫合格证明" />
+      </div>
+      <div class="cert-image-info">
+        <p><span>证号</span><b>{{ productCert?.certificateNo || '-' }}</b></p>
+        <p><span>产品名称</span><b>{{ productCert?.productName || '-' }}</b></p>
+        <p><span>产品重量</span><b>{{ productCert?.weight || '-' }} kg</b></p>
+        <p><span>产品批次号</span><b>{{ productCert?.productBatchNo || '-' }}</b></p>
+        <p><span>屠宰企业</span><b>{{ entryRecord?.slaughterhouseName || '-' }}</b></p>
+        <p><span>签发兽医</span><b>{{ productCert?.issuedBy || '-' }}</b></p>
+        <p><span>签发日期</span><b>{{ formatTime(productCert?.issuedAt) }}</b></p>
+        <p><span>关联动物证编号</span><b>{{ relatedCert?.certificateNo || '-' }}</b></p>
+        <p><span>关联肉品品质证</span><b>{{ meatCert?.certificateNo || '-' }}</b></p>
+        <p><span>标志编号段</span><b>{{ productCert?.markRangeStart || '-' }}~{{ productCert?.markRangeEnd || '-' }}</b></p>
       </div>
       <template #footer>
         <el-button type="primary" @click="viewCertDialog = false">关闭</el-button>
@@ -597,7 +588,7 @@ const markUsage = computed(() => {
 /* 三栏布局 */
 .three-col-layout {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: 320px 1fr 280px;
   gap: 8px;
   align-items: start;
 }
@@ -674,6 +665,68 @@ const markUsage = computed(() => {
 }
 .site-check-list .el-checkbox { margin-right: 0; font-size: 13px; }
 
+/* 宰前检查表单 */
+.ante-check-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ante-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ante-check-label {
+  font-size: 12px;
+  color: #303133;
+  min-width: 170px;
+}
+.ante-check-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.ante-check-conclusion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+/* 申报条件网格 */
+.condition-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+.cond-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.cond-row span {
+  color: #909399;
+}
+
+/* 自检资料分区 */
+.self-check-section {
+  font-size: 12px;
+}
+.section-title {
+  font-weight: 600;
+  color: #303133;
+  font-size: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+
 /* 出证信息 */
 .cert-summary {
   text-align: center;
@@ -746,34 +799,18 @@ const markUsage = computed(() => {
 }
 .cert-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-end;
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px dashed #d4c5a0;
 }
 .cert-qr img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
   border: 1px solid #d4c5a0;
   border-radius: 4px;
-}
-.cert-stamp {
-  position: relative;
-}
-.stamp-circle {
-  width: 90px;
-  height: 90px;
-  border: 3px solid #8b0000;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #8b0000;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  opacity: 0.7;
-  transform: rotate(-15deg);
 }
 
 @media (max-width: 1100px) {

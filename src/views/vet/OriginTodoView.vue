@@ -8,10 +8,17 @@ import { formatTime } from '../../lib/format'
 const store = useAppStore()
 const router = useRouter()
 const activeTab = ref('pending')
+const keywordInput = ref('')
+const appliedKeyword = ref('')
 
-const pendingList = computed(() => store.data.originApplications.filter((item) => item.status === 'submitted'))
-const rejectedList = computed(() => store.data.originApplications.filter((item) => item.status === 'rejected'))
-const issuedList = computed(() => store.data.originApplications.filter((item) => ['certificate_issued', 'transporting', 'arrived'].includes(item.status)))
+const matchedKeyword = (item: { applicationNo: string; animalType: string; destination: string }) => {
+  const keyword = appliedKeyword.value
+  return !keyword || item.applicationNo.includes(keyword) || item.animalType.includes(keyword) || item.destination.includes(keyword)
+}
+
+const pendingList = computed(() => store.data.originApplications.filter((item) => item.status === 'submitted' && matchedKeyword(item)))
+const rejectedList = computed(() => store.data.originApplications.filter((item) => item.status === 'rejected' && matchedKeyword(item)))
+const issuedList = computed(() => store.data.originApplications.filter((item) => ['certificate_issued', 'transporting', 'arrived'].includes(item.status) && matchedKeyword(item)))
 
 const currentList = computed(() => {
   if (activeTab.value === 'pending') return pendingList.value
@@ -19,25 +26,37 @@ const currentList = computed(() => {
   if (activeTab.value === 'issued') return issuedList.value
   return []
 })
+function searchApplications() {
+  appliedKeyword.value = keywordInput.value.trim()
+}
+
+async function refreshApplications() {
+  await store.refresh()
+  searchApplications()
+}
 </script>
 
 <template>
-  <section class="stack">
+  <section class="gov-page">
     <el-card class="panel-card">
-      <div class="card-header-line">
+      <div class="page-hero">
         <div>
           <h2>产地检疫管理</h2>
           <p>查看所有产地检疫申报，对已提交的申报进行现场查验。</p>
         </div>
-        <div class="action-inline">
-          <el-button @click="store.refresh()">刷新</el-button>
+      </div>
+      <div class="page-toolbar">
+        <el-input v-model="keywordInput" class="filter-keyword" placeholder="按申报编号、动物、目的地筛选" clearable @keyup.enter="searchApplications" />
+        <div class="toolbar-actions">
+          <el-button type="primary" @click="searchApplications">搜索</el-button>
+          <el-button @click="refreshApplications">刷新</el-button>
         </div>
       </div>
     </el-card>
 
     <el-card class="panel-card">
       <template #header>
-        <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title">
           <strong>申报列表</strong>
           <el-radio-group v-model="activeTab" size="small">
             <el-radio-button value="pending">待审核 ({{ pendingList.length }})</el-radio-button>
@@ -61,8 +80,10 @@ const currentList = computed(() => {
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
-            <el-button v-if="scope.row.status === 'submitted'" type="success" size="small" @click="router.push(`/vet/origin-inspection/${scope.row.id}`)">现场查验</el-button>
-            <el-button size="small" @click="router.push(`/vet/origin-inspection/${scope.row.id}`)">查看详情</el-button>
+            <div class="table-actions">
+              <el-button v-if="scope.row.status === 'submitted'" type="success" size="small" @click="router.push(`/vet/origin-inspection/${scope.row.id}`)">现场查验</el-button>
+              <el-button size="small" @click="router.push(`/vet/origin-inspection/${scope.row.id}`)">查看详情</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>

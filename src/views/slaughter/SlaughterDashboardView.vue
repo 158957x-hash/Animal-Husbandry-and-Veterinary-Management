@@ -7,10 +7,11 @@ import type { SlaughterBatchStatus } from '../../domain/models'
 const store = useAppStore()
 
 const batchStatusText: Record<SlaughterBatchStatus, string> = {
-  pending_self_check: '待自检',
-  self_check_passed: '自检通过',
-  self_check_failed: '自检未通过',
   pending_slaughter_apply: '待提交屠宰检疫申报',
+  draft_application: '申报草稿',
+  submitted_pending_accept: '已提交待受理',
+  returned_for_correction: '退回补正',
+  accepted_pending_ante_mortem: '已受理/待宰前检查',
   slaughter_applied: '已申报屠宰检疫',
   ante_mortem_checking: '宰前检查中',
   ante_mortem_passed: '宰前检查通过',
@@ -21,6 +22,8 @@ const batchStatusText: Record<SlaughterBatchStatus, string> = {
   pending_product_cert: '待出产品证',
   meat_quality_certificate_issued: '肉品品质证已出',
   product_cert_issued: '产品证已出',
+  emergency_slaughtering: '急宰处理中',
+  death_registration: '待宰死亡登记',
   abnormal: '异常',
 }
 
@@ -29,32 +32,34 @@ const todayEntryCount = computed(() => {
   return store.data.slaughterEntryRecords.filter((item) => new Date(item.createdAt).toLocaleDateString('zh-CN') === today).length
 })
 
-const waitingSlaughterCount = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_self_check').length)
+const waitingSlaughterCount = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_slaughter_apply').length)
 const pendingSlaughterApplyCount = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_slaughter_apply').length)
-const pendingSelfCheckCount = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_self_check').length)
 const productCertCount = computed(() => store.data.productCertificates.length)
 const markInventoryTotal = computed(() => store.data.quarantineMarkInventories.reduce((sum, item) => sum + item.available, 0))
 
 const recentEntries = computed(() => store.data.slaughterEntryRecords.slice(0, 8))
-const pendingSelfCheckBatches = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_self_check'))
 const pendingSlaughterApplyBatches = computed(() => store.data.slaughterBatches.filter((item) => item.status === 'pending_slaughter_apply'))
 </script>
 
 <template>
-  <div class="page-grid">
-    <div class="topbar">
-      <h1>屠宰企业工作台</h1>
-      <div class="topbar-stats">
-        <span>入场批次 {{ todayEntryCount }}</span>
-        <span>待宰 {{ waitingSlaughterCount }}</span>
+  <div class="gov-page">
+    <el-card class="panel-card">
+      <div class="page-hero">
+        <div>
+          <h2>屠宰企业工作台</h2>
+          <p>汇总入场、待宰、自检、申报、出证和检疫标志库存，辅助企业按流程办理检疫事项。</p>
+        </div>
+        <div class="status-summary">
+          <el-tag type="success">入场批次 {{ todayEntryCount }}</el-tag>
+          <el-tag type="warning">待宰 {{ waitingSlaughterCount }}</el-tag>
+        </div>
       </div>
-    </div>
+    </el-card>
 
     <div class="kpi-grid">
       <div class="kpi-card"><span>今日入场批次</span><b>{{ todayEntryCount }}</b></div>
       <div class="kpi-card"><span>待宰批次</span><b>{{ waitingSlaughterCount }}</b></div>
       <div class="kpi-card"><span>待提交屠宰检疫申报</span><b>{{ pendingSlaughterApplyCount }}</b></div>
-      <div class="kpi-card"><span>非瘟检测待确认</span><b>{{ pendingSelfCheckCount }}</b></div>
       <div class="kpi-card"><span>已出产品证数量</span><b>{{ productCertCount }}</b></div>
       <div class="kpi-card"><span>检疫标志库存</span><b>{{ markInventoryTotal }}</b></div>
     </div>
@@ -82,30 +87,16 @@ const pendingSlaughterApplyBatches = computed(() => store.data.slaughterBatches.
       <el-empty v-if="!recentEntries.length" description="暂无入场记录" />
     </el-card>
 
-    <div class="page-grid two-col">
-      <el-card class="panel-card">
-        <template #header><b>待处理自检记录</b></template>
-        <div v-for="batch in pendingSelfCheckBatches" :key="batch.id" class="task-item">
-          <div>
-            <b>{{ batch.batchNo }}</b>
-            <p>{{ batch.animalType }} {{ batch.entryQuantity }} 头</p>
-          </div>
-          <el-tag type="warning">{{ batchStatusText[batch.status] }}</el-tag>
+    <el-card class="panel-card">
+      <template #header><b>待提交屠宰检疫申报</b></template>
+      <div v-for="batch in pendingSlaughterApplyBatches" :key="batch.id" class="task-item">
+        <div>
+          <b>{{ batch.batchNo }}</b>
+          <p>{{ batch.animalType }} {{ batch.waitingQuantity }} 头待宰</p>
         </div>
-        <el-empty v-if="!pendingSelfCheckBatches.length" description="暂无待自检批次" />
-      </el-card>
-
-      <el-card class="panel-card">
-        <template #header><b>待提交屠宰检疫申报</b></template>
-        <div v-for="batch in pendingSlaughterApplyBatches" :key="batch.id" class="task-item">
-          <div>
-            <b>{{ batch.batchNo }}</b>
-            <p>{{ batch.animalType }} {{ batch.waitingQuantity }} 头待宰</p>
-          </div>
-          <el-tag type="warning">{{ batchStatusText[batch.status] }}</el-tag>
-        </div>
-        <el-empty v-if="!pendingSlaughterApplyBatches.length" description="暂无待申报批次" />
-      </el-card>
-    </div>
+        <el-tag type="warning">{{ batchStatusText[batch.status] }}</el-tag>
+      </div>
+      <el-empty v-if="!pendingSlaughterApplyBatches.length" description="暂无待申报批次" />
+    </el-card>
   </div>
 </template>

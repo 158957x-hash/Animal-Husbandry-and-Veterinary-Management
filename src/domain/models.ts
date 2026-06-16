@@ -46,15 +46,59 @@ export type DrugRecordType = 'in' | 'out' | 'reversal'
 export type WasteStatus = 'draft' | 'pending' | 'handled' | 'voided'
 export type AnnualReportStatus = 'generated' | 'submitted' | 'withdrawn'
 export type WasteSourceBusinessType = 'immunization' | 'prescription'
-export type InspectionAttachmentType = 'vehicle_photo' | 'ear_tag_photo' | 'loading_photo' | 'scene_photo' | 'other'
+export type InspectionAttachmentType = 'vehicle_photo' | 'certificate_photo' | 'ear_tag_photo' | 'loading_photo' | 'scene_photo' | 'other'
+export type CertificateEntryUsageStatus = 'not_arrived' | 'arrived' | 'used'
 
 export type SlaughterEntryStatus = 'pending_check' | 'checking' | 'entry_passed' | 'entry_rejected'
-export type SlaughterBatchStatus = 'pending_self_check' | 'self_check_passed' | 'self_check_failed' | 'pending_slaughter_apply' | 'slaughter_applied' | 'ante_mortem_checking' | 'ante_mortem_passed' | 'ante_mortem_failed' | 'post_mortem_checking' | 'post_mortem_passed' | 'post_mortem_failed' | 'pending_product_cert' | 'meat_quality_certificate_issued' | 'product_cert_issued' | 'abnormal'
+export type SlaughterBatchStatus =
+  | 'pending_slaughter_apply'
+  | 'draft_application'
+  | 'submitted_pending_accept'
+  | 'returned_for_correction'
+  | 'accepted_pending_ante_mortem'
+  | 'ante_mortem_passed'
+  | 'ante_mortem_failed'
+  | 'emergency_slaughtering'
+  | 'death_registration'
+  | 'abnormal'
+  | 'slaughter_applied'
+  | 'ante_mortem_checking'
+  | 'post_mortem_checking'
+  | 'post_mortem_passed'
+  | 'post_mortem_failed'
+  | 'pending_product_cert'
+  | 'meat_quality_certificate_issued'
+  | 'product_cert_issued'
 export type SelfCheckStatus = 'pending' | 'passed' | 'failed'
-export type SlaughterApplicationStatus = 'pending_accept' | 'accepted' | 'ante_mortem_checking' | 'post_mortem_checking' | 'pending_product_cert' | 'product_cert_issued' | 'returned' | 'abnormal'
+export type SlaughterApplicationStatus =
+  | 'draft'
+  | 'submitted_pending_accept'
+  | 'returned'
+  | 'accepted_pending_pre_check'
+  | 'pre_check_passed'
+  | 'pre_check_failed'
+  | 'auto_slaughter_completed'
+  | 'post_product_generated'
+  | 'post_check_passed'
+  | 'post_check_failed'
+  | 'quality_cert_generated'
+  | 'product_cert_pending'
+  | 'product_cert_issued'
+  | 'mark_used'
+  | 'completed'
+  | 'abnormal'
 export type MarkType = 'card_ring' | 'sticker'
 export type MarkStatus = 'pending_review' | 'issued' | 'in_stock' | 'used' | 'returned' | 'voided'
-export type MarkApplicationStatus = 'pending_review' | 'approved' | 'rejected' | 'issued'
+export type MarkApplicationType = 'apply' | 'return'
+export type MarkApplicationStatus = 'pending_review' | 'approved' | 'rejected' | 'issued' | 'return_pending_review' | 'return_approved' | 'return_rejected' | 'returned'
+export type MarkIssueStatus = 'pending_issue' | 'issued'
+export type MarkReturnStatus = 'pending_return' | 'returned'
+export type SlaughterRecordStatus = 'not_generated' | 'auto_generated' | 'completed' | 'abnormal'
+export type PostProductBatchStatus = 'not_generated' | 'generated' | 'waiting_quality_check' | 'waiting_post_check' | 'ready_for_product_cert' | 'product_cert_issued' | 'completed' | 'abnormal'
+export type MeatQualityCheckStatus = 'not_started' | 'draft' | 'submitted' | 'passed' | 'failed' | 'cert_generated'
+export type PostMortemCheckStatus2 = 'not_started' | 'pending' | 'in_progress' | 'passed' | 'failed' | 'partial_failed' | 'harmless_required'
+export type ProductCertStatus = 'not_ready' | 'pending' | 'ready_for_product_cert' | 'issued' | 'rejected' | 'voided'
+export type QuarantineMarkUsageStatus = 'not_used' | 'allocated' | 'used' | 'returned' | 'voided'
 
 export interface InspectionAttachment {
   id: string
@@ -145,6 +189,7 @@ export interface QuarantineCertificate {
   carrier?: string
   earTagRange?: string
   applicationNo?: string
+  entryUsageStatus?: CertificateEntryUsageStatus
 }
 
 export interface RoutePoint {
@@ -310,11 +355,168 @@ export interface MeatQualityCertificate {
 
 export interface ThreeCertificateLink {
   id: string
-  waitingBatchId: string
+  linkNo: string
   animalCertificateId: string
   productCertificateId: string
   meatQualityCertificateId: string
+  slaughterApplicationId?: string
+  waitingBatchId?: string
+  slaughterBatchId?: string
+  productBatchId?: string
+  markRangeStart?: string
+  markRangeEnd?: string
+  qrCode?: string
   linkedAt: string
+}
+
+// 屠宰记录
+export interface SlaughterRecord {
+  id: string
+  recordNo: string
+  slaughterBatchNo: string
+  waitingBatchId: string
+  slaughterApplicationId: string
+  quarantineCertificateId: string
+  slaughterhouseName: string
+  animalType: string
+  preCheckConclusion: string
+  actualSlaughterQuantity: number
+  slaughterCompletedTime: string
+  generationMethod: string
+  status: SlaughterRecordStatus
+  createdAt: string
+}
+
+// 宰后产品批次
+export interface PostProductBatch {
+  id: string
+  productBatchNo: string
+  slaughterBatchNo: string
+  slaughterRecordId: string
+  slaughterApplicationId: string
+  animalType: string
+  productName: string
+  productType: string
+  productQuantity: number
+  productWeight: number
+  sourceAnimalQuantity: number
+  sourceAnimalCertificateNo: string
+  slaughterhouseName: string
+  productCertStatus: ProductCertStatus
+  meatQualityStatus: MeatQualityCheckStatus
+  postCheckStatus: PostMortemCheckStatus2
+  waitingBatchId?: string
+  quarantineCertificateId?: string
+  createdAt: string
+}
+
+// 宰前检查详情
+export interface AnteMortemCheckDetail {
+  id: string
+  checkNo: string
+  slaughterApplicationId: string
+  waitingBatchId: string
+  slaughterhouseName: string
+  animalType: string
+  applicationQuantity: number
+  waitingPenNo: string
+  plannedSlaughterTime: string
+  officialVet: string
+  checkTime: string
+  items: AnteMortemCheckItem[]
+  conclusion: 'passed' | 'failed' | 'partial_exception' | 'harmless' | ''
+  conclusionReason?: string
+  status: 'pending' | 'completed'
+  createdAt: string
+}
+
+export interface AnteMortemCheckItem {
+  label: string
+  result: 'normal' | 'abnormal'
+  remark: string
+  attachment: string
+}
+
+// 宰后检疫详情
+export interface PostMortemCheckDetail {
+  id: string
+  checkNo: string
+  productBatchId: string
+  slaughterBatchNo: string
+  slaughterApplicationId: string
+  slaughterhouseName: string
+  animalType: string
+  actualSlaughterQuantity: number
+  productName: string
+  productWeight: number
+  slaughterCompletedTime: string
+  officialVet: string
+  checkTime: string
+  items: PostMortemCheckItem[]
+  conclusion: 'passed' | 'failed' | 'partial_failed' | 'harmless' | ''
+  conclusionReason?: string
+  unqualifiedQuantity: number
+  harmlessQuantity: number
+  status: PostMortemCheckStatus2
+  createdAt: string
+}
+
+export interface PostMortemCheckItem {
+  label: string
+  result: 'normal' | 'abnormal'
+  remark: string
+  attachment: string
+}
+
+// 肉品品质检验详情
+export interface MeatQualityCheckDetail {
+  id: string
+  checkNo: string
+  productBatchId: string
+  slaughterBatchNo: string
+  slaughterhouseName: string
+  animalType: string
+  productName: string
+  productType: string
+  productQuantity: number
+  productWeight: number
+  slaughterCompletedTime: string
+  inspector: string
+  checkTime: string
+  items: MeatQualityCheckItem[]
+  conclusion: 'qualified' | 'unqualified' | ''
+  unqualifiedQuantity: number
+  unqualifiedReason: string
+  disposalMethod: string
+  remark: string
+  status: MeatQualityCheckStatus
+  createdAt: string
+}
+
+export interface MeatQualityCheckItem {
+  label: string
+  result: 'normal' | 'abnormal'
+  remark: string
+}
+
+// 产品出证记录
+export interface ProductCertIssueRecord {
+  id: string
+  productBatchId: string
+  slaughterApplicationId: string
+  productName: string
+  productQuantity: number
+  productWeight: number
+  slaughterhouseName: string
+  destination: string
+  vehiclePlateNo: string
+  issuedBy: string
+  issuedAt: string
+  status: ProductCertStatus
+  animalCertificateNo?: string
+  meatQualityCertificateNo?: string
+  productCertificateNo?: string
+  createdAt: string
 }
 
 export interface HarmlessTreatmentTask {
@@ -552,6 +754,23 @@ export interface SlaughterEntryRecord {
   checkedBy: string
   checkedAt: string
   createdAt: string
+  actualQuantity?: number
+  waitingPenNo?: string
+  actualVehiclePlateNo?: string
+  vehicleArrived?: boolean
+  quantityMatched?: boolean
+  earTagMatched?: boolean
+  clinicalNormal?: boolean
+  deathCount?: number
+  abnormalCount?: number
+  loadingNormal?: boolean
+  sceneRemark?: string
+  operator?: string
+  phone?: string
+  entryTime?: string
+  opinion?: string
+  abnormalReason?: string
+  returnReason?: string
 }
 
 // Slaughter batch (replaces simple WaitingSlaughterBatch)
@@ -570,6 +789,14 @@ export interface SlaughterBatch {
   waitingPenNo: string
   status: SlaughterBatchStatus
   createdAt: string
+  entryTime?: string
+  slaughterApplicationId?: string
+  anteMortemCheckId?: string
+  emergencySlaughterId?: string
+  deathRecordId?: string
+  abnormalReason?: string
+  returnReason?: string
+  operator?: string
 }
 
 // Self inspection (ASF + banned drugs)
@@ -621,15 +848,51 @@ export interface QuarantineMarkApplication {
   applicationNo: string
   orgId: string
   orgName: string
+  applicationType?: MarkApplicationType
   markType: MarkType
   quantity: number
   reason: string
   status: MarkApplicationStatus
   appliedBy: string
   approvedBy?: string
+  approvedAt?: string
   issuedRangeStart?: string
   issuedRangeEnd?: string
+  relatedIssueOrderId?: string
+  relatedReturnOrderId?: string
   createdAt: string
+}
+
+export interface QuarantineMarkIssueOrder {
+  id: string
+  issueNo: string
+  applicationId: string
+  orgId: string
+  orgName: string
+  markType: MarkType
+  quantity: number
+  rangeStart: string
+  rangeEnd: string
+  status: MarkIssueStatus
+  createdAt: string
+  issuedBy?: string
+  issuedAt?: string
+}
+
+export interface QuarantineMarkReturnOrder {
+  id: string
+  returnNo: string
+  applicationId: string
+  orgId: string
+  orgName: string
+  markType: MarkType
+  quantity: number
+  reason: string
+  status: MarkReturnStatus
+  createdAt: string
+  returnedBy?: string
+  returnedAt?: string
+  markNos?: string[]
 }
 
 // Traceability record
@@ -656,10 +919,16 @@ export interface AppData {
   slaughterApplications: SlaughterQuarantineApplication[]
   waitingSlaughterBatches: WaitingSlaughterBatch[]
   anteMortemChecks: SlaughterAnteMortemCheck[]
+  anteMortemCheckDetails: AnteMortemCheckDetail[]
   postMortemChecks: SlaughterPostMortemCheck[]
+  postMortemCheckDetails: PostMortemCheckDetail[]
   productCertificates: ProductCertificate[]
   meatQualityCertificates: MeatQualityCertificate[]
+  meatQualityCheckDetails: MeatQualityCheckDetail[]
   threeCertificateLinks: ThreeCertificateLink[]
+  slaughterRecords: SlaughterRecord[]
+  postProductBatches: PostProductBatch[]
+  productCertIssueRecords: ProductCertIssueRecord[]
   harmlessTasks: HarmlessTreatmentTask[]
   sealRecords: SealManagementRecord[]
   clinicInstitutions: ClinicInstitution[]
@@ -683,6 +952,8 @@ export interface AppData {
   quarantineMarks: QuarantineMark[]
   quarantineMarkInventories: QuarantineMarkInventory[]
   quarantineMarkApplications: QuarantineMarkApplication[]
+  quarantineMarkIssueOrders: QuarantineMarkIssueOrder[]
+  quarantineMarkReturnOrders: QuarantineMarkReturnOrder[]
   traceabilityRecords: TraceabilityRecord[]
 }
 
@@ -700,6 +971,45 @@ export interface OriginApplicationInput {
 }
 export interface OriginInspectionInput { faceRecognitionPassed: boolean; siteInspectionPassed: boolean; evidencePhotoCount: number; remark: string }
 export interface EntryCheckInput { query: string; actualQuantity: number; channel: string; recognizedPlateNo?: string; earTagMatched?: boolean; originRegionMatched?: boolean }
+export interface SlaughterEntryAttachmentInput { type: InspectionAttachmentType; typeName: string; fileName: string; fileSize: number; fileType: string; dataUrl?: string; uploadedBy: string }
+export interface SlaughterEntryConfirmInput {
+  actualQuantity: number
+  waitingPenNo: string
+  actualVehiclePlateNo: string
+  vehicleArrived: boolean
+  quantityMatched: boolean
+  earTagMatched: boolean
+  clinicalNormal: boolean
+  deathCount: number
+  abnormalCount: number
+  loadingNormal: boolean
+  sceneRemark: string
+  operator: string
+  phone: string
+  entryTime: string
+  opinion: string
+  attachments?: SlaughterEntryAttachmentInput[]
+}
+export interface SlaughterEntryExceptionInput {
+  actualQuantity?: number
+  waitingPenNo?: string
+  actualVehiclePlateNo?: string
+  vehicleArrived: boolean
+  quantityMatched: boolean
+  earTagMatched: boolean
+  clinicalNormal: boolean
+  deathCount: number
+  abnormalCount: number
+  loadingNormal: boolean
+  sceneRemark: string
+  abnormalReason: string
+  operator: string
+  phone: string
+  entryTime: string
+  opinion: string
+  attachments?: SlaughterEntryAttachmentInput[]
+}
+export interface SlaughterEntryReturnInput { reason: string; operator: string; phone: string; entryTime: string; opinion: string }
 export interface SlaughterApplicationInput { entryCheckId: string; quantity: number; africanSwineFeverResult: DetectionResult; bannedDrugResult: DetectionResult }
 export interface SlaughterAuditInput { anteMortemPassed: boolean; postMortemPassed: boolean; productName: string; weight: number; remark: string }
 export interface LandingReportInput { transportTaskId: string; actualDestination: string; reporter: string; arrivedAt: string }
@@ -757,6 +1067,13 @@ export interface QuarantineMarkApplicationInput {
   reason: string
   appliedBy: string
 }
+export interface QuarantineMarkReturnApplicationInput {
+  markType: MarkType
+  quantity: number
+  reason: string
+  appliedBy: string
+  markNos?: string[]
+}
 export interface UseQuarantineMarksInput {
   batchId: string
   productCertificateId: string
@@ -765,5 +1082,51 @@ export interface UseQuarantineMarksInput {
   markType: MarkType
   quantity: number
   useObject: string
+}
+export interface AnteMortemSubmitInput {
+  slaughterApplicationId: string
+  items: { label: string; result: 'normal' | 'abnormal'; remark: string; attachment: string }[]
+  conclusion: 'passed' | 'failed' | 'partial_exception' | 'harmless'
+  conclusionReason: string
+}
+export interface MeatQualitySubmitInput {
+  productBatchId: string
+  productName: string
+  productType: string
+  inspector: string
+  items: { label: string; result: 'normal' | 'abnormal'; remark: string }[]
+  conclusion: 'qualified' | 'unqualified'
+  unqualifiedQuantity: number
+  unqualifiedReason: string
+  disposalMethod: string
+  remark: string
+}
+export interface PostMortemSubmitInput {
+  productBatchId: string
+  items: { label: string; result: 'normal' | 'abnormal'; remark: string; attachment: string }[]
+  conclusion: 'passed' | 'failed' | 'partial_failed' | 'harmless'
+  conclusionReason: string
+  unqualifiedQuantity: number
+  harmlessQuantity: number
+}
+export interface ProductCertIssueInput {
+  productBatchId: string
+  productName: string
+  productQuantity: number
+  productWeight: number
+  slaughterhouseName: string
+  destination: string
+  vehiclePlateNo: string
+}
+export interface MarkUsageSubmitInput {
+  productBatchId: string
+  productCertificateId: string
+  quarantineCertificateId: string
+  meatQualityCertificateId: string
+  slaughterApplicationId: string
+  markType: MarkType
+  quantity: number
+  useObject: string
+  operator: string
 }
 

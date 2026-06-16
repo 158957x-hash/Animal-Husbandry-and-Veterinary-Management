@@ -7,8 +7,8 @@ const store = useAppStore()
 
 const kpis = computed(() => [
   { label: '今日入场批次', value: store.data.slaughterEntryRecords.length },
-  { label: '待宰批次', value: store.data.slaughterBatches.filter((b) => b.status === 'pending_self_check' || b.status === 'self_check_passed').length },
-  { label: '待审核申报', value: store.data.slaughterApplications.filter((a) => a.status === 'pending_accept').length },
+  { label: '待宰批次', value: store.data.slaughterBatches.filter((b) => b.status === 'pending_slaughter_apply').length },
+  { label: '待审核申报', value: store.data.slaughterApplications.filter((a) => a.status === 'submitted_pending_accept').length },
   { label: '已出产品证', value: store.data.productCertificates.length },
   { label: '异常预警数', value: store.data.alerts.filter((a) => a.type === 'slaughter' || a.type === 'entry' || a.type === 'quarantine').length },
 ])
@@ -21,11 +21,10 @@ const entryStatusText: Record<string, string> = {
 }
 
 const applicationStatusText: Record<string, string> = {
-  pending_accept: '待受理',
-  accepted: '已受理',
-  ante_mortem_checking: '宰前检疫中',
-  post_mortem_checking: '宰后检疫中',
-  pending_product_cert: '待出产品证',
+  submitted_pending_accept: '待受理',
+  accepted_pending_pre_check: '已受理',
+  post_product_generated: '产品批次已生成',
+  product_cert_pending: '待出产品证',
   product_cert_issued: '已出产品证',
   returned: '退回',
   abnormal: '异常',
@@ -121,7 +120,7 @@ const slaughterAlerts = computed(() =>
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'pending_accept' ? 'warning' : scope.row.status === 'product_cert_issued' ? 'success' : scope.row.status === 'abnormal' ? 'danger' : 'info'" size="small">
+            <el-tag :type="scope.row.status === 'submitted_pending_accept' ? 'warning' : scope.row.status === 'product_cert_issued' ? 'success' : scope.row.status === 'abnormal' ? 'danger' : 'info'" size="small">
               {{ applicationStatusText[scope.row.status] ?? scope.row.status }}
             </el-tag>
           </template>

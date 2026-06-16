@@ -12,7 +12,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    Inspector(),
+    process.env.VITE_ENABLE_INSPECTOR === 'true' ? Inspector() : null,
     traeBadgePlugin({
       variant: 'dark',
       position: 'bottom-right',

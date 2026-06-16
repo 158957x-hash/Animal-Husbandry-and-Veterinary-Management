@@ -3,10 +3,10 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Document, CircleCheck, CircleClose, Warning } from '@element-plus/icons-vue'
-import QRCode from 'qrcode'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
 import type { InspectionAttachment } from '../../domain/models'
+import certImage from '../../../image/动物检疫证书.png'
 
 const store = useAppStore()
 const route = useRoute()
@@ -70,21 +70,15 @@ const activeArchiveTab = ref('farm')
 
 /* ---- 出证确认弹窗 ---- */
 const certDialog = ref(false)
-const certQrDataUrl = ref('')
 function openCertDialog() {
   if (!allPassed.value) return ElMessage.error('身份核验、现场查验、取证附件和自动校验须全部通过')
   certDialog.value = true
-  const certNo = certificate.value?.certificateNo || application.value?.applicationNo?.replace('CDJY', 'DWJY') || '-'
-  QRCode.toDataURL(certNo, { width: 140, margin: 2, color: { dark: '#1a1a1a' } }).then((url) => { certQrDataUrl.value = url }).catch(() => {})
 }
 
 /* ---- 已出证查看证书弹窗 ---- */
 const viewCertDialog = ref(false)
-const viewCertQrDataUrl = ref('')
 function openViewCertDialog() {
   viewCertDialog.value = true
-  const certNo = certificate.value?.certificateNo || '-'
-  QRCode.toDataURL(certNo, { width: 140, margin: 2, color: { dark: '#1a1a1a' } }).then((url) => { viewCertQrDataUrl.value = url }).catch(() => {})
 }
 
 /* ---- 耳标明细 ---- */
@@ -406,52 +400,92 @@ async function reject() {
     </template>
 
     <!-- ========== 弹窗：出证确认 ========== -->
-    <el-dialog v-model="certDialog" title="确认出证" width="580px" :close-on-click-modal="false">
-      <div class="cert-document">
-        <div class="cert-header">
-          <div class="cert-emblem">&#9733;</div>
-          <h2>动物检疫合格证明</h2>
-          <p class="cert-subtitle">Animal Quarantine Certificate</p>
+    <el-dialog v-model="certDialog" class="cert-issue-dialog" width="1280px" :show-close="false" :close-on-click-modal="false">
+      <template #header>
+        <div class="cert-dialog-header">
+          <div class="cert-dialog-title">
+            <strong>确认出证</strong>
+            <span>请核对证照信息后确认签发</span>
+          </div>
+          <el-button text class="cert-dialog-close" @click="certDialog = false">×</el-button>
         </div>
-        <div class="cert-body">
-          <div class="cert-no-row"><span>证号：{{ previewCertNo }}</span></div>
-          <table class="cert-table">
-            <tr><td class="label">动物种类</td><td>{{ application.animalType }}</td><td class="label">数量</td><td>{{ application.quantity }}头</td></tr>
-            <tr><td class="label">启运地</td><td colspan="3">{{ batch?.location || '-' }}</td></tr>
-            <tr><td class="label">目的地</td><td colspan="3">{{ application.destination }}</td></tr>
-            <tr><td class="label">承运车辆</td><td>{{ vehicle?.plateNo || '-' }}</td><td class="label">承运人</td><td>{{ application.carrier }}</td></tr>
-            <tr><td class="label">签发兽医</td><td>官方兽医 王敏</td><td class="label">签发日期</td><td>{{ formatTime(new Date().toISOString()) }}</td></tr>
-          </table>
+      </template>
+
+      <div class="cert-issue-layout">
+        <div class="cert-preview-panel">
+          <div class="cert-panel-title">电子证书预览</div>
+          <div class="cert-paper-frame">
+            <img :src="certImage" alt="动物检疫合格证明" />
+          </div>
+          <div class="cert-preview-actions">
+            <el-button text @click="ElMessage.info('预览原图入口已保留')">预览原图</el-button>
+            <el-divider direction="vertical" />
+            <el-button text @click="ElMessage.info('放大查看入口已保留')">放大查看</el-button>
+          </div>
         </div>
-        <div class="cert-footer">
-          <div class="cert-qr"><img v-if="certQrDataUrl" :src="certQrDataUrl" alt="二维码" style="width:100px;height:100px" /></div>
-          <div class="cert-stamp"><div class="stamp-circle"><span>利辛县</span><span>动物卫生</span><span>监督所</span></div></div>
+
+        <div class="cert-confirm-panel">
+          <div class="cert-confirm-top">
+            <div class="cert-pass-card">
+              <el-tag type="warning" effect="light">审核通过待签发</el-tag>
+              <div class="cert-pass-message">
+                <el-icon><CircleCheck /></el-icon>
+                <span>经系统校验与审核，所有信息及材料均符合要求，可签发电子证照。</span>
+              </div>
+            </div>
+            <div class="cert-check-card">
+              <strong>审核与校验结果</strong>
+              <p><span>自动校验</span><b><el-icon><CircleCheck /></el-icon> 已通过</b></p>
+              <p><span>身份核验</span><b><el-icon><CircleCheck /></el-icon> 已完成</b></p>
+              <p><span>现场查验</span><b><el-icon><CircleCheck /></el-icon> 已完成</b></p>
+              <p><span>附件材料</span><b><el-icon><CircleCheck /></el-icon> 齐全</b></p>
+            </div>
+          </div>
+
+          <div class="cert-info-card">
+            <strong>证照信息</strong>
+            <div class="cert-info-list">
+              <p><span>证号</span><b>{{ previewCertNo }}</b></p>
+              <p><span>动物种类</span><b>{{ application.animalType }}</b></p>
+              <p><span>数量</span><b>{{ application.quantity }}头</b></p>
+              <p><span>启运地</span><b>{{ batch?.location || '-' }}</b></p>
+              <p><span>目的地</span><b>{{ application.destination }}</b></p>
+              <p><span>运输车辆</span><b>{{ vehicle?.plateNo || '-' }}</b></p>
+              <p><span>承运人</span><b>{{ application.carrier }}</b></p>
+              <p><span>签发兽医</span><b>官方兽医 王敏</b></p>
+              <p><span>签发日期</span><b>{{ formatTime(new Date().toISOString()) }}</b></p>
+            </div>
+          </div>
         </div>
       </div>
+
       <template #footer>
-        <el-button @click="certDialog = false">取消</el-button>
-        <el-button type="success" @click="confirmApprove">确认出证</el-button>
+        <div class="cert-dialog-footer">
+          <div class="cert-footer-tip">确认签发后将生成正式电子证书并写入出证记录</div>
+          <div class="cert-footer-actions">
+            <el-button @click="certDialog = false">取消</el-button>
+            <el-button @click="certDialog = false">返回修改</el-button>
+            <el-button type="success" @click="confirmApprove">确认出证</el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
 
     <!-- ========== 弹窗：查看已出证证书 ========== -->
     <el-dialog v-model="viewCertDialog" title="动物检疫合格证明" width="580px">
-      <div class="cert-document">
-        <div class="cert-header"><div class="cert-emblem">&#9733;</div><h2>动物检疫合格证明</h2><p class="cert-subtitle">Animal Quarantine Certificate</p></div>
-        <div class="cert-body">
-          <div class="cert-no-row"><span>证号：{{ certificate?.certificateNo || '-' }}</span></div>
-          <table class="cert-table">
-            <tr><td class="label">动物种类</td><td>{{ certificate?.animalType || '-' }}</td><td class="label">数量</td><td>{{ certificate?.quantity || '-' }}头</td></tr>
-            <tr><td class="label">启运地</td><td colspan="3">{{ certificate?.origin || '-' }}</td></tr>
-            <tr><td class="label">目的地</td><td colspan="3">{{ certificate?.destination || '-' }}</td></tr>
-            <tr><td class="label">承运车辆</td><td>{{ certificate?.vehiclePlateNo || '-' }}</td><td class="label">签发兽医</td><td>{{ certificate?.issuedBy || '-' }}</td></tr>
-            <tr><td class="label">签发日期</td><td>{{ formatTime(certificate?.validFrom) }}</td><td class="label">有效期至</td><td>{{ formatTime(certificate?.validTo) }}</td></tr>
-          </table>
-        </div>
-        <div class="cert-footer">
-          <div class="cert-qr"><img v-if="viewCertQrDataUrl" :src="viewCertQrDataUrl" alt="二维码" style="width:100px;height:100px" /></div>
-          <div class="cert-stamp"><div class="stamp-circle"><span>利辛县</span><span>动物卫生</span><span>监督所</span></div></div>
-        </div>
+      <div class="cert-image-box">
+        <img :src="certImage" alt="动物检疫合格证明" />
+      </div>
+      <div class="cert-image-info">
+        <p><span>证号</span><b>{{ certificate?.certificateNo || '-' }}</b></p>
+        <p><span>动物种类</span><b>{{ certificate?.animalType || '-' }}</b></p>
+        <p><span>数量</span><b>{{ certificate?.quantity || '-' }}头</b></p>
+        <p><span>启运地</span><b>{{ certificate?.origin || '-' }}</b></p>
+        <p><span>目的地</span><b>{{ certificate?.destination || '-' }}</b></p>
+        <p><span>承运车辆</span><b>{{ certificate?.vehiclePlateNo || '-' }}</b></p>
+        <p><span>签发兽医</span><b>{{ certificate?.issuedBy || '-' }}</b></p>
+        <p><span>签发日期</span><b>{{ formatTime(certificate?.validFrom) }}</b></p>
+        <p><span>有效期至</span><b>{{ formatTime(certificate?.validTo) }}</b></p>
       </div>
       <template #footer><el-button type="primary" @click="viewCertDialog = false">关闭</el-button></template>
     </el-dialog>
@@ -627,12 +661,217 @@ async function reject() {
 .cert-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cert-table td { border: 1px solid #d4c5a0; padding: 6px 10px; color: #303133; }
 .cert-table td.label { background: #f5eed9; color: #666; font-weight: 500; width: 80px; text-align: center; }
-.cert-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #d4c5a0; }
-.cert-qr img { border: 1px solid #d4c5a0; border-radius: 4px; }
-.stamp-circle {
-  width: 90px; height: 90px; border: 3px solid #8b0000; border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #8b0000; font-size: 12px; font-weight: 600; line-height: 1.4; opacity: 0.7; transform: rotate(-15deg);
+.cert-footer { display: flex; justify-content: flex-start; align-items: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #d4c5a0; }
+.cert-qr img { width: 96px; height: 96px; object-fit: contain; border: 1px solid #d4c5a0; border-radius: 4px; }
+
+/* ========== 出证确认弹窗 ========== */
+:deep(.cert-issue-dialog) {
+  border-radius: 10px;
+  overflow: hidden;
+}
+:deep(.cert-issue-dialog .el-dialog__header) {
+  padding: 18px 26px 12px;
+  margin: 0;
+  border-bottom: 1px solid #eef0f3;
+}
+:deep(.cert-issue-dialog .el-dialog__body) {
+  padding: 14px 26px 18px;
+}
+:deep(.cert-issue-dialog .el-dialog__footer) {
+  padding: 0;
+  border-top: 1px solid #eef0f3;
+}
+.cert-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cert-dialog-title {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+.cert-dialog-title strong {
+  color: #151a24;
+  font-size: 21px;
+  font-weight: 700;
+}
+.cert-dialog-title span {
+  color: #8a93a3;
+  font-size: 14px;
+}
+.cert-dialog-close {
+  color: #a0a7b3;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+.cert-issue-layout {
+  display: grid;
+  grid-template-columns: 410px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+.cert-preview-panel,
+.cert-confirm-panel,
+.cert-info-card,
+.cert-check-card {
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #fff;
+}
+.cert-preview-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+.cert-panel-title,
+.cert-info-card > strong,
+.cert-check-card > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #252b36;
+  font-size: 15px;
+  font-weight: 700;
+}
+.cert-paper-frame {
+  padding: 7px;
+  border: 1px solid #e8e1d5;
+  border-radius: 6px;
+  background: #fffdf7;
+  box-shadow: 0 8px 20px rgba(111, 91, 55, 0.08);
+}
+.cert-paper-frame img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+}
+.cert-preview-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding-top: 10px;
+}
+.cert-preview-actions .el-button {
+  color: #6b7280;
+  font-weight: 600;
+}
+.cert-confirm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+.cert-confirm-top {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 270px;
+  gap: 18px;
+}
+.cert-pass-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffdf6 0%, #ffffff 52%);
+}
+.cert-pass-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #bfe8cf;
+  border-radius: 6px;
+  background: #effaf3;
+  color: #4f8b63;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.cert-pass-message .el-icon,
+.cert-check-card .el-icon {
+  color: #49b765;
+}
+.cert-check-card {
+  padding: 12px 14px;
+  background: #fbfcfe;
+}
+.cert-check-card p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 9px 0 0;
+  color: #697386;
+  font-size: 13px;
+}
+.cert-check-card b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #69b86d;
+  font-weight: 600;
+}
+.cert-info-card {
+  flex: 1;
+  padding: 16px 18px;
+}
+.cert-info-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+  row-gap: 0;
+}
+.cert-info-list p {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid #eff1f4;
+}
+.cert-info-list p:last-child {
+  border-bottom: none;
+}
+.cert-info-list span {
+  color: #8a93a3;
+  font-size: 14px;
+}
+.cert-info-list b {
+  color: #1f2633;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
+  word-break: break-all;
+}
+.cert-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 26px;
+  background: #fbfcfe;
+}
+.cert-footer-tip {
+  color: #8a93a3;
+  font-size: 13px;
+}
+.cert-footer-tip::before {
+  content: 'ⓘ';
+  margin-right: 8px;
+  color: #a7afbd;
+}
+.cert-footer-actions {
+  display: flex;
+  gap: 14px;
+}
+.cert-footer-actions .el-button {
+  min-width: 110px;
+  height: 40px;
+  margin-left: 0 !important;
+}
+.cert-footer-actions .el-button--success {
+  background: #58c83a;
+  border-color: #58c83a;
+  font-weight: 700;
 }
 
 @media (max-width: 1200px) {

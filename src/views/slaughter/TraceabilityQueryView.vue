@@ -60,17 +60,24 @@ function resetSearch() {
 </script>
 
 <template>
-  <div class="page-grid">
-    <div class="topbar">
-      <h1>三证扫码查询</h1>
-    </div>
+  <div class="gov-page">
+    <el-card class="panel-card">
+      <div class="page-hero">
+        <div>
+          <h2>三证扫码查询</h2>
+          <p>输入检疫验讫标志编号，查询动物证、产品证、肉品品质证和标志使用信息。</p>
+        </div>
+      </div>
+    </el-card>
 
     <el-card class="panel-card">
-      <template #header><b>检疫标志查询</b></template>
-      <div class="action-inline" style="margin-bottom: 0">
-        <el-input v-model="searchQuery" placeholder="请输入检疫标志编号" clearable size="large" @keyup.enter="search" />
-        <el-button type="primary" size="large" :loading="loading" @click="search">查询</el-button>
-        <el-button size="large" @click="resetSearch">重置</el-button>
+      <template #header><div class="card-title"><b>检疫标志查询</b><small>支持按卡环或标签标志编号进行追溯</small></div></template>
+      <div class="page-toolbar compact">
+        <el-input v-model="searchQuery" class="filter-keyword" placeholder="请输入检疫标志编号" clearable size="large" @keyup.enter="search" />
+        <div class="toolbar-actions">
+          <el-button type="primary" size="large" :loading="loading" @click="search">搜索</el-button>
+          <el-button size="large" @click="resetSearch">重置</el-button>
+        </div>
       </div>
     </el-card>
 
@@ -87,7 +94,7 @@ function resetSearch() {
         </div>
       </el-card>
 
-      <div class="page-grid" style="grid-template-columns: repeat(3, 1fr)">
+      <div class="gov-section-grid three-col">
         <el-card class="panel-card">
           <template #header><b>动物检疫合格证明</b></template>
           <div v-if="originCert" class="info-list">

@@ -7,10 +7,13 @@ import OriginApplyView from '../views/farmer/OriginApplyView.vue'
 import OriginDetailView from '../views/farmer/OriginDetailView.vue'
 import OriginTodoView from '../views/vet/OriginTodoView.vue'
 import OriginInspectionView from '../views/vet/OriginInspectionView.vue'
-import SlaughterAuditView from '../views/vet/SlaughterAuditView.vue'
 import EntryCheckView from '../views/slaughter/EntryCheckView.vue'
+import EntryCheckProcessView from '../views/slaughter/EntryCheckProcessView.vue'
+import EntryCheckDetailView from '../views/slaughter/EntryCheckDetailView.vue'
 import SlaughterApplyView from '../views/slaughter/SlaughterApplyView.vue'
+import SlaughterQuarantineApplyView from '../views/slaughter/SlaughterQuarantineApplyView.vue'
 import WaitingSlaughterView from '../views/slaughter/WaitingSlaughterView.vue'
+import WaitingSlaughterDetailView from '../views/slaughter/WaitingSlaughterDetailView.vue'
 import DashboardView from '../views/regulator/DashboardView.vue'
 import TransportMapView from '../views/regulator/TransportMapView.vue'
 import CertificateSpotCheckView from '../views/regulator/CertificateSpotCheckView.vue'
@@ -33,15 +36,19 @@ import AnnualReportView from '../views/clinic/AnnualReportView.vue'
 import PetOwnerRecordsView from '../views/clinic/PetOwnerRecordsView.vue'
 import ClinicSupervisionView from '../views/clinic/ClinicSupervisionView.vue'
 import SlaughterDashboardView from '../views/slaughter/SlaughterDashboardView.vue'
-import SelfCheckView from '../views/slaughter/SelfCheckView.vue'
 import MeatQualityView from '../views/slaughter/MeatQualityView.vue'
 import MarkManagementView from '../views/slaughter/MarkManagementView.vue'
 import TraceabilityQueryView from '../views/slaughter/TraceabilityQueryView.vue'
 import SlaughterTodoView from '../views/vet/SlaughterTodoView.vue'
 import SlaughterAuditDetailView from '../views/vet/SlaughterAuditDetailView.vue'
+import PostMortemCheckListView from '../views/vet/PostMortemCheckListView.vue'
+import PostMortemCheckDetailView from '../views/vet/PostMortemCheckDetailView.vue'
+import PostMortemCheckResultView from '../views/vet/PostMortemCheckResultView.vue'
+import SlaughterRecordListView from '../views/slaughter/SlaughterRecordListView.vue'
 import SlaughterSupervisionView from '../views/regulator/SlaughterSupervisionView.vue'
 import TraceabilityTrackView from '../views/regulator/TraceabilityTrackView.vue'
 import MarkUsageView from '../views/regulator/MarkUsageView.vue'
+import QuarantineMarkManagementView from '../views/regulator/QuarantineMarkManagementView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
@@ -60,17 +67,23 @@ const router = createRouter({
         { path: 'farmer/origin-detail/:id?', component: OriginDetailView, meta: { role: 'farmer' } },
         { path: 'vet/origin-todos', component: OriginTodoView, meta: { role: 'vet' } },
         { path: 'vet/origin-inspection/:id', component: OriginInspectionView, meta: { role: 'vet' } },
-        { path: 'vet/slaughter-audit', component: SlaughterAuditView, meta: { role: 'vet' } },
         { path: 'vet/slaughter-todos', component: SlaughterTodoView, meta: { role: 'vet' } },
         { path: 'vet/slaughter-audit/:id', component: SlaughterAuditDetailView, meta: { role: 'vet' } },
+        { path: 'vet/post-mortem-check', component: PostMortemCheckListView, meta: { role: 'vet' } },
+        { path: 'vet/post-mortem-check/:productBatchId', component: PostMortemCheckDetailView, meta: { role: 'vet' } },
+        { path: 'vet/post-mortem-check/:productBatchId/detail', component: PostMortemCheckResultView, meta: { role: 'vet' } },
         { path: 'slaughter/entry-check', component: EntryCheckView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/entry-check/:id/process', component: EntryCheckProcessView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/entry-check/:id/detail', component: EntryCheckDetailView, meta: { role: 'slaughter' } },
         { path: 'slaughter/waiting-slaughter', component: WaitingSlaughterView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/waiting-slaughter/:id/detail', component: WaitingSlaughterDetailView, meta: { role: 'slaughter' } },
         { path: 'slaughter/slaughter-apply', component: SlaughterApplyView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/quarantine-apply/:batchId', component: SlaughterQuarantineApplyView, meta: { role: 'slaughter' } },
         { path: 'slaughter/dashboard', component: SlaughterDashboardView, meta: { role: 'slaughter' } },
-        { path: 'slaughter/self-check', component: SelfCheckView, meta: { role: 'slaughter' } },
         { path: 'slaughter/meat-quality', component: MeatQualityView, meta: { role: 'slaughter' } },
         { path: 'slaughter/mark-management', component: MarkManagementView, meta: { role: 'slaughter' } },
         { path: 'slaughter/traceability-query', component: TraceabilityQueryView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/slaughter-records', component: SlaughterRecordListView, meta: { role: 'slaughter' } },
         { path: 'regulator/dashboard', component: DashboardView, meta: { role: 'regulator' } },
         { path: 'regulator/transport-map', component: TransportMapView, meta: { role: 'regulator' } },
         { path: 'regulator/certificate-spot-check', component: CertificateSpotCheckView, meta: { role: 'regulator' } },
@@ -85,6 +98,10 @@ const router = createRouter({
         { path: 'regulator/slaughter-supervision', component: SlaughterSupervisionView, meta: { role: 'regulator' } },
         { path: 'regulator/traceability-track', component: TraceabilityTrackView, meta: { role: 'regulator' } },
         { path: 'regulator/mark-usage', component: MarkUsageView, meta: { role: 'regulator' } },
+        { path: 'regulator/quarantine-mark/review', component: QuarantineMarkManagementView, meta: { role: 'regulator' } },
+        { path: 'regulator/quarantine-mark/issue', component: QuarantineMarkManagementView, meta: { role: 'regulator' } },
+        { path: 'regulator/quarantine-mark/inventory', component: QuarantineMarkManagementView, meta: { role: 'regulator' } },
+        { path: 'regulator/quarantine-mark/return', component: QuarantineMarkManagementView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-supervision', component: ClinicSupervisionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-institutions', component: ClinicInstitutionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-veterinarians', component: ClinicVeterinarianView, meta: { role: 'regulator' } },
