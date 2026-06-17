@@ -42,7 +42,8 @@ const menus = computed(() => {
       // { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
       { label: '宰后管理', path: '/slaughter/slaughter-records' },
       { label: '肉品品质检验', path: '/slaughter/meat-quality' },
-      { label: '检疫验讫标志', path: '/slaughter/mark-management' },
+      { label: '检疫验讫标志管理', path: '/slaughter/mark-management' },
+      { label: '检疫验讫标志使用', path: '/slaughter/mark-usage' },
       { label: '三证扫码查询', path: '/slaughter/traceability-query' },
     ],
     regulator: [

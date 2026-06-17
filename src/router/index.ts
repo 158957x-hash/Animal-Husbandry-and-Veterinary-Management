@@ -38,6 +38,7 @@ import ClinicSupervisionView from '../views/clinic/ClinicSupervisionView.vue'
 import SlaughterDashboardView from '../views/slaughter/SlaughterDashboardView.vue'
 import MeatQualityView from '../views/slaughter/MeatQualityView.vue'
 import MarkManagementView from '../views/slaughter/MarkManagementView.vue'
+import SlaughterMarkUsageView from '../views/slaughter/MarkUsageView.vue'
 import TraceabilityQueryView from '../views/slaughter/TraceabilityQueryView.vue'
 import SlaughterTodoView from '../views/vet/SlaughterTodoView.vue'
 import SlaughterAuditDetailView from '../views/vet/SlaughterAuditDetailView.vue'
@@ -49,6 +50,7 @@ import SlaughterSupervisionView from '../views/regulator/SlaughterSupervisionVie
 import TraceabilityTrackView from '../views/regulator/TraceabilityTrackView.vue'
 import MarkUsageView from '../views/regulator/MarkUsageView.vue'
 import QuarantineMarkManagementView from '../views/regulator/QuarantineMarkManagementView.vue'
+import MarkTraceView from '../views/public/MarkTraceView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
@@ -56,6 +58,8 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginView },
+    { path: '/public/mark-trace', component: MarkTraceView },
+    { path: '/public/mark-trace/:markCode', component: MarkTraceView },
     {
       path: '/',
       component: AppShell,
@@ -82,6 +86,7 @@ const router = createRouter({
         { path: 'slaughter/dashboard', component: SlaughterDashboardView, meta: { role: 'slaughter' } },
         { path: 'slaughter/meat-quality', component: MeatQualityView, meta: { role: 'slaughter' } },
         { path: 'slaughter/mark-management', component: MarkManagementView, meta: { role: 'slaughter' } },
+        { path: 'slaughter/mark-usage', component: SlaughterMarkUsageView, meta: { role: 'slaughter' } },
         { path: 'slaughter/traceability-query', component: TraceabilityQueryView, meta: { role: 'slaughter' } },
         { path: 'slaughter/slaughter-records', component: SlaughterRecordListView, meta: { role: 'slaughter' } },
         { path: 'regulator/dashboard', component: DashboardView, meta: { role: 'regulator' } },
@@ -124,6 +129,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.path.startsWith('/public/')) return true
   const store = useAppStore()
   if (!store.session) await store.bootstrap()
   if (to.path === '/login') return true

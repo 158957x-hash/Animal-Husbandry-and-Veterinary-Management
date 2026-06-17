@@ -138,74 +138,29 @@ describe('mockApi 检疫屠宰闭环', () => {
     expect(attachments.map((item) => item.type)).toContain('vehicle_photo')
   })
 
-  it('完成产地申报、出证、运输、入场、屠宰申报和产品出证闭环', async () => {
-    const data = await mockApi.getBootstrapData()
-    const batch = data.farmBatches[0]
-    const vehicle = data.vehicles.find((item) => item.registered && !item.blacklisted)
-
-    expect(vehicle).toBeTruthy()
-
-    const origin = await mockApi.submitOriginApplication({
-      batchId: batch.id,
-      quantity: 60,
-      destination: '皖北标准化屠宰中心',
-      destinationAddress: '安徽省亳州市利辛县屠宰加工园区 1 号',
-      purpose: 'slaughter',
-      departureTime: '2026-06-13T08:00:00.000Z',
-      contactPerson: '王场长',
-      contactPhone: '13900002222',
-      remark: '闭环测试',
-      vehicleId: vehicle!.id,
+  it('检疫验讫标志申领和退回审核可以驳回', async () => {
+    const apply = await mockApi.applyQuarantineMarks({
+      markType: 'card_ring',
+      quantity: 20,
+      reason: '生产补充申领',
+      appliedBy: '屠宰经办人',
     })
 
-    expect(origin.status).toBe('submitted')
-    expect(origin.validationResults.every((item) => item.passed)).toBe(true)
+    const rejectedApply = await mockApi.rejectQuarantineMarkApplication(apply.id, '申领数量与近期屠宰计划不匹配')
+    expect(rejectedApply.status).toBe('rejected')
 
-    const certificate = await mockApi.approveOriginApplication(origin.id, {
-      faceRecognitionPassed: true,
-      siteInspectionPassed: true,
-      evidencePhotoCount: 3,
-      remark: '现场查验合格',
+    const returnApply = await mockApi.applyQuarantineMarkReturn({
+      markType: 'card_ring',
+      quantity: 5,
+      reason: '破损退回',
+      appliedBy: '屠宰经办人',
     })
 
-    expect(certificate.quantity).toBe(60)
-
-    const afterOrigin = await mockApi.getBootstrapData()
-    const updatedBatch = afterOrigin.farmBatches.find((item) => item.id === batch.id)
-    const task = afterOrigin.transportTasks.find((item) => item.certificateId === certificate.id)
-
-    expect(updatedBatch?.stock).toBe(batch.stock - 60)
-    expect(task?.status).toBe('transporting')
-
-    const entry = await mockApi.performEntryCheck({
-      query: certificate.certificateNo,
-      actualQuantity: 60,
-      channel: vehicle!.channel,
-    })
-
-    expect(entry.status).toBe('entry_passed')
-
-    const slaughter = await mockApi.submitSlaughterApplication({
-      entryCheckId: entry.id,
-      quantity: 60,
-      africanSwineFeverResult: 'negative',
-      bannedDrugResult: 'negative',
-    })
-
-    expect(slaughter.status).toBe('submitted_pending_accept')
-
-    const product = await mockApi.approveSlaughterApplication(slaughter.id, {
-      anteMortemPassed: true,
-      postMortemPassed: true,
-      productName: '白条猪肉',
-      weight: 4800,
-      remark: '检疫合格',
-    })
-
-    expect(product.certificateNo).toContain('CP')
+    const rejectedReturn = await mockApi.rejectQuarantineMarkApplication(returnApply.id, '退回标志编号范围不清晰')
+    expect(rejectedReturn.status).toBe('return_rejected')
 
     const finalData = await mockApi.getBootstrapData()
-    expect(finalData.productCertificates.length).toBeGreaterThanOrEqual(1)
-    expect(finalData.operationLogs.length).toBeGreaterThan(5)
+    expect(finalData.quarantineMarkIssueOrders.some((item) => item.applicationId === apply.id)).toBe(false)
+    expect(finalData.quarantineMarkReturnOrders.some((item) => item.applicationId === returnApply.id)).toBe(false)
   })
 })

@@ -37,6 +37,7 @@ export const useAppStore = defineStore('app', {
     session: undefined as UserSession | undefined,
     data: createSeedData() as AppData,
     loading: false,
+    restoreVersion: 0,
   }),
   getters: {
     currentRole: (state) => state.session?.role,
@@ -71,6 +72,7 @@ export const useAppStore = defineStore('app', {
     },
     async restoreInitialData() {
       this.data = await mockApi.restoreInitialData()
+      this.restoreVersion += 1
     },
     async saveOriginDraft(input: OriginApplicationInput) {
       const result = await mockApi.saveOriginDraft(input)
@@ -414,6 +416,11 @@ export const useAppStore = defineStore('app', {
     },
     async approveQuarantineMarkApplication(id: string) {
       const result = await mockApi.approveQuarantineMarkApplication(id)
+      await this.refresh()
+      return result
+    },
+    async rejectQuarantineMarkApplication(id: string, reason: string) {
+      const result = await mockApi.rejectQuarantineMarkApplication(id, reason)
       await this.refresh()
       return result
     },

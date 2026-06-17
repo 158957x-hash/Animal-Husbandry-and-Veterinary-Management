@@ -856,6 +856,7 @@ export interface QuarantineMarkApplication {
   appliedBy: string
   approvedBy?: string
   approvedAt?: string
+  rejectReason?: string
   issuedRangeStart?: string
   issuedRangeEnd?: string
   relatedIssueOrderId?: string

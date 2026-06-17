@@ -9,7 +9,9 @@ const store = useAppStore()
 const activeTab = ref('inventory')
 const applyDialogVisible = ref(false)
 const returnDialogVisible = ref(false)
-const usageDialogVisible = ref(false)
+const inventoryDetailVisible = ref(false)
+const inventoryDetailPage = ref(1)
+const selectedInventory = ref<any>(null)
 
 const applyForm = reactive({
   markType: 'card_ring' as MarkType,
@@ -23,18 +25,6 @@ const returnForm = reactive({
   quantity: 10,
   reason: '',
   appliedBy: '',
-})
-
-const usageForm = reactive({
-  productBatchId: '',
-  quarantineCertificateNo: '',
-  meatQualityCertificateNo: '',
-  markType: 'card_ring' as MarkType,
-  useObject: '胴体',
-  quantity: 0,
-  markRangeStart: '',
-  markRangeEnd: '',
-  operator: '',
 })
 
 const markTypeText: Record<MarkType, string> = {
@@ -64,46 +54,46 @@ const applicationStatusType: Record<MarkApplicationStatus, 'info' | 'success' | 
   returned: 'success',
 }
 
-const issuedProductBatches = computed(() =>
-  store.data.postProductBatches.filter((item) => item.productCertStatus === 'issued'),
-)
-
 const usedMarks = computed(() => store.data.quarantineMarks.filter((item) => item.status === 'used'))
 const slaughterInventories = computed(() => store.data.quarantineMarkInventories.filter((item) => item.orgId === 'org-slaughter-001'))
 const issueRecords = computed(() => store.data.quarantineMarkIssueOrders.filter((item) => item.orgId === 'org-slaughter-001' && item.status === 'issued'))
 const returnOrders = computed(() => store.data.quarantineMarkReturnOrders.filter((item) => item.orgId === 'org-slaughter-001'))
 const applicationRecords = computed(() => store.data.quarantineMarkApplications.filter((item) => (item.applicationType || 'apply') === 'apply'))
 const returnApplicationRecords = computed(() => store.data.quarantineMarkApplications.filter((item) => item.applicationType === 'return'))
+const inventoryDetailRows = computed(() => {
+  if (!selectedInventory.value) return []
+  const prefix = selectedInventory.value.markType === 'card_ring' ? 'KH' : 'BQ'
+  const applicableObject = selectedInventory.value.markType === 'card_ring' ? '胴体' : '副产品 / 包装箱 / 分割产品'
+  const spec = selectedInventory.value.markType === 'card_ring' ? 'Φ35mm 卡环' : '60mm × 40mm 标签'
+  const material = selectedInventory.value.markType === 'card_ring' ? '食品级塑料' : '防水不干胶'
+  const color = selectedInventory.value.markType === 'card_ring' ? '绿色' : '蓝白'
+  return Array.from({ length: 10 }, (_, index) => {
+    const seq = String(index + 1).padStart(4, '0')
+    const markNo = `${prefix}20260616${seq}`
+    return {
+      qrCode: `https://trace.animal-vet.gov.cn/mark/${markNo}`,
+      markNo,
+      markType: selectedInventory.value.markType,
+      purpose: '检疫验讫标志',
+      applicableObject,
+      spec,
+      material,
+      color,
+      productionBatchNo: 'SCPC20260616001',
+      status: '可用',
+      issuedAt: '2026-06-16T10:00:00.000Z',
+    }
+  })
+})
 
-function onProductBatchSelect(batchId: string) {
-  const batch = store.data.postProductBatches.find((b) => b.id === batchId)
-  if (!batch) return
-  const quarantineCert = store.data.quarantineCertificates.find((c) => c.id === batch.quarantineCertificateId)
-  usageForm.quarantineCertificateNo = quarantineCert?.certificateNo || ''
-  const meatQualityCert = store.data.meatQualityCertificates.find((c) => c.productBatchNo === batch.productBatchNo)
-  usageForm.meatQualityCertificateNo = meatQualityCert?.certificateNo || ''
-  const availableMarks = store.data.quarantineMarks.filter((m) => m.markType === usageForm.markType && m.status === 'in_stock')
-  usageForm.markRangeStart = availableMarks[0]?.markNo || ''
-  usageForm.markRangeEnd = availableMarks[Math.min(usageForm.quantity || 1, availableMarks.length) - 1]?.markNo || ''
+function openInventoryDetail(row: any) {
+  selectedInventory.value = row
+  inventoryDetailPage.value = 1
+  inventoryDetailVisible.value = true
 }
 
-function onQuantityChange() {
-  const availableMarks = store.data.quarantineMarks.filter((m) => m.markType === usageForm.markType && m.status === 'in_stock')
-  usageForm.markRangeStart = availableMarks[0]?.markNo || ''
-  usageForm.markRangeEnd = availableMarks[Math.min(usageForm.quantity || 1, availableMarks.length) - 1]?.markNo || ''
-}
-
-function openUsageDialog() {
-  usageForm.productBatchId = ''
-  usageForm.quarantineCertificateNo = ''
-  usageForm.meatQualityCertificateNo = ''
-  usageForm.markType = 'card_ring'
-  usageForm.useObject = '胴体'
-  usageForm.quantity = 0
-  usageForm.markRangeStart = ''
-  usageForm.markRangeEnd = ''
-  usageForm.operator = ''
-  usageDialogVisible.value = true
+function showDetail() {
+  ElMessage.info('详情功能待接入')
 }
 
 async function submitApplication() {
@@ -125,31 +115,6 @@ async function submitReturnApplication() {
   ElMessage.success('标志退回申请已提交，等待监管端审核')
   returnDialogVisible.value = false
 }
-
-async function submitMarkUsage() {
-  if (!usageForm.productBatchId || !usageForm.operator || !usageForm.quantity) {
-    ElMessage.warning('请填写完整的使用信息')
-    return
-  }
-  const batch = store.data.postProductBatches.find((b) => b.id === usageForm.productBatchId)
-  if (!batch) return
-  const productCert = store.data.productCertificates.find((c) => c.productBatchNo === batch.productBatchNo)
-  const quarantineCert = store.data.quarantineCertificates.find((c) => c.id === batch.quarantineCertificateId)
-  const meatQualityCert = store.data.meatQualityCertificates.find((c) => c.productBatchNo === batch.productBatchNo)
-  await store.submitMarkUsage({
-    productBatchId: batch.id,
-    productCertificateId: productCert?.id || '',
-    quarantineCertificateId: quarantineCert?.id || '',
-    meatQualityCertificateId: meatQualityCert?.id || '',
-    slaughterApplicationId: batch.slaughterApplicationId,
-    markType: usageForm.markType,
-    quantity: usageForm.quantity,
-    useObject: usageForm.useObject,
-    operator: usageForm.operator,
-  })
-  ElMessage.success('检疫验讫标志使用记录已提交')
-  usageDialogVisible.value = false
-}
 </script>
 
 <template>
@@ -170,19 +135,20 @@ async function submitMarkUsage() {
     <el-card class="panel-card">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="标志库存" name="inventory">
-          <el-table :data="slaughterInventories" stripe>
+          <el-table :data="slaughterInventories" stripe class="full-table">
             <el-table-column type="index" label="序号" width="70" />
-            <el-table-column label="标志类型" width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
-            <el-table-column prop="total" label="总量" width="100" />
-            <el-table-column prop="available" label="可用" width="100" />
-            <el-table-column prop="used" label="已用" width="100" />
-            <el-table-column prop="returned" label="已退回" width="100" />
-            <el-table-column prop="voided" label="已作废" width="100" />
+            <el-table-column label="标志类型" min-width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
+            <el-table-column prop="total" label="总量" min-width="100" />
+            <el-table-column prop="available" label="可用" min-width="100" />
+            <el-table-column prop="used" label="已用" min-width="100" />
+            <el-table-column prop="returned" label="已退回" min-width="100" />
+            <el-table-column prop="voided" label="已作废" min-width="100" />
+            <el-table-column label="操作" width="110" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openInventoryDetail(row)">查看详情</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="申领记录" name="applications">
-          <el-table :data="applicationRecords" stripe>
+          <el-table :data="applicationRecords" stripe class="full-table">
             <el-table-column prop="applicationNo" label="申领编号" min-width="150" />
             <el-table-column label="标志类型" width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
             <el-table-column prop="quantity" label="申领数量" width="100" />
@@ -191,38 +157,41 @@ async function submitMarkUsage() {
             <el-table-column label="状态" width="120"><template #default="{ row }"><el-tag :type="applicationStatusType[row.status as MarkApplicationStatus]" size="small">{{ applicationStatusText[row.status as MarkApplicationStatus] }}</el-tag></template></el-table-column>
             <el-table-column label="发放范围" min-width="220"><template #default="{ row }">{{ row.issuedRangeStart || '-' }} ~ {{ row.issuedRangeEnd || '-' }}</template></el-table-column>
             <el-table-column label="申领时间" min-width="160"><template #default="{ row }">{{ formatTime(row.createdAt) }}</template></el-table-column>
+            <el-table-column label="操作" width="110" fixed="right"><template #default><el-button link type="primary" @click="showDetail">查看详情</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="发放记录" name="issueRecords">
-          <el-table :data="issueRecords" stripe>
+          <el-table :data="issueRecords" stripe class="full-table">
             <el-table-column prop="issueNo" label="发放单号" min-width="150" />
             <el-table-column label="标志类型" width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
             <el-table-column prop="quantity" label="发放数量" width="100" />
             <el-table-column label="编号段" min-width="240"><template #default="{ row }">{{ row.rangeStart }} ~ {{ row.rangeEnd }}</template></el-table-column>
             <el-table-column prop="issuedBy" label="发放人" width="140" />
             <el-table-column label="发放时间" min-width="160"><template #default="{ row }">{{ formatTime(row.issuedAt) }}</template></el-table-column>
+            <el-table-column label="操作" width="110" fixed="right"><template #default><el-button link type="primary" @click="showDetail">查看详情</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="退回记录" name="returns">
-          <el-table :data="returnApplicationRecords" stripe>
+          <el-table :data="returnApplicationRecords" stripe class="full-table">
             <el-table-column prop="applicationNo" label="退回申请编号" min-width="150" />
             <el-table-column label="标志类型" width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
             <el-table-column prop="quantity" label="退回数量" width="100" />
             <el-table-column prop="reason" label="退回原因" min-width="180" />
             <el-table-column label="状态" width="130"><template #default="{ row }"><el-tag :type="applicationStatusType[row.status as MarkApplicationStatus]" size="small">{{ applicationStatusText[row.status as MarkApplicationStatus] }}</el-tag></template></el-table-column>
             <el-table-column label="退回入库单" min-width="150"><template #default="{ row }">{{ returnOrders.find((item) => item.applicationId === row.id)?.returnNo || '-' }}</template></el-table-column>
+            <el-table-column label="操作" width="110" fixed="right"><template #default><el-button link type="primary" @click="showDetail">查看详情</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="使用记录" name="usage">
-          <div class="tab-toolbar"><el-button type="primary" @click="openUsageDialog">使用检疫验讫标志</el-button></div>
-          <el-table :data="usedMarks" stripe>
+          <el-table :data="usedMarks" stripe class="full-table">
             <el-table-column prop="markNo" label="标志编号" min-width="150" />
             <el-table-column label="标志类型" width="120"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
             <el-table-column label="使用对象" min-width="140"><template #default="{ row }">{{ row.productBatchNo || row.slaughterBatchId || '-' }}</template></el-table-column>
             <el-table-column label="使用时间" min-width="160"><template #default="{ row }">{{ formatTime(row.usedAt) }}</template></el-table-column>
+            <el-table-column label="操作" width="110" fixed="right"><template #default><el-button link type="primary" @click="showDetail">查看详情</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
       </el-tabs>
@@ -248,18 +217,84 @@ async function submitMarkUsage() {
       <template #footer><el-button @click="returnDialogVisible = false">取消</el-button><el-button type="primary" @click="submitReturnApplication">提交退回申请</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="usageDialogVisible" title="使用检疫验讫标志" width="580px" destroy-on-close>
-      <el-form label-position="top">
-        <el-form-item label="选择产品批次" required><el-select v-model="usageForm.productBatchId" class="full-width" placeholder="请选择已出证的产品批次" @change="onProductBatchSelect"><el-option v-for="batch in issuedProductBatches" :key="batch.id" :label="`${batch.productBatchNo} (${batch.productName})`" :value="batch.id" /></el-select></el-form-item>
-        <el-form-item label="动物产品检疫证明编号"><el-input :model-value="usageForm.quarantineCertificateNo" disabled /></el-form-item>
-        <el-form-item label="肉品品质检验合格证编号"><el-input :model-value="usageForm.meatQualityCertificateNo" disabled /></el-form-item>
-        <el-form-item label="标志类型" required><el-radio-group v-model="usageForm.markType" @change="onQuantityChange"><el-radio-button label="card_ring">卡环式</el-radio-button><el-radio-button label="sticker">粘贴式</el-radio-button></el-radio-group></el-form-item>
-        <el-form-item label="使用对象" required><el-select v-model="usageForm.useObject" class="full-width"><el-option label="胴体" value="胴体" /><el-option label="副产品" value="副产品" /><el-option label="包装箱" value="包装箱" /><el-option label="分割产品" value="分割产品" /></el-select></el-form-item>
-        <el-form-item label="使用数量" required><el-input-number v-model="usageForm.quantity" :min="1" class="full-width" @change="onQuantityChange" /></el-form-item>
-        <el-form-item label="标志编号段起止"><el-row :gutter="8"><el-col :span="12"><el-input :model-value="usageForm.markRangeStart" disabled placeholder="起始编号" /></el-col><el-col :span="12"><el-input :model-value="usageForm.markRangeEnd" disabled placeholder="截止编号" /></el-col></el-row></el-form-item>
-        <el-form-item label="经办人" required><el-input v-model="usageForm.operator" placeholder="请输入经办人姓名" /></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="usageDialogVisible = false">取消</el-button><el-button type="primary" @click="submitMarkUsage">提交使用</el-button></template>
+    <el-dialog v-model="inventoryDetailVisible" title="标志库存详情" width="1080px" top="6vh">
+      <div v-if="selectedInventory" class="inventory-detail-summary">
+        <p><span>标志类型</span><b>{{ markTypeText[selectedInventory.markType as MarkType] }}</b></p>
+        <p><span>库存总量</span><b>{{ selectedInventory.total }}</b></p>
+        <p><span>可用数量</span><b>{{ selectedInventory.available }}</b></p>
+        <p><span>已使用</span><b>{{ selectedInventory.used }}</b></p>
+      </div>
+      <el-table :data="inventoryDetailRows" stripe border class="full-table">
+        <el-table-column type="index" label="序号" width="70" />
+        <el-table-column prop="qrCode" label="标志二维码编号" min-width="240" show-overflow-tooltip />
+        <el-table-column prop="markNo" label="编号" min-width="160" />
+        <el-table-column label="标志类型" width="110"><template #default="{ row }">{{ markTypeText[row.markType as MarkType] }}</template></el-table-column>
+        <el-table-column prop="purpose" label="标志用途" width="130" />
+        <el-table-column prop="applicableObject" label="适用对象" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="spec" label="标志规格" min-width="130" />
+        <el-table-column prop="material" label="标志材质" min-width="130" />
+        <el-table-column prop="color" label="标志颜色" width="100" />
+        <el-table-column prop="productionBatchNo" label="生产批次号" min-width="150" />
+        <el-table-column prop="status" label="状态" width="90"><template #default="{ row }"><el-tag type="success" size="small">{{ row.status }}</el-tag></template></el-table-column>
+      </el-table>
+      <div class="table-pagination">
+        <el-pagination
+          v-model:current-page="inventoryDetailPage"
+          background
+          layout="total, prev, pager, next, jumper"
+          :page-size="10"
+          :total="selectedInventory?.available || 0"
+        />
+      </div>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.full-table {
+  width: 100%;
+}
+
+.inventory-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.inventory-detail-summary p {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  margin: 0;
+  background: #f7faf8;
+  border: 1px solid #e4efe8;
+  border-radius: 12px;
+}
+
+.inventory-detail-summary span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.inventory-detail-summary b {
+  color: #12372a;
+  font-size: 20px;
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+}
+
+:deep(.el-tabs__content) {
+  width: 100%;
+  overflow: visible;
+}
+
+:deep(.el-table) {
+  --el-table-header-bg-color: #f6faf7;
+}
+</style>

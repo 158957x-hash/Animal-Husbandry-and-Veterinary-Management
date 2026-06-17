@@ -261,17 +261,21 @@ function handleAction(batchId: string, action: string) {
             <el-tag :type="statusType[scope.row.status]">{{ statusText[scope.row.status] }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="200" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right" class-name="waiting-action-column">
           <template #default="scope">
             <div class="table-actions-inline">
-              <template v-for="(act, idx) in getActions(scope.row.status).slice(0, 3)" :key="idx">
-                <el-button :type="act.type" size="small" @click="handleAction(scope.row.id, act.action)">{{ act.label }}</el-button>
-              </template>
-              <el-dropdown v-if="getActions(scope.row.status).length > 3" trigger="click">
+              <el-button
+                v-for="(act, idx) in getActions(scope.row.status).slice(0, 2)"
+                :key="idx"
+                :type="act.type"
+                size="small"
+                @click="handleAction(scope.row.id, act.action)"
+              >{{ act.label }}</el-button>
+              <el-dropdown v-if="getActions(scope.row.status).length > 2" trigger="click">
                 <el-button size="small">更多</el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item v-for="(act, idx) in getActions(scope.row.status).slice(3)" :key="idx" @click="handleAction(scope.row.id, act.action)">{{ act.label }}</el-dropdown-item>
+                    <el-dropdown-item v-for="(act, idx) in getActions(scope.row.status).slice(2)" :key="idx" @click="handleAction(scope.row.id, act.action)">{{ act.label }}</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -288,10 +292,19 @@ function handleAction(batchId: string, action: string) {
 .table-actions-inline {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
+  width: max-content;
+  min-width: 100%;
 }
+
 .table-actions-inline .el-button {
   margin: 0;
+  flex: 0 0 auto;
+}
+
+:deep(.waiting-action-column .cell) {
+  overflow: visible;
+  padding-right: 14px;
 }
 </style>

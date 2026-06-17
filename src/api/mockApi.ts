@@ -1890,6 +1890,23 @@ export const mockApi = {
     return clone(application)
   },
 
+  async rejectQuarantineMarkApplication(applicationId: string, reason: string): Promise<QuarantineMarkApplication> {
+    const data = readData()
+    const application = data.quarantineMarkApplications.find((a) => a.id === applicationId)
+    if (!application) throw new Error('检疫验讫标志单据不存在')
+    if (application.status !== 'pending_review' && application.status !== 'return_pending_review') throw new Error('只有待审核单据可以驳回')
+
+    application.status = (application.applicationType || 'apply') === 'return' ? 'return_rejected' : 'rejected'
+    application.approvedBy = '市级畜牧兽医监管员'
+    application.approvedAt = now()
+    application.rejectReason = reason
+
+    const action = (application.applicationType || 'apply') === 'return' ? '驳回检疫验讫标志退回申请' : '驳回检疫验讫标志申领'
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', action, `${application.applicationNo} ${reason}`)
+    writeData(data)
+    return clone(application)
+  },
+
   async issueQuarantineMarks(issueOrderId: string): Promise<QuarantineMarkApplication> {
     const data = readData()
     const issueOrder = data.quarantineMarkIssueOrders.find((order) => order.id === issueOrderId || order.applicationId === issueOrderId)
