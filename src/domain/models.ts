@@ -669,6 +669,7 @@ export interface DrugInventory {
   approvalNo: string
   validTo: string
   quantity: number
+  storageLocation: string
   supplier: string
   traceCode: string
   active: boolean
@@ -1185,7 +1186,7 @@ export interface VeterinarianInput { name: string; certificateNo: string; practi
 export interface PetOwnerInput { name: string; phone: string; address: string }
 export interface PetProfileInput { ownerId: string; name: string; species: string; breed: string; gender: string; age: number; weight: number; identityNo: string }
 export interface ImmunizationInput { petId: string; vaccineName: string; vaccineBatchNo: string; immunizedAt: string; nextImmunizedAt: string; veterinarianId: string; institutionId: string }
-export interface DrugStockInInput { institutionId: string; drugName: string; specification: string; batchNo: string; unit: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; supplier: string; traceCode: string }
+export interface DrugStockInInput { institutionId: string; drugName: string; specification: string; batchNo: string; unit: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; storageLocation: string; supplier: string; traceCode: string }
 export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
 export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
 export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }
@@ -1335,6 +1336,12 @@ export interface DrugRequisitionItem {
   notes: string
 }
 
+export interface DrugOutboundSelection {
+  requisitionItemKey: string
+  drugInventoryId: string
+  quantity: number
+}
+
 export interface DrugRequisition {
   id: string
   requisitionNo: string
@@ -1347,7 +1354,8 @@ export interface DrugRequisition {
   veterinarianName: string
   institutionId: string
   items: DrugRequisitionItem[]
-  status: 'pending' | 'confirmed' | 'outbound'
+  outboundSelections: DrugOutboundSelection[]
+  status: 'pending_outbound' | 'outbound'
   createdAt: string
   updatedAt: string
 }

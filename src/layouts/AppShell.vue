@@ -145,7 +145,7 @@ const menus = computed(() => {
       { label: '执业兽医年度报告审核', path: '/clinic/admin/veterinarian-reports' },
     ],
     practicing_vet: [
-      { label: '宠物主人与档案', path: '/clinic/veterinarian/pets' },
+      { label: '宠物档案管理', path: '/clinic/veterinarian/pets' },
       { label: '免疫台账管理', path: '/clinic/veterinarian/immunization' },
       { label: '接诊管理', path: '/clinic/veterinarian/consultations' },
       { label: '年度报告', path: '/clinic/veterinarian/reports' },

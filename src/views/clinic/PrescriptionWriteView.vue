@@ -92,9 +92,9 @@ function onDrugSelect(index: number, drugId: string) {
       ...drugItems.value[index],
       drugId: drug.id,
       drugName: drug.drugName,
-      specification: drug.approvalNo,
+      specification: drug.specification,
       batchNo: drug.batchNo,
-      unit: '盒/支',
+      unit: drug.unit,
       currentStock: drug.quantity,
     }
     // Auto-recommend quantity

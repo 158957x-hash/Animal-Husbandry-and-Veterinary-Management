@@ -9,6 +9,7 @@ import type {
   ConsultationInput,
   ConsultationPrescriptionInput,
   DrugRequisitionItem,
+  DrugOutboundSelection,
   DrugStockInInput,
   EntryCheckInput,
   HarmlessTaskInput,
@@ -579,8 +580,8 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
-    async processDrugOutbound(requisitionId: string) {
-      const result = await mockApi.processDrugOutbound(requisitionId)
+    async processDrugOutbound(requisitionId: string, selections: DrugOutboundSelection[]) {
+      const result = await mockApi.processDrugOutbound(requisitionId, selections)
       await this.refresh()
       return result
     },

@@ -18,6 +18,7 @@ import type {
   ConsultationRecord,
   DrugInOutRecord,
   DrugInventory,
+  DrugOutboundSelection,
   DrugRequisition,
   DrugRequisitionItem,
   DrugStockInInput,
@@ -1460,7 +1461,7 @@ export const mockApi = {
     const data = readData()
     const institution = data.clinicInstitutions.find((item) => item.id === input.institutionId)
     if (!institution) throw new Error('诊疗机构不存在')
-    const inventory: DrugInventory = { id: id('drug'), ...input, active: true, createdAt: now() }
+    const inventory: DrugInventory = { id: id('drug'), ...input, storageLocation: input.storageLocation || '默认库位', active: true, createdAt: now() }
     const record: DrugInOutRecord = { id: id('drug-record'), type: 'in', drugId: inventory.id, drugName: inventory.drugName, institutionId: inventory.institutionId, quantity: input.quantity, operator: institution.name, createdAt: now() }
     data.drugInventories.unshift(inventory)
     data.drugInOutRecords.unshift(record)
@@ -3246,7 +3247,8 @@ export const mockApi = {
         items: input.items.map((item) => ({
           ...item,
         })),
-        status: 'pending',
+        outboundSelections: [],
+        status: 'pending_outbound',
         createdAt: now(),
         updatedAt: now(),
       }
@@ -3272,7 +3274,7 @@ export const mockApi = {
     const req = data.drugRequisitions.find((r) => r.id === requisitionId)
     if (!req) throw new Error('领用单不存在')
     req.items = items
-    req.status = 'confirmed'
+    req.status = 'pending_outbound'
     req.updatedAt = now()
     pushLog(data, 'practicing_vet', req.veterinarianName, '确认药品领用单', `${req.requisitionNo} · ${req.petName}`)
     writeData(data)
@@ -3283,40 +3285,56 @@ export const mockApi = {
     const data = readData()
     const req = data.drugRequisitions.find((r) => r.id === requisitionId)
     if (!req) throw new Error('领用单不存在')
-    req.status = 'confirmed'
+    req.status = 'pending_outbound'
     req.updatedAt = now()
     pushLog(data, 'practicing_vet', req.veterinarianName, '提交药品领用单至机构', `${req.requisitionNo} · ${req.petName}`)
     writeData(data)
     return clone(req)
   },
 
-  async processDrugOutbound(requisitionId: string): Promise<DrugRequisition> {
+  async processDrugOutbound(requisitionId: string, selections: DrugOutboundSelection[] = []): Promise<DrugRequisition> {
     const data = readData()
     const req = data.drugRequisitions.find((r) => r.id === requisitionId)
     if (!req) throw new Error('领用单不存在')
+    if (req.status === 'outbound') throw new Error('该领用单已出库')
+
+    for (const item of req.items) {
+      const itemKey = `${item.drugName}|${item.specification}|${item.batchNo}|${item.unit}`
+      const selected = selections.filter((selection) => selection.requisitionItemKey === itemKey)
+      const selectedQuantity = selected.reduce((sum, selection) => sum + selection.quantity, 0)
+      if (selectedQuantity !== item.quantity) {
+        throw new Error('选择出库数量必须等于领用数量')
+      }
+      for (const selection of selected) {
+        const drug = data.drugInventories.find((d) => d.id === selection.drugInventoryId)
+        if (!drug) throw new Error('选择的库存不存在')
+        if (drug.quantity < selection.quantity) throw new Error('库存数量不足')
+        if (selection.quantity <= 0) throw new Error('出库数量必须大于0')
+      }
+    }
+
     req.status = 'outbound'
+    req.outboundSelections = selections
     req.updatedAt = now()
 
-    // 出库扣减库存
-    for (const item of req.items) {
-      const drug = data.drugInventories.find((d) => d.id === item.drugId)
+    for (const selection of selections) {
+      const drug = data.drugInventories.find((d) => d.id === selection.drugInventoryId)
       if (drug) {
-        drug.quantity = Math.max(0, drug.quantity - item.quantity)
+        drug.quantity -= selection.quantity
         data.drugInOutRecords.push({
           id: id('dior'),
           type: 'out',
           drugId: drug.id,
           drugName: drug.drugName,
           institutionId: req.institutionId,
-          quantity: item.quantity,
-          relatedId: req.prescriptionId,
+          quantity: selection.quantity,
+          relatedId: req.requisitionNo,
           operator: req.veterinarianName,
           createdAt: now(),
         })
       }
     }
 
-    // 更新接诊出药状态
     const consultation = data.consultations.find((c) => c.id === req.consultationId)
     if (consultation) {
       consultation.dispensingStatus = 'dispensed'

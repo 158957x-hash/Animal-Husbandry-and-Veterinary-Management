@@ -19,21 +19,36 @@ const drugEditDialog = ref(false)
 const currentDrug = ref<DrugInventory>()
 const approvedInstitutions = computed(() => store.data.clinicInstitutions.filter((item) => item.status === 'approved' && item.active))
 
-const drugs = computed(() => {
-  return store.data.drugInventories.filter((item) => {
+type MergedDrugInventory = DrugInventory & { locationCount: number }
+
+const drugs = computed<MergedDrugInventory[]>(() => {
+  const filtered = store.data.drugInventories.filter((item) => {
     if (searchForm.drugName && !item.drugName.includes(searchForm.drugName)) return false
     if (searchForm.batchNo && !item.batchNo.includes(searchForm.batchNo)) return false
     if (searchForm.manufacturer && !item.manufacturer.includes(searchForm.manufacturer)) return false
     if (searchForm.approvalNo && !item.approvalNo.includes(searchForm.approvalNo)) return false
     return true
   })
+  const map = new Map<string, MergedDrugInventory>()
+  for (const item of filtered) {
+    const key = `${item.drugName}|${item.specification}|${item.batchNo}|${item.unit}`
+    const existing = map.get(key)
+    if (existing) {
+      existing.quantity += item.quantity
+      existing.locationCount += 1
+      existing.active = existing.active || item.active
+    } else {
+      map.set(key, { ...item, locationCount: 1 })
+    }
+  }
+  return Array.from(map.values())
 })
 
-const drugForm = reactive({ institutionId: '', drugName: '', specification: '', batchNo: '', unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, supplier: '', traceCode: '' })
-const drugEditForm = reactive({ institutionId: '', drugName: '', specification: '', batchNo: '', unit: '', manufacturer: '', approvalNo: '', validTo: '', supplier: '', traceCode: '' })
+const drugForm = reactive({ institutionId: '', drugName: '', specification: '', batchNo: '', unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, storageLocation: '', supplier: '', traceCode: '' })
+const drugEditForm = reactive({ institutionId: '', drugName: '', specification: '', batchNo: '', unit: '', manufacturer: '', approvalNo: '', validTo: '', storageLocation: '', supplier: '', traceCode: '' })
 
 function openStock() {
-  Object.assign(drugForm, { institutionId: approvedInstitutions.value[0]?.id || '', drugName: '', specification: '', batchNo: `DRUG${Date.now().toString().slice(-6)}`, unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, supplier: '', traceCode: '' })
+  Object.assign(drugForm, { institutionId: approvedInstitutions.value[0]?.id || '', drugName: '', specification: '', batchNo: `DRUG${Date.now().toString().slice(-6)}`, unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, storageLocation: '门诊药房A柜', supplier: '', traceCode: '' })
   stockDialog.value = true
 }
 
@@ -112,6 +127,9 @@ function onReset() {
         <el-table-column prop="batchNo" label="批号" width="140" />
         <el-table-column prop="unit" label="单位" width="70" />
         <el-table-column prop="quantity" label="当前库存" width="90" />
+        <el-table-column label="库位数量" width="90">
+          <template #default="{ row }">{{ row.locationCount }}处</template>
+        </el-table-column>
         <el-table-column prop="manufacturer" label="生产企业" min-width="160" />
         <el-table-column prop="approvalNo" label="批准文号" width="180" />
         <el-table-column prop="validTo" label="有效期" width="110">
@@ -144,6 +162,7 @@ function onReset() {
         <el-form-item label="批准文号"><el-input v-model="drugForm.approvalNo" /></el-form-item>
         <el-form-item label="有效期"><el-input v-model="drugForm.validTo" /></el-form-item>
         <el-form-item label="入库数量"><el-input-number v-model="drugForm.quantity" :min="1" class="full-width" /></el-form-item>
+        <el-form-item label="库存位置"><el-input v-model="drugForm.storageLocation" /></el-form-item>
         <el-form-item label="供应商"><el-input v-model="drugForm.supplier" /></el-form-item>
         <el-form-item label="追溯码"><el-input v-model="drugForm.traceCode" /></el-form-item>
       </el-form>
@@ -161,6 +180,7 @@ function onReset() {
         <el-form-item label="生产企业"><el-input v-model="drugEditForm.manufacturer" /></el-form-item>
         <el-form-item label="批准文号"><el-input v-model="drugEditForm.approvalNo" /></el-form-item>
         <el-form-item label="有效期"><el-input v-model="drugEditForm.validTo" /></el-form-item>
+        <el-form-item label="库存位置"><el-input v-model="drugEditForm.storageLocation" /></el-form-item>
         <el-form-item label="供应商"><el-input v-model="drugEditForm.supplier" /></el-form-item>
         <el-form-item label="追溯码"><el-input v-model="drugEditForm.traceCode" /></el-form-item>
       </el-form>
