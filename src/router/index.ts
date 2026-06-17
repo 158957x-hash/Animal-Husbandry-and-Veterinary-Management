@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import LoginView from '../views/LoginView.vue'
 import FarmerDashboardView from '../views/farmer/FarmerDashboardView.vue'
@@ -54,7 +54,7 @@ import MarkTraceView from '../views/public/MarkTraceView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginView },

@@ -78,8 +78,7 @@ watch(
 )
 
 async function generateTraceQrCode() {
-  const baseUrl = traceBaseUrl.value || getDefaultTraceUrl()
-  const url = `${baseUrl}public/mark-trace`
+  const url = getTraceUrl()
   traceQrCode.value = await QRCode.toDataURL(url, { width: 200, margin: 1 })
 }
 
@@ -91,12 +90,17 @@ function getDefaultTraceUrl() {
   return `${window.location.origin}${base}`
 }
 
+function normalizeTraceBaseUrl(value: string) {
+  return value.endsWith('/') ? value : `${value}/`
+}
+
 function getTraceUrl() {
-  const baseUrl = traceBaseUrl.value || getDefaultTraceUrl()
-  return `${baseUrl}public/mark-trace`
+  const baseUrl = normalizeTraceBaseUrl(traceBaseUrl.value || getDefaultTraceUrl())
+  return `${baseUrl}#/public/mark-trace`
 }
 
 function onTraceUrlChange() {
+  traceBaseUrl.value = normalizeTraceBaseUrl(traceBaseUrl.value)
   generateTraceQrCode()
 }
 
@@ -311,7 +315,7 @@ function openCertificate(title: string, image: string) {
             <span class="qr-code-url-label">扫码地址</span>
             <el-input v-model="traceBaseUrl" size="small" class="qr-code-url-input" placeholder="例如 http://192.168.1.100:5173/Animal-Husbandry-and-Veterinary-Management/" @change="onTraceUrlChange" />
           </div>
-          <p class="qr-code-hint">将上方地址改为电脑的局域网 IP 后，用手机扫码即可打开查验页面</p>
+          <p class="qr-code-hint">本地扫码时将上方地址改为电脑局域网 IP；线上扫码时改为 GitHub Pages 地址。二维码会自动指向 #/public/mark-trace，刷新不会 404。</p>
           <p class="qr-code-current"><el-tag size="small" type="info">当前二维码指向：{{ getTraceUrl() }}</el-tag></p>
         </div>
       </el-card>
