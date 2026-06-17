@@ -1,6 +1,7 @@
 import type {
   AlertRecord,
   AnnualReport,
+  AnnualReportSection,
   AnteMortemCheckDetail,
   AnteMortemInput,
   AnteMortemSubmitInput,
@@ -11,8 +12,14 @@ import type {
   ClosedLoopNode,
   CompleteHarmlessInput,
   CompleteMedicalWasteInput,
+  ConsultationInput,
+  ConsultationPrescription,
+  ConsultationPrescriptionInput,
+  ConsultationRecord,
   DrugInOutRecord,
   DrugInventory,
+  DrugRequisition,
+  DrugRequisitionItem,
   DrugStockInInput,
   EntryCheckInput,
   EntryCheckRecord,
@@ -71,11 +78,14 @@ import type {
   ThreeCertificateLink,
   TraceabilityRecord,
   TransportExceptionInput,
+  TreatmentRecordInput,
   UserRole,
   UserSession,
   ValidationResult,
   Veterinarian,
   VeterinarianInput,
+  VeterinarianRegistrationApplication,
+  VeterinarianAnnualReport,
   WaitingSlaughterBatch,
   InspectionAttachment,
   TransportTask,
@@ -383,6 +393,420 @@ function addRestriction(data: AppData, taskId: string, reason: string) {
   pushSync(data, certificate.certificateNo, '承运限制')
   pushNode(data, '承运限制', '调运监管系统', false, '市级畜牧兽医监管员', restriction.id, reason)
   return restriction
+}
+
+function buildAnnualReportSections(institution: { name: string; licenseNo: string; address: string; contactPerson: string; phone: string; type: string }, year: number): AnnualReportSection[] {
+  const y = String(year)
+  const sections: AnnualReportSection[] = []
+
+  sections.push({
+    title: '一、报告基本信息',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>报告年度</td><td>${y}年度</td></tr>
+      <tr><td>报告编号</td><td>ZLJG-NB-${y}-0001</td></tr>
+      <tr><td>诊疗机构名称</td><td>${institution.name}</td></tr>
+      <tr><td>统一社会信用代码</td><td>91341600MA2XXXXXXX</td></tr>
+      <tr><td>动物诊疗许可证编号</td><td>${institution.licenseNo}</td></tr>
+      <tr><td>机构类型</td><td>${institution.type}</td></tr>
+      <tr><td>机构地址</td><td>${institution.address}</td></tr>
+      <tr><td>法定代表人/负责人</td><td>${institution.contactPerson}</td></tr>
+      <tr><td>联系电话</td><td>${institution.phone}</td></tr>
+      <tr><td>填报人</td><td>${institution.contactPerson}</td></tr>
+      <tr><td>填报时间</td><td>${y}-12-31 15:30:00</td></tr>
+      <tr><td>报告状态</td><td>草稿</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '二、机构基本情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>是否正常营业</td><td>是</td></tr>
+      <tr><td>年度营业状态</td><td>正常经营</td></tr>
+      <tr><td>诊疗场所面积</td><td>180㎡</td></tr>
+      <tr><td>诊室数量</td><td>3间</td></tr>
+      <tr><td>手术室数量</td><td>1间</td></tr>
+      <tr><td>药房数量</td><td>1间</td></tr>
+      <tr><td>留观室数量</td><td>1间</td></tr>
+      <tr><td>影像/检验设备</td><td>X光机、B超、血液分析仪、生化分析仪</td></tr>
+      <tr><td>是否变更机构地址</td><td>否</td></tr>
+      <tr><td>是否变更负责人</td><td>否</td></tr>
+      <tr><td>是否存在停业、歇业情况</td><td>否</td></tr>
+      <tr><td>年度自查结论</td><td>本年度机构正常开展动物诊疗活动，未发现重大违法违规问题。</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '三、执业兽医人员情况',
+    html: `<table class="report-table"><thead><tr><th>人员类型</th><th>年初人数</th><th>年末人数</th><th>本年新增</th><th>本年减少</th></tr></thead><tbody>
+      <tr><td>执业兽医师</td><td class="num">3</td><td class="num">3</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td>执业助理兽医师</td><td class="num">2</td><td class="num">2</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td>其他辅助人员</td><td class="num">4</td><td class="num">5</td><td class="num">1</td><td class="num">0</td></tr>
+    </tbody></table>
+    <h5>执业兽医明细</h5>
+    <table class="report-table"><thead><tr><th>姓名</th><th>执业类别</th><th>执业证号</th><th>岗位</th><th>年度接诊量</th><th>处方数量</th><th>报告状态</th></tr></thead><tbody>
+      <tr><td>李明</td><td>执业兽医师</td><td>A012026340001</td><td>主治兽医</td><td class="num">430</td><td class="num">260</td><td>已确认</td></tr>
+      <tr><td>赵倩</td><td>执业兽医师</td><td>A012026340002</td><td>外科兽医</td><td class="num">380</td><td class="num">210</td><td>已确认</td></tr>
+      <tr><td>刘洋</td><td>执业兽医师</td><td>A012026340003</td><td>影像诊断</td><td class="num">260</td><td class="num">120</td><td>已确认</td></tr>
+      <tr><td>孙浩</td><td>执业助理兽医师</td><td>B012026340011</td><td>诊疗辅助</td><td class="num">120</td><td class="num">0</td><td>已确认</td></tr>
+      <tr><td>周婷</td><td>执业助理兽医师</td><td>B012026340012</td><td>免疫登记</td><td class="num">70</td><td class="num">0</td><td>已确认</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '四、年度诊疗服务情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>年度接诊总数</td><td class="num">1260例</td></tr>
+      <tr><td>犬类接诊数量</td><td class="num">720例</td></tr>
+      <tr><td>猫类接诊数量</td><td class="num">510例</td></tr>
+      <tr><td>其他宠物接诊数量</td><td class="num">30例</td></tr>
+      <tr><td>门诊诊疗数量</td><td class="num">1080例</td></tr>
+      <tr><td>手术数量</td><td class="num">86例</td></tr>
+      <tr><td>住院/留观数量</td><td class="num">94例</td></tr>
+      <tr><td>急诊数量</td><td class="num">35例</td></tr>
+      <tr><td>转诊数量</td><td class="num">18例</td></tr>
+      <tr><td>死亡病例数量</td><td class="num">6例</td></tr>
+    </tbody></table>
+    <h5>主要诊疗类型统计</h5>
+    <table class="report-table"><thead><tr><th>诊疗类型</th><th>数量</th><th>占比</th></tr></thead><tbody>
+      <tr><td>普通内科</td><td class="num">480</td><td class="num">38.1%</td></tr>
+      <tr><td>外科处置</td><td class="num">210</td><td class="num">16.7%</td></tr>
+      <tr><td>免疫接种</td><td class="num">300</td><td class="num">23.8%</td></tr>
+      <tr><td>影像检查</td><td class="num">150</td><td class="num">11.9%</td></tr>
+      <tr><td>实验室检测</td><td class="num">120</td><td class="num">9.5%</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '五、宠物主人建档与免疫台账情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>宠物主人建档数量</td><td class="num">930户</td></tr>
+      <tr><td>宠物档案数量</td><td class="num">1120只</td></tr>
+      <tr><td>犬只档案数量</td><td class="num">650只</td></tr>
+      <tr><td>猫只档案数量</td><td class="num">440只</td></tr>
+      <tr><td>其他宠物档案数量</td><td class="num">30只</td></tr>
+      <tr><td>年度免疫登记数量</td><td class="num">820条</td></tr>
+      <tr><td>狂犬病免疫登记数量</td><td class="num">510条</td></tr>
+      <tr><td>其他疫苗免疫登记数量</td><td class="num">310条</td></tr>
+    </tbody></table>
+    <h5>免疫台账摘要</h5>
+    <table class="report-table"><thead><tr><th>疫苗类型</th><th>接种数量</th><th>登记完整率</th></tr></thead><tbody>
+      <tr><td>狂犬病疫苗</td><td class="num">510</td><td class="num">100%</td></tr>
+      <tr><td>犬联苗</td><td class="num">180</td><td class="num">98%</td></tr>
+      <tr><td>猫三联</td><td class="num">130</td><td class="num">99%</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '六、处方笺与药品使用情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>年度处方笺数量</td><td class="num">680张</td></tr>
+      <tr><td>电子处方数量</td><td class="num">680张</td></tr>
+      <tr><td>抗菌药物处方数量</td><td class="num">210张</td></tr>
+      <tr><td>处方审核通过数量</td><td class="num">680张</td></tr>
+      <tr><td>处方退回修改数量</td><td class="num">0张</td></tr>
+    </tbody></table>
+    <h5>药品入库情况</h5>
+    <table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>药品入库批次</td><td class="num">42批</td></tr>
+      <tr><td>药品入库品种数</td><td class="num">86种</td></tr>
+      <tr><td>疫苗入库批次</td><td class="num">12批</td></tr>
+      <tr><td>常规药品入库批次</td><td class="num">30批</td></tr>
+    </tbody></table>
+    <h5>药品出库情况</h5>
+    <table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>药品出库记录</td><td class="num">610条</td></tr>
+      <tr><td>处方关联出库记录</td><td class="num">580条</td></tr>
+      <tr><td>免疫接种出库记录</td><td class="num">30条</td></tr>
+      <tr><td>年末库存预警药品</td><td class="num">3种</td></tr>
+    </tbody></table>
+    <h5>重点药品使用说明</h5>
+    <p>本年度药品采购、入库、出库和处方使用记录完整，药品来源可追溯，未发现账实不符、超范围使用或异常出库情况。</p>`,
+  })
+
+  sections.push({
+    title: '七、诊疗废弃物处理情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>废弃物处理记录</td><td class="num">52次</td></tr>
+      <tr><td>感染性废弃物处理量</td><td class="num">128kg</td></tr>
+      <tr><td>损伤性废弃物处理量</td><td class="num">36kg</td></tr>
+      <tr><td>药物性废弃物处理量</td><td class="num">18kg</td></tr>
+      <tr><td>委托处理单位</td><td>亳州绿安医疗废物处置有限公司</td></tr>
+      <tr><td>转运联单数量</td><td class="num">52张</td></tr>
+      <tr><td>废弃物暂存设施是否符合要求</td><td>是</td></tr>
+    </tbody></table>
+    <h5>废弃物处理说明</h5>
+    <p>本年度诊疗废弃物均按规定分类收集、暂存、转运和处置，处理记录、转运联单和委托处置资料齐全。</p>`,
+  })
+
+  sections.push({
+    title: '八、年度异常、投诉和整改情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量/情况</th></tr></thead><tbody>
+      <tr><td>投诉数量</td><td class="num">0件</td></tr>
+      <tr><td>行政处罚记录</td><td>无</td></tr>
+      <tr><td>监管检查次数</td><td class="num">2次</td></tr>
+      <tr><td>发现问题数量</td><td class="num">1项</td></tr>
+      <tr><td>已整改数量</td><td class="num">1项</td></tr>
+      <tr><td>是否存在重大安全事件</td><td>否</td></tr>
+      <tr><td>是否存在违法违规执业行为</td><td>否</td></tr>
+    </tbody></table>
+    <h5>整改情况说明</h5>
+    <p>本年度监管检查中发现部分废弃物暂存标签填写不够规范，机构已于规定期限内完成整改，并完善废弃物暂存登记制度。</p>`,
+  })
+
+  sections.push({
+    title: '九、年度自查情况',
+    html: `<h5>自查项目</h5>
+    <table class="report-table"><thead><tr><th>自查内容</th><th>自查结果</th></tr></thead><tbody>
+      <tr><td>动物诊疗许可证是否有效</td><td>正常</td></tr>
+      <tr><td>执业兽医人员是否备案</td><td>正常</td></tr>
+      <tr><td>处方笺是否规范开具</td><td>正常</td></tr>
+      <tr><td>药品入库出库是否留痕</td><td>正常</td></tr>
+      <tr><td>宠物主人和动物档案是否完整</td><td>正常</td></tr>
+      <tr><td>免疫台账是否完整</td><td>正常</td></tr>
+      <tr><td>诊疗废弃物是否规范处理</td><td>正常</td></tr>
+      <tr><td>是否存在超范围诊疗行为</td><td>未发现</td></tr>
+      <tr><td>是否存在违法违规行为</td><td>未发现</td></tr>
+    </tbody></table>
+    <h5>年度自查结论</h5>
+    <p>经本机构自查，${y}年度动物诊疗活动总体规范，执业兽医人员备案完整，诊疗、处方、药品、免疫、废弃物处理等业务记录齐全，未发现重大违法违规行为。</p>`,
+  })
+
+  sections.push({
+    title: '十、附件材料',
+    html: `<table class="report-table"><thead><tr><th>附件名称</th><th>是否上传</th></tr></thead><tbody>
+      <tr><td>动物诊疗许可证扫描件</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>执业兽医人员名单</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>年度处方笺汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>药品入库出库汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>宠物免疫台账汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>诊疗废弃物处理联单</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>年度自查承诺书</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>整改情况说明</td><td><span class="tag-ok">已上传</span></td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '十一、机构承诺',
+    html: `<p>本机构承诺：本年度报告所填报信息真实、准确、完整，诊疗服务、处方笺、药品管理、宠物档案、免疫台账、诊疗废弃物处理等数据均来源于本机构日常业务记录。如存在虚假填报、隐瞒漏报等情形，愿依法承担相应责任。</p>
+    <table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>机构负责人</td><td>${institution.contactPerson}</td></tr>
+      <tr><td>填报人</td><td>${institution.contactPerson}</td></tr>
+      <tr><td>联系电话</td><td>${institution.phone}</td></tr>
+      <tr><td>提交时间</td><td>${y}-12-31 15:30:00</td></tr>
+      <tr><td>机构盖章</td><td>电子签章</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '十二、监管处理意见',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>监管处理状态</td><td>待审核</td></tr>
+      <tr><td>审核人员</td><td>-</td></tr>
+      <tr><td>审核时间</td><td>-</td></tr>
+      <tr><td>审核意见</td><td>-</td></tr>
+      <tr><td>归档时间</td><td>-</td></tr>
+    </tbody></table>`,
+  })
+
+  return sections
+}
+
+function buildVetAnnualReportSections(vet: { name: string; certificateNo: string }, institution: { name: string }, year: number): AnnualReportSection[] {
+  const y = String(year)
+  const sections: AnnualReportSection[] = []
+
+  sections.push({
+    title: '一、报告基本信息',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>报告年度</td><td>${y}年度</td></tr>
+      <tr><td>报告编号</td><td>ZYSY-NB-${y}-0001</td></tr>
+      <tr><td>报告类型</td><td>执业兽医年度报告</td></tr>
+      <tr><td>报告状态</td><td>已生成</td></tr>
+      <tr><td>填报人</td><td>${vet.name}</td></tr>
+      <tr><td>填报时间</td><td>${y}-12-31 16:20:00</td></tr>
+      <tr><td>所属诊疗机构</td><td>${institution.name}</td></tr>
+      <tr><td>机构年度报告编号</td><td>ZLJG-NB-${y}-0001</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '二、执业兽医基本信息',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>姓名</td><td>${vet.name}</td></tr>
+      <tr><td>性别</td><td>男</td></tr>
+      <tr><td>身份证号</td><td>3416********0018</td></tr>
+      <tr><td>联系电话</td><td>13800008888</td></tr>
+      <tr><td>执业类别</td><td>执业兽医师</td></tr>
+      <tr><td>执业证号</td><td>${vet.certificateNo}</td></tr>
+      <tr><td>资格证书编号</td><td>QYSY2026340001</td></tr>
+      <tr><td>执业机构</td><td>${institution.name}</td></tr>
+      <tr><td>执业岗位</td><td>主治兽医</td></tr>
+      <tr><td>执业范围</td><td>动物诊疗、处方开具、免疫接种、病例管理</td></tr>
+      <tr><td>执业状态</td><td>正常执业</td></tr>
+      <tr><td>备案状态</td><td>已备案</td></tr>
+      <tr><td>备案时间</td><td>${y}-01-05</td></tr>
+      <tr><td>是否变更执业机构</td><td>否</td></tr>
+      <tr><td>是否存在多点执业</td><td>否</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '三、年度执业概况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>年度接诊总数</td><td class="num">430例</td></tr>
+      <tr><td>犬类接诊数量</td><td class="num">260例</td></tr>
+      <tr><td>猫类接诊数量</td><td class="num">160例</td></tr>
+      <tr><td>其他宠物接诊数量</td><td class="num">10例</td></tr>
+      <tr><td>门诊诊疗数量</td><td class="num">365例</td></tr>
+      <tr><td>手术参与数量</td><td class="num">42例</td></tr>
+      <tr><td>住院/留观病例数量</td><td class="num">23例</td></tr>
+      <tr><td>急诊病例数量</td><td class="num">12例</td></tr>
+      <tr><td>转诊病例数量</td><td class="num">5例</td></tr>
+      <tr><td>死亡病例数量</td><td class="num">2例</td></tr>
+    </tbody></table>
+    <h5>主要诊疗类型统计</h5>
+    <table class="report-table"><thead><tr><th>诊疗类型</th><th>数量</th><th>占比</th></tr></thead><tbody>
+      <tr><td>普通内科诊疗</td><td class="num">180</td><td class="num">41.9%</td></tr>
+      <tr><td>外科处置</td><td class="num">65</td><td class="num">15.1%</td></tr>
+      <tr><td>免疫接种</td><td class="num">95</td><td class="num">22.1%</td></tr>
+      <tr><td>影像/检验判读</td><td class="num">52</td><td class="num">12.1%</td></tr>
+      <tr><td>其他诊疗服务</td><td class="num">38</td><td class="num">8.8%</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '四、处方笺开具情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>年度开具处方笺数量</td><td class="num">260张</td></tr>
+      <tr><td>电子处方数量</td><td class="num">260张</td></tr>
+      <tr><td>抗菌药物处方数量</td><td class="num">85张</td></tr>
+      <tr><td>疫苗相关处方/用药记录</td><td class="num">42张</td></tr>
+      <tr><td>处方审核通过数量</td><td class="num">260张</td></tr>
+      <tr><td>处方退回修改数量</td><td class="num">0张</td></tr>
+      <tr><td>处方异常预警数量</td><td class="num">0条</td></tr>
+    </tbody></table>
+    <h5>处方规范情况</h5>
+    <table class="report-table"><thead><tr><th>自查项目</th><th>结果</th></tr></thead><tbody>
+      <tr><td>是否按规定开具处方</td><td>是</td></tr>
+      <tr><td>处方信息是否完整</td><td>是</td></tr>
+      <tr><td>是否存在超范围开药</td><td>否</td></tr>
+      <tr><td>是否存在无诊疗记录开具处方</td><td>否</td></tr>
+      <tr><td>是否存在异常用药记录</td><td>否</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '五、免疫与宠物档案参与情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>参与宠物免疫数量</td><td class="num">300次</td></tr>
+      <tr><td>狂犬病免疫登记数量</td><td class="num">185次</td></tr>
+      <tr><td>犬联苗接种登记数量</td><td class="num">65次</td></tr>
+      <tr><td>猫三联接种登记数量</td><td class="num">50次</td></tr>
+      <tr><td>新建宠物档案数量</td><td class="num">210只</td></tr>
+      <tr><td>更新宠物档案数量</td><td class="num">330次</td></tr>
+      <tr><td>宠物主人建档数量</td><td class="num">180户</td></tr>
+    </tbody></table>
+    <h5>免疫登记规范情况</h5>
+    <table class="report-table"><thead><tr><th>自查项目</th><th>结果</th></tr></thead><tbody>
+      <tr><td>免疫记录是否完整</td><td>是</td></tr>
+      <tr><td>疫苗批号是否记录</td><td>是</td></tr>
+      <tr><td>接种日期是否记录</td><td>是</td></tr>
+      <tr><td>宠物主人信息是否完整</td><td>是</td></tr>
+      <tr><td>是否存在漏登、补登异常</td><td>否</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '六、药品使用与关联情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>数量</th></tr></thead><tbody>
+      <tr><td>处方关联药品出库记录</td><td class="num">245条</td></tr>
+      <tr><td>免疫接种关联药品/疫苗出库记录</td><td class="num">95条</td></tr>
+      <tr><td>抗菌药物使用记录</td><td class="num">85条</td></tr>
+      <tr><td>重点监管药品使用记录</td><td class="num">0条</td></tr>
+      <tr><td>异常用药预警</td><td class="num">0条</td></tr>
+    </tbody></table>
+    <h5>药品使用说明</h5>
+    <p>本年度本人在执业过程中按诊疗记录开具处方，并按机构药品管理制度关联药品出库记录，未发现超范围用药、异常用药或药品来源不明情况。</p>`,
+  })
+
+  sections.push({
+    title: '七、继续教育与培训情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>年度继续教育学时</td><td>40学时</td></tr>
+      <tr><td>参加培训次数</td><td>4次</td></tr>
+      <tr><td>是否达到年度继续教育要求</td><td>是</td></tr>
+      <tr><td>培训内容</td><td>动物诊疗规范、抗菌药物合理使用、宠物免疫管理、诊疗废弃物处置</td></tr>
+      <tr><td>培训证明材料</td><td>已上传</td></tr>
+    </tbody></table>
+    <h5>培训明细</h5>
+    <table class="report-table"><thead><tr><th>培训名称</th><th>培训时间</th><th>学时</th><th>组织单位</th></tr></thead><tbody>
+      <tr><td>动物诊疗执业规范培训</td><td>${y}-03-18</td><td class="num">8</td><td>利辛县农业农村局</td></tr>
+      <tr><td>抗菌药物合理使用培训</td><td>${y}-05-22</td><td class="num">8</td><td>亳州市动物诊疗行业协会</td></tr>
+      <tr><td>宠物免疫与档案管理培训</td><td>${y}-08-10</td><td class="num">12</td><td>${institution.name}</td></tr>
+      <tr><td>诊疗废弃物规范处置培训</td><td>${y}-11-05</td><td class="num">12</td><td>利辛县动物卫生监督机构</td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '八、执业变更、投诉与处罚情况',
+    html: `<table class="report-table"><thead><tr><th>项目</th><th>情况</th></tr></thead><tbody>
+      <tr><td>是否变更执业机构</td><td>否</td></tr>
+      <tr><td>是否暂停执业</td><td>否</td></tr>
+      <tr><td>是否存在投诉</td><td>否</td></tr>
+      <tr><td>投诉数量</td><td class="num">0件</td></tr>
+      <tr><td>是否存在行政处罚</td><td>否</td></tr>
+      <tr><td>行政处罚记录</td><td>无</td></tr>
+      <tr><td>是否存在医疗纠纷</td><td>否</td></tr>
+      <tr><td>医疗纠纷数量</td><td class="num">0件</td></tr>
+      <tr><td>是否存在违法违规执业行为</td><td>否</td></tr>
+    </tbody></table>
+    <h5>情况说明</h5>
+    <p>本年度本人在备案机构内正常执业，未发生执业机构变更、暂停执业、行政处罚、重大投诉或医疗纠纷情况。</p>`,
+  })
+
+  sections.push({
+    title: '九、年度自查情况',
+    html: `<h5>自查项目</h5>
+    <table class="report-table"><thead><tr><th>自查内容</th><th>自查结果</th></tr></thead><tbody>
+      <tr><td>是否在备案机构内执业</td><td>是</td></tr>
+      <tr><td>是否按照执业范围开展诊疗</td><td>是</td></tr>
+      <tr><td>是否规范书写诊疗记录</td><td>是</td></tr>
+      <tr><td>是否规范开具处方笺</td><td>是</td></tr>
+      <tr><td>是否按要求参与免疫登记</td><td>是</td></tr>
+      <tr><td>是否按规定使用药品</td><td>是</td></tr>
+      <tr><td>是否参与诊疗废弃物规范处理</td><td>是</td></tr>
+      <tr><td>是否完成继续教育要求</td><td>是</td></tr>
+      <tr><td>是否存在违法违规行为</td><td>否</td></tr>
+    </tbody></table>
+    <h5>年度自查结论</h5>
+    <p>经本人自查，${y}年度本人在${institution.name}正常开展动物诊疗执业活动，诊疗记录、处方笺、免疫登记、药品使用等执业记录完整，未发现超范围执业、违规开具处方、异常用药或其他违法违规行为。</p>`,
+  })
+
+  sections.push({
+    title: '十、附件材料',
+    html: `<table class="report-table"><thead><tr><th>附件名称</th><th>是否上传</th></tr></thead><tbody>
+      <tr><td>执业兽医师资格证书</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>执业证书/备案证明</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>年度处方笺汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>年度接诊记录汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>免疫登记汇总表</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>继续教育培训证明</td><td><span class="tag-ok">已上传</span></td></tr>
+      <tr><td>年度执业承诺书</td><td><span class="tag-ok">已上传</span></td></tr>
+    </tbody></table>`,
+  })
+
+  sections.push({
+    title: '十一、个人承诺',
+    html: `<p>本人承诺：本年度报告所填报信息真实、准确、完整，年度接诊、处方、免疫、药品使用、继续教育等数据均来源于本人实际执业记录。如存在虚假填报、隐瞒漏报等情形，愿依法承担相应责任。</p>
+    <table class="report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody>
+      <tr><td>执业兽医签名</td><td>${vet.name}</td></tr>
+      <tr><td>联系电话</td><td>13800008888</td></tr>
+      <tr><td>提交时间</td><td>${y}-12-31 16:20:00</td></tr>
+      <tr><td>电子签名</td><td>已签名</td></tr>
+    </tbody></table>`,
+  })
+
+  return sections
 }
 
 export const mockApi = {
@@ -918,6 +1342,83 @@ export const mockApi = {
     return clone(veterinarian)
   },
 
+  async submitVeterinarianRegistration(input: Partial<VeterinarianRegistrationApplication> & { type: 'new' | 'change' | 'cancel' }): Promise<VeterinarianRegistrationApplication> {
+    const data = readData()
+    const application: VeterinarianRegistrationApplication = {
+      id: id('vetreg'),
+      applicationNo: no('ZYSYBA'),
+      ...input,
+      status: 'pending' as const,
+      createdAt: now(),
+    } as VeterinarianRegistrationApplication
+    data.veterinarianRegistrationApplications.unshift(application)
+    const typeLabel = input.type === 'new' ? '新增' : input.type === 'change' ? '变更' : '注销'
+    pushLog(data, 'clinic_admin', input.institutionName || '', `提交执业兽医备案${typeLabel}`, input.name || '')
+    pushNode(data, `执业兽医备案${typeLabel}`, '动物诊疗管理', false, input.institutionName || '', application.id, `${input.name} 待审核`)
+    writeData(data)
+    return clone(application)
+  },
+
+  async reviewVeterinarianRegistration(idValue: string, approved: boolean, remark: string): Promise<VeterinarianRegistrationApplication> {
+    const data = readData()
+    const application = data.veterinarianRegistrationApplications.find((item) => item.id === idValue)
+    if (!application) throw new Error('执业兽医备案申请不存在')
+    application.status = approved ? 'approved' : 'rejected'
+    application.reviewRemark = remark
+    application.reviewedAt = now()
+    if (approved) {
+      application.syncStatus = 'not_synced'
+    }
+    const typeLabel = application.type === 'new' ? '新增' : application.type === 'change' ? '变更' : '注销'
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', approved ? `审核通过执业兽医备案${typeLabel}` : `驳回执业兽医备案${typeLabel}`, application.name)
+    pushNode(data, `执业兽医备案${typeLabel}审核`, '诊疗监管端', approved, '市级畜牧兽医监管员', application.id, remark)
+    // If approved, sync to the veterinarian list
+    if (approved && application.type === 'new') {
+      const vet: Veterinarian = {
+        id: id('veterinarian'),
+        name: application.name,
+        certificateNo: application.certificateNo,
+        practiceType: application.practiceType,
+        institutionId: application.institutionId,
+        practiceScope: application.practiceScope,
+        phone: application.phone,
+        material: application.materials.map((m) => m.name).join('、'),
+        status: 'approved',
+        active: true,
+        createdAt: now(),
+        reviewedAt: now(),
+      }
+      data.veterinarians.unshift(vet)
+    } else if (approved && application.type === 'change' && application.veterinarianId) {
+      const vet = data.veterinarians.find((v) => v.id === application.veterinarianId)
+      if (vet) {
+        vet.practiceScope = application.practiceScope
+        vet.practiceType = application.practiceType
+        vet.phone = application.phone
+        vet.reviewedAt = now()
+      }
+    } else if (approved && application.type === 'cancel' && application.veterinarianId) {
+      const vet = data.veterinarians.find((v) => v.id === application.veterinarianId)
+      if (vet) {
+        vet.active = false
+        vet.reviewedAt = now()
+      }
+    }
+    writeData(data)
+    return clone(application)
+  },
+
+  async batchSyncVeterinarianRegistrations(ids: string[]): Promise<void> {
+    const data = readData()
+    const applications = data.veterinarianRegistrationApplications.filter((item) => ids.includes(item.id))
+    for (const app of applications) {
+      app.syncStatus = 'synced'
+      pushSync(data, app.applicationNo, '执业兽医备案同步')
+      pushLog(data, 'regulator', '市级畜牧兽医监管员', '批量同步备案信息', app.name)
+    }
+    writeData(data)
+  },
+
   async createPetOwner(input: PetOwnerInput): Promise<PetOwner> {
     const data = readData()
     const owner: PetOwner = { id: id('owner'), ...input, active: true, createdAt: now() }
@@ -1028,11 +1529,15 @@ export const mockApi = {
     if (institution.status !== 'approved') throw new Error('只有备案通过的诊疗机构才能生成年度报告')
     const institutionVetIds = data.veterinarians.filter((item) => item.institutionId === institutionId && item.status === 'approved').map((item) => item.id)
     const prescriptionIds = data.prescriptions.filter((item) => item.institutionId === institutionId && new Date(item.issuedAt).getFullYear() === year).map((item) => item.id)
+    const sections = buildAnnualReportSections(institution, year)
     const report: AnnualReport = {
       id: id('annual'),
       institutionId,
+      institutionName: institution.name,
       year,
       status: 'generated',
+      sections,
+      currentPage: 0,
       veterinarianCount: institutionVetIds.length,
       petCount: data.petProfiles.length,
       immunizationCount: data.immunizationLedgers.filter((item) => item.institutionId === institutionId && new Date(item.immunizedAt).getFullYear() === year).length,
@@ -1055,10 +1560,162 @@ export const mockApi = {
     if (!report) throw new Error('年度报告不存在')
     const institution = data.clinicInstitutions.find((item) => item.id === report.institutionId)
     if (!institution || institution.status !== 'approved') throw new Error('只有备案通过的诊疗机构才能提交年度报告')
-    report.status = 'submitted'
+    report.status = 'pending'
     report.submittedAt = now()
+    report.archiveStatus = 'not_archived'
+    // Update section 1 status
+    if (report.sections[0]) {
+      report.sections[0].html = report.sections[0].html.replace('草稿</td>', '已提交</td>')
+    }
+    // Update section 12 status
+    if (report.sections[11]) {
+      report.sections[11].html = report.sections[11].html.replace('待审核</td>', '已提交</td>')
+    }
     pushLog(data, 'clinic_admin', institution.name, '提交年度报告', `${report.year}`)
     pushNode(data, '年度报告', '动物诊疗管理', true, institution.name, report.id, `${report.year} 年度报告已提交`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async saveAnnualReport(idValue: string): Promise<AnnualReport> {
+    const data = readData()
+    const report = data.annualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('年度报告不存在')
+    report.status = 'draft'
+    writeData(data)
+    return clone(report)
+  },
+
+  async archiveAnnualReport(idValue: string, remark: string): Promise<AnnualReport> {
+    const data = readData()
+    const report = data.annualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('年度报告不存在')
+    report.status = 'archived'
+    report.archiveStatus = 'archived'
+    report.regulatorRemark = remark
+    report.regulatorReviewedAt = now()
+    const institution = data.clinicInstitutions.find((item) => item.id === report.institutionId)
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', '归档年度报告', `${report.year} · ${institution?.name || ''}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async reviewAnnualReport(idValue: string, approved: boolean, remark: string): Promise<AnnualReport> {
+    const data = readData()
+    const report = data.annualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('年度报告不存在')
+    report.status = approved ? 'approved' : 'rejected'
+    report.regulatorRemark = remark
+    report.regulatorReviewedAt = now()
+    const institution = data.clinicInstitutions.find((item) => item.id === report.institutionId)
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', approved ? '审核通过年度报告' : '驳回年度报告', `${report.year} · ${institution?.name || ''}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async generateVetAnnualReport(vetId: string, year: number): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const vet = data.veterinarians.find((item) => item.id === vetId)
+    if (!vet) throw new Error('执业兽医不存在')
+    const institution = data.clinicInstitutions.find((item) => item.id === vet.institutionId)
+    if (!institution) throw new Error('所属诊疗机构不存在')
+
+    const sections = buildVetAnnualReportSections(vet, institution, year)
+
+    const report: VeterinarianAnnualReport = {
+      id: id('vet-ar'),
+      veterinarianId: vetId,
+      veterinarianName: vet.name,
+      institutionId: institution.id,
+      institutionName: institution.name,
+      year,
+      status: 'generated',
+      archiveStatus: 'not_archived',
+      sections,
+      currentPage: 0,
+      generatedAt: now(),
+    }
+
+    data.veterinarianAnnualReports = data.veterinarianAnnualReports.filter((item) => !(item.veterinarianId === vetId && item.year === year))
+    data.veterinarianAnnualReports.unshift(report)
+    pushLog(data, 'practicing_vet', '执业兽医', '生成个人年度报告', `${year} · ${vet.name}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async submitVetAnnualReportToClinic(idValue: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    report.status = 'submitted_to_clinic'
+    report.submittedToClinicAt = now()
+    pushLog(data, 'practicing_vet', '执业兽医', '提交年度报告', `${report.year} · ${report.veterinarianName}`)
+    pushNode(data, '执业兽医年度报告', '动物诊疗管理', true, report.institutionName, report.id, `${report.veterinarianName} ${report.year} 年度报告已提交`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async clinicReviewVetAnnualReport(idValue: string, approved: boolean, remark: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    if (approved) {
+      report.status = 'clinic_approved'
+      report.clinicReviewedAt = now()
+      report.clinicReviewRemark = remark || '审核通过，可以提交监管端'
+      pushLog(data, 'clinic_admin', '诊疗机构管理员', '审核通过执业兽医年度报告', `${report.year} · ${report.veterinarianName}`)
+    } else {
+      report.status = 'clinic_rejected'
+      report.clinicReviewedAt = now()
+      report.clinicReviewRemark = remark
+      pushLog(data, 'clinic_admin', '诊疗机构管理员', '退回执业兽医年度报告', `${report.year} · ${report.veterinarianName}`)
+    }
+    writeData(data)
+    return clone(report)
+  },
+
+  async submitVetAnnualReportToRegulator(idValue: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    report.status = 'submitted_to_regulator'
+    report.submittedToRegulatorAt = now()
+    pushLog(data, 'clinic_admin', '诊疗机构管理员', '提交执业兽医年度报告', `${report.year} · ${report.veterinarianName}`)
+    pushNode(data, '执业兽医年度报告', '诊疗监管端', true, report.institutionName, report.id, `${report.veterinarianName} ${report.year} 年度报告已提交监管端`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async archiveVetAnnualReport(idValue: string, remark: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    report.status = 'archived'
+    report.archiveStatus = 'archived'
+    report.regulatorRemark = remark
+    report.regulatorReviewedAt = now()
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', '归档执业兽医年度报告', `${report.year} · ${report.veterinarianName}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async reviewVetAnnualReport(idValue: string, approved: boolean, remark: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    report.status = approved ? 'approved' : 'rejected'
+    report.regulatorRemark = remark
+    report.regulatorReviewedAt = now()
+    pushLog(data, 'regulator', '市级畜牧兽医监管员', approved ? '审核通过执业兽医年度报告' : '驳回执业兽医年度报告', `${report.year} · ${report.veterinarianName}`)
+    writeData(data)
+    return clone(report)
+  },
+
+  async withdrawVetAnnualReport(idValue: string, reason: string): Promise<VeterinarianAnnualReport> {
+    const data = readData()
+    const report = data.veterinarianAnnualReports.find((item) => item.id === idValue)
+    if (!report) throw new Error('执业兽医年度报告不存在')
+    report.status = 'withdrawn'
     writeData(data)
     return clone(report)
   },
@@ -2475,6 +3132,218 @@ export const mockApi = {
       postProductBatch,
       slaughterRecord,
     })
+  },
+
+  // ---- 诊疗接诊管理 ----
+  async createConsultation(input: ConsultationInput): Promise<ConsultationRecord> {
+    const data = readData()
+    const pet = data.petProfiles.find((item) => item.id === input.petId)
+    if (!pet) throw new Error('宠物档案不存在')
+    const owner = data.petOwners.find((item) => item.id === pet.ownerId)
+    if (!owner) throw new Error('宠物主人不存在')
+
+    const currentVet = data.veterinarians.find((v) => v.status === 'approved' && v.active)
+    if (!currentVet) throw new Error('未找到当前执业兽医')
+
+    const record: ConsultationRecord = {
+      id: id('con'),
+      consultationNo: no('JZ'),
+      petOwnerId: owner.id,
+      petOwnerName: owner.name,
+      petOwnerPhone: owner.phone,
+      petId: pet.id,
+      petName: pet.name,
+      species: pet.species,
+      breed: pet.breed,
+      gender: pet.gender,
+      age: pet.age,
+      weight: input.weight || 0,
+      chiefComplaint: input.chiefComplaint,
+      initialSymptoms: input.initialSymptoms,
+      consultationTime: '',
+      veterinarianId: currentVet.id,
+      veterinarianName: currentVet.name,
+      institutionId: currentVet.institutionId,
+      status: 'pending',
+      dispensingStatus: 'no_dispensing',
+      createdAt: now(),
+      updatedAt: now(),
+    }
+
+    data.consultations.unshift(record)
+    pushLog(data, 'practicing_vet', currentVet.name, '接诊登记', `${record.consultationNo} · ${pet.name}`)
+    writeData(data)
+    return clone(record)
+  },
+
+  async confirmConsultation(idValue: string): Promise<ConsultationRecord> {
+    const data = readData()
+    const record = data.consultations.find((item) => item.id === idValue)
+    if (!record) throw new Error('接诊记录不存在')
+    record.status = 'filling_record'
+    record.consultationTime = now()
+    record.updatedAt = now()
+    pushLog(data, 'practicing_vet', record.veterinarianName, '确认接诊', `${record.consultationNo} · ${record.petName}`)
+    writeData(data)
+    return clone(record)
+  },
+
+  async saveTreatmentRecord(idValue: string, input: TreatmentRecordInput): Promise<ConsultationRecord> {
+    const data = readData()
+    const record = data.consultations.find((item) => item.id === idValue)
+    if (!record) throw new Error('接诊记录不存在')
+    record.treatmentRecord = {
+      ...input,
+      filledAt: now(),
+    }
+    record.status = 'pending_prescription'
+    record.updatedAt = now()
+    pushLog(data, 'practicing_vet', record.veterinarianName, '填写诊疗记录', `${record.consultationNo} · ${record.petName}`)
+    writeData(data)
+    return clone(record)
+  },
+
+  async createConsultationPrescription(input: ConsultationPrescriptionInput): Promise<ConsultationPrescription> {
+    const data = readData()
+    const consultation = data.consultations.find((item) => item.id === input.consultationId)
+    if (!consultation) throw new Error('接诊记录不存在')
+
+    const prescription: ConsultationPrescription = {
+      id: id('cp'),
+      prescriptionNo: no('CF'),
+      consultationId: consultation.id,
+      consultationNo: consultation.consultationNo,
+      petOwnerName: consultation.petOwnerName,
+      petName: consultation.petName,
+      species: consultation.species,
+      weight: consultation.weight,
+      diagnosis: input.diagnosis,
+      veterinarianId: consultation.veterinarianId,
+      veterinarianName: consultation.veterinarianName,
+      institutionId: consultation.institutionId,
+      items: input.items,
+      needDispensing: input.needDispensing,
+      createdAt: now(),
+    }
+
+    consultation.prescriptionId = prescription.id
+    consultation.status = 'completed'
+
+    if (input.needDispensing) {
+      consultation.dispensingStatus = 'pending_dispensing'
+      // 生成药品领用单
+      const requisition: DrugRequisition = {
+        id: id('drq'),
+        requisitionNo: no('LYD'),
+        prescriptionId: prescription.id,
+        prescriptionNo: prescription.prescriptionNo,
+        consultationId: consultation.id,
+        consultationNo: consultation.consultationNo,
+        petName: consultation.petName,
+        petOwnerName: consultation.petOwnerName,
+        veterinarianName: consultation.veterinarianName,
+        institutionId: consultation.institutionId,
+        items: input.items.map((item) => ({
+          ...item,
+        })),
+        status: 'pending',
+        createdAt: now(),
+        updatedAt: now(),
+      }
+      data.drugRequisitions.unshift(requisition)
+      pushLog(data, 'practicing_vet', consultation.veterinarianName, '生成药品领用单', `${requisition.requisitionNo} · ${consultation.petName}`)
+    } else {
+      consultation.dispensingStatus = 'no_dispensing'
+    }
+
+    consultation.updatedAt = now()
+    data.consultationPrescriptions.unshift(prescription)
+    pushLog(data, 'practicing_vet', consultation.veterinarianName, '开具处方笺', `${prescription.prescriptionNo} · ${consultation.petName}`)
+    writeData(data)
+    return clone(prescription)
+  },
+
+  async getDrugRequisitions(): Promise<DrugRequisition[]> {
+    return clone(readData().drugRequisitions)
+  },
+
+  async confirmDrugRequisition(requisitionId: string, items: DrugRequisitionItem[]): Promise<DrugRequisition> {
+    const data = readData()
+    const req = data.drugRequisitions.find((r) => r.id === requisitionId)
+    if (!req) throw new Error('领用单不存在')
+    req.items = items
+    req.status = 'confirmed'
+    req.updatedAt = now()
+    pushLog(data, 'practicing_vet', req.veterinarianName, '确认药品领用单', `${req.requisitionNo} · ${req.petName}`)
+    writeData(data)
+    return clone(req)
+  },
+
+  async submitDrugRequisition(requisitionId: string): Promise<DrugRequisition> {
+    const data = readData()
+    const req = data.drugRequisitions.find((r) => r.id === requisitionId)
+    if (!req) throw new Error('领用单不存在')
+    req.status = 'confirmed'
+    req.updatedAt = now()
+    pushLog(data, 'practicing_vet', req.veterinarianName, '提交药品领用单至机构', `${req.requisitionNo} · ${req.petName}`)
+    writeData(data)
+    return clone(req)
+  },
+
+  async processDrugOutbound(requisitionId: string): Promise<DrugRequisition> {
+    const data = readData()
+    const req = data.drugRequisitions.find((r) => r.id === requisitionId)
+    if (!req) throw new Error('领用单不存在')
+    req.status = 'outbound'
+    req.updatedAt = now()
+
+    // 出库扣减库存
+    for (const item of req.items) {
+      const drug = data.drugInventories.find((d) => d.id === item.drugId)
+      if (drug) {
+        drug.quantity = Math.max(0, drug.quantity - item.quantity)
+        data.drugInOutRecords.push({
+          id: id('dior'),
+          type: 'out',
+          drugId: drug.id,
+          drugName: drug.drugName,
+          institutionId: req.institutionId,
+          quantity: item.quantity,
+          relatedId: req.prescriptionId,
+          operator: req.veterinarianName,
+          createdAt: now(),
+        })
+      }
+    }
+
+    // 更新接诊出药状态
+    const consultation = data.consultations.find((c) => c.id === req.consultationId)
+    if (consultation) {
+      consultation.dispensingStatus = 'dispensed'
+      consultation.updatedAt = now()
+    }
+
+    pushLog(data, 'clinic_admin', '诊疗机构管理员', '药品出库', `${req.requisitionNo} · ${req.petName}`)
+    writeData(data)
+    return clone(req)
+  },
+
+  async getConsultationById(idValue: string): Promise<ConsultationRecord | undefined> {
+    const data = readData()
+    const record = data.consultations.find((item) => item.id === idValue)
+    return record ? clone(record) : undefined
+  },
+
+  async getPetHistoryConsultations(petId: string): Promise<ConsultationRecord[]> {
+    const data = readData()
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const cutoff = oneYearAgo.toISOString()
+    return clone(data.consultations.filter((item) => item.petId === petId && item.createdAt >= cutoff))
+  },
+
+  async getConsultationPrescriptions(): Promise<ConsultationPrescription[]> {
+    return clone(readData().consultationPrescriptions)
   },
 }
 

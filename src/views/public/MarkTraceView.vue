@@ -4,14 +4,43 @@ import productCertImg from '../../../image/产品证.png'
 import meatQualityCertImg from '../../../image/肉品品质检验合格证.png'
 import animalCertImg from '../../../image/动物检疫证书.png'
 
-const certificateDialogVisible = ref(false)
-const certificateTitle = ref('')
-const certificateImage = ref('')
+const markExpanded = ref(false)
+const productExpanded = ref(false)
+const activeCertTab = ref('product')
 
-function openCertificate(title: string, image: string) {
-  certificateTitle.value = title
-  certificateImage.value = image
-  certificateDialogVisible.value = true
+const certificates = {
+  product: {
+    title: '动物产品检疫证明',
+    image: productCertImg,
+    items: [
+      ['证号', 'CPJY202606160001'],
+      ['签发兽医', '官方兽医 王敏'],
+      ['签发单位', '利辛县动物卫生监督所'],
+      ['签发时间', '2026-06-16 15:20:00'],
+    ],
+  },
+  animal: {
+    title: '动物检疫合格证明',
+    image: animalCertImg,
+    items: [
+      ['证号', 'DWJY2026061613480168'],
+      ['动物种类', '生猪'],
+      ['数量', '60头'],
+      ['来源养殖场', '绿丰生态养殖场'],
+    ],
+  },
+  meat: {
+    title: '肉品品质检验合格证',
+    image: meatQualityCertImg,
+    items: [
+      ['合格证编号', 'RPZJ202606160001'],
+      ['产品名称', '猪胴体'],
+      ['产品重量', '4680kg'],
+      ['检验结论', '合格'],
+      ['检验人员', '刘海峰'],
+      ['检验时间', '2026-06-16 15:05:00'],
+    ],
+  },
 }
 </script>
 
@@ -22,183 +51,68 @@ function openCertificate(title: string, image: string) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
       <h1>检疫验讫标志扫码查验</h1>
-      <div class="trace-status-badge">
-        <span class="trace-status-dot"></span>
-        查验有效
-      </div>
+      <div class="trace-status-badge"><span class="trace-status-dot"></span>查验有效</div>
       <p class="trace-header-sub">该检疫验讫标志已关联有效检疫信息</p>
     </header>
 
     <div class="trace-cards">
-      <section class="trace-card">
-        <h2 class="trace-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          检疫验讫标志信息
-        </h2>
-        <div class="trace-info-grid">
-          <div class="trace-info-item">
-            <span class="trace-info-label">标志编号</span>
-            <span class="trace-info-value">KH202606160001</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">标志类型</span>
-            <span class="trace-info-value">卡环式</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">使用对象</span>
-            <span class="trace-info-value">猪胴体</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">标志状态</span>
-            <span class="trace-info-value"><em class="trace-tag-green">已使用</em></span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">关联时间</span>
-            <span class="trace-info-value">2026-06-16 16:10:00</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">关联企业</span>
-            <span class="trace-info-value">皖北标准化屠宰中心</span>
-          </div>
+      <section class="trace-card trace-fold-card">
+        <button class="trace-fold-header" @click="markExpanded = !markExpanded">
+          <span>
+            <strong>检疫验讫标志信息</strong>
+            <em>KH202606160001</em>
+          </span>
+          <i>{{ markExpanded ? '收起' : '展开' }}</i>
+        </button>
+        <div v-if="markExpanded" class="trace-info-grid">
+          <div class="trace-info-item"><span class="trace-info-label">标志编号</span><span class="trace-info-value">KH202606160001</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">标志类型</span><span class="trace-info-value">卡环式</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">使用对象</span><span class="trace-info-value">猪胴体</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">标志状态</span><span class="trace-info-value"><em class="trace-tag-green">已使用</em></span></div>
+          <div class="trace-info-item"><span class="trace-info-label">关联时间</span><span class="trace-info-value">2026-06-16 16:10:00</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">关联企业</span><span class="trace-info-value">皖北标准化屠宰中心</span></div>
         </div>
       </section>
 
-      <section class="trace-card">
-        <h2 class="trace-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-          产品信息
-        </h2>
-        <div class="trace-info-grid">
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品明细编号</span>
-            <span class="trace-info-value">CPPC202606160001-001</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品批次编号</span>
-            <span class="trace-info-value">CPPC202606160001</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品名称</span>
-            <span class="trace-info-value">猪胴体</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品类型</span>
-            <span class="trace-info-value">胴体</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品重量</span>
-            <span class="trace-info-value">78kg</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">产品证编号</span>
-            <span class="trace-info-value">CPJY202606160001</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">屠宰企业</span>
-            <span class="trace-info-value">皖北标准化屠宰中心</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">来源养殖场</span>
-            <span class="trace-info-value">绿丰生态养殖场</span>
-          </div>
-          <div class="trace-info-item">
-            <span class="trace-info-label">检疫结论</span>
-            <span class="trace-info-value"><em class="trace-tag-green">合格</em></span>
-          </div>
+      <section class="trace-card trace-fold-card">
+        <button class="trace-fold-header" @click="productExpanded = !productExpanded">
+          <span>
+            <strong>产品信息</strong>
+            <em>CPPC202606160001-001</em>
+          </span>
+          <i>{{ productExpanded ? '收起' : '展开' }}</i>
+        </button>
+        <div v-if="productExpanded" class="trace-info-grid">
+          <div class="trace-info-item"><span class="trace-info-label">产品明细编号</span><span class="trace-info-value">CPPC202606160001-001</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">产品批次编号</span><span class="trace-info-value">CPPC202606160001</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">产品名称</span><span class="trace-info-value">猪胴体</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">产品类型</span><span class="trace-info-value">胴体</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">产品重量</span><span class="trace-info-value">78kg</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">产品证编号</span><span class="trace-info-value">CPJY202606160001</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">屠宰企业</span><span class="trace-info-value">皖北标准化屠宰中心</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">来源养殖场</span><span class="trace-info-value">绿丰生态养殖场</span></div>
+          <div class="trace-info-item"><span class="trace-info-label">检疫结论</span><span class="trace-info-value"><em class="trace-tag-green">合格</em></span></div>
         </div>
       </section>
 
-      <section class="trace-card">
-        <h2 class="trace-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          三证信息
-        </h2>
+      <section class="trace-card trace-cert-tabs-card">
+        <h2 class="trace-card-title">三证信息</h2>
+        <div class="trace-tab-nav">
+          <button :class="{ active: activeCertTab === 'product' }" @click="activeCertTab = 'product'">产品证</button>
+          <button :class="{ active: activeCertTab === 'animal' }" @click="activeCertTab = 'animal'">动物证</button>
+          <button :class="{ active: activeCertTab === 'meat' }" @click="activeCertTab = 'meat'">肉品证</button>
+        </div>
 
-        <div class="trace-cert-list">
-          <div class="trace-cert-card">
-            <div class="trace-cert-card-header">
-              <h3>动物产品检疫证明</h3>
-              <span class="trace-cert-status">有效</span>
-            </div>
-            <div class="trace-cert-body">
-              <div class="trace-info-item">
-                <span class="trace-info-label">证号</span>
-                <span class="trace-info-value">CPJY202606160001</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">签发兽医</span>
-                <span class="trace-info-value">官方兽医 王敏</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">签发单位</span>
-                <span class="trace-info-value">利辛县动物卫生监督所</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">签发时间</span>
-                <span class="trace-info-value">2026-06-16 15:20:00</span>
-              </div>
-            </div>
-            <button class="trace-cert-btn" @click="openCertificate('动物产品检疫证明', productCertImg)">查看证书</button>
+        <div class="trace-cert-panel">
+          <div class="trace-cert-image-inline">
+            <img :src="certificates[activeCertTab as keyof typeof certificates].image" :alt="certificates[activeCertTab as keyof typeof certificates].title" />
           </div>
-
-          <div class="trace-cert-card">
-            <div class="trace-cert-card-header">
-              <h3>动物检疫合格证明</h3>
-              <span class="trace-cert-status">有效</span>
+          <h3>{{ certificates[activeCertTab as keyof typeof certificates].title }}</h3>
+          <div class="trace-info-grid">
+            <div v-for="item in certificates[activeCertTab as keyof typeof certificates].items" :key="item[0]" class="trace-info-item">
+              <span class="trace-info-label">{{ item[0] }}</span>
+              <span class="trace-info-value" :class="{ green: item[1] === '合格' }">{{ item[1] }}</span>
             </div>
-            <div class="trace-cert-body">
-              <div class="trace-info-item">
-                <span class="trace-info-label">证号</span>
-                <span class="trace-info-value">DWJY2026061613480168</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">动物种类</span>
-                <span class="trace-info-value">生猪</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">数量</span>
-                <span class="trace-info-value">60头</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">来源养殖场</span>
-                <span class="trace-info-value">绿丰生态养殖场</span>
-              </div>
-            </div>
-            <button class="trace-cert-btn" @click="openCertificate('动物检疫合格证明', animalCertImg)">查看证书</button>
-          </div>
-
-          <div class="trace-cert-card">
-            <div class="trace-cert-card-header">
-              <h3>肉品品质检验合格证</h3>
-              <span class="trace-cert-status">有效</span>
-            </div>
-            <div class="trace-cert-body">
-              <div class="trace-info-item">
-                <span class="trace-info-label">合格证编号</span>
-                <span class="trace-info-value">RPZJ202606160001</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">产品名称</span>
-                <span class="trace-info-value">猪胴体</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">产品重量</span>
-                <span class="trace-info-value">4680kg</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">检验结论</span>
-                <span class="trace-info-value"><em class="trace-tag-green">合格</em></span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">检验人员</span>
-                <span class="trace-info-value">刘海峰</span>
-              </div>
-              <div class="trace-info-item">
-                <span class="trace-info-label">检验时间</span>
-                <span class="trace-info-value">2026-06-16 15:05:00</span>
-              </div>
-            </div>
-            <button class="trace-cert-btn" @click="openCertificate('肉品品质检验合格证', meatQualityCertImg)">查看证书</button>
           </div>
         </div>
       </section>
@@ -208,20 +122,6 @@ function openCertificate(title: string, image: string) {
       <p>利辛县动物卫生监督所</p>
       <p>安徽省畜牧兽医综合信息平台</p>
     </footer>
-
-    <div v-if="certificateDialogVisible" class="trace-cert-overlay" @click.self="certificateDialogVisible = false">
-      <div class="trace-cert-viewer">
-        <div class="trace-cert-viewer-header">
-          <h3>{{ certificateTitle }}</h3>
-          <button class="trace-cert-close" @click="certificateDialogVisible = false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div class="trace-cert-image">
-          <img :src="certificateImage" :alt="certificateTitle" />
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -234,7 +134,7 @@ function openCertificate(title: string, image: string) {
 }
 
 .trace-header {
-  padding: 36px 20px 28px;
+  padding: 32px 20px 24px;
   text-align: center;
   background: linear-gradient(180deg, #eaf7ee 0%, #f5f7f5 100%);
 }
@@ -262,7 +162,6 @@ function openCertificate(title: string, image: string) {
   color: #12372a;
   font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.3px;
 }
 
 .trace-status-badge {
@@ -306,7 +205,7 @@ function openCertificate(title: string, image: string) {
 }
 
 .trace-card {
-  padding: 20px;
+  padding: 18px;
   margin-bottom: 14px;
   background: #fff;
   border: 1px solid #e8efe8;
@@ -314,26 +213,51 @@ function openCertificate(title: string, image: string) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.trace-card-title {
+.trace-fold-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.trace-fold-header {
   display: flex;
+  width: 100%;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 16px;
+  justify-content: space-between;
+  padding: 18px;
+  text-align: left;
+  background: #fff;
+  border: none;
+}
+
+.trace-fold-header span {
+  display: grid;
+  gap: 6px;
+}
+
+.trace-fold-header strong,
+.trace-card-title {
+  margin: 0;
   color: #12372a;
   font-size: 16px;
   font-weight: 700;
 }
 
-.trace-card-title svg {
-  width: 20px;
-  height: 20px;
+.trace-fold-header em {
+  color: #64748b;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.trace-fold-header i {
   color: #16a34a;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
 }
 
 .trace-info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
+  padding: 0 18px 12px;
 }
 
 .trace-info-item {
@@ -362,6 +286,7 @@ function openCertificate(title: string, image: string) {
   word-break: break-all;
 }
 
+.trace-info-value.green,
 .trace-tag-green {
   display: inline-flex;
   padding: 2px 10px;
@@ -373,68 +298,54 @@ function openCertificate(title: string, image: string) {
   border-radius: 999px;
 }
 
-.trace-cert-list {
+.trace-tab-nav {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+  padding: 5px;
+  background: #f1f5f2;
+  border-radius: 12px;
 }
 
-.trace-cert-card {
-  padding: 16px;
-  background: #f8fbf9;
-  border: 1px solid #e4efe8;
-  border-radius: 13px;
-}
-
-.trace-cert-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e4efe8;
-}
-
-.trace-cert-card-header h3 {
-  margin: 0;
-  color: #12372a;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.trace-cert-status {
-  padding: 3px 10px;
-  color: #15803d;
-  font-size: 12px;
-  font-weight: 600;
-  background: #dcfce7;
-  border-radius: 999px;
-}
-
-.trace-cert-body {
-  margin-bottom: 12px;
-}
-
-.trace-cert-body .trace-info-item {
-  padding: 8px 0;
-}
-
-.trace-cert-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  color: #16a34a;
+.trace-tab-nav button {
+  padding: 10px 6px;
+  color: #64748b;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   background: transparent;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
+  border: none;
+  border-radius: 9px;
 }
 
-.trace-cert-btn:active {
-  background: #dcfce7;
+.trace-tab-nav button.active {
+  color: #15803d;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 118, 110, 0.12);
+}
+
+.trace-cert-panel h3 {
+  margin: 14px 0 0;
+  color: #12372a;
+  font-size: 16px;
+}
+
+.trace-cert-panel .trace-info-grid {
+  padding: 6px 0 0;
+}
+
+.trace-cert-image-inline {
+  max-height: 420px;
+  overflow: auto;
+  background: #f8fafc;
+  border: 1px solid #e8efe8;
+  border-radius: 12px;
+}
+
+.trace-cert-image-inline img {
+  display: block;
+  width: 100%;
+  object-fit: contain;
 }
 
 .trace-footer {
@@ -451,76 +362,5 @@ function openCertificate(title: string, image: string) {
 .trace-footer p:first-child {
   color: #64748b;
   font-weight: 500;
-}
-
-.trace-cert-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.trace-cert-viewer {
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.trace-cert-viewer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e8efe8;
-}
-
-.trace-cert-viewer-header h3 {
-  margin: 0;
-  color: #12372a;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.trace-cert-close {
-  display: flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  background: #f1f5f9;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.trace-cert-close svg {
-  width: 18px;
-  height: 18px;
-}
-
-.trace-cert-image {
-  overflow: auto;
-  text-align: center;
-  padding: 8px;
-  background: #f8fafc;
-}
-
-.trace-cert-image img {
-  width: 100%;
-  max-width: 640px;
-  object-fit: contain;
-  border-radius: 8px;
 }
 </style>

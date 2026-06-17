@@ -42,10 +42,15 @@ export type HarmlessSource = 'farm_death' | 'slaughter_unqualified' | 'entry_exc
 export type SealAction = 'receive' | 'issue' | 'use' | 'recycle' | 'destroy'
 export type FilingStatus = 'pending' | 'approved' | 'rejected'
 export type PracticeType = 'licensed_veterinarian' | 'assistant_veterinarian'
+export type VeterinarianApplicationType = 'new' | 'change' | 'cancel'
+export type VeterinarianApplicationStatus = 'pending' | 'approved' | 'rejected'
 export type DrugRecordType = 'in' | 'out' | 'reversal'
 export type WasteStatus = 'draft' | 'pending' | 'handled' | 'voided'
-export type AnnualReportStatus = 'generated' | 'submitted' | 'withdrawn'
+export type AnnualReportStatus = 'draft' | 'generated' | 'submitted' | 'pending' | 'approved' | 'rejected' | 'archived' | 'withdrawn'
+export type VetAnnualReportStatus = 'generated' | 'submitted_to_clinic' | 'clinic_approved' | 'clinic_rejected' | 'submitted_to_regulator' | 'approved' | 'rejected' | 'archived' | 'withdrawn'
 export type WasteSourceBusinessType = 'immunization' | 'prescription'
+export type ConsultationStatus = 'pending' | 'filling_record' | 'pending_prescription' | 'completed'
+export type DispensingStatus = 'no_dispensing' | 'pending_dispensing' | 'dispensed'
 export type InspectionAttachmentType = 'vehicle_photo' | 'certificate_photo' | 'ear_tag_photo' | 'loading_photo' | 'scene_photo' | 'other'
 export type CertificateEntryUsageStatus = 'not_arrived' | 'arrived' | 'used'
 
@@ -579,6 +584,44 @@ export interface Veterinarian {
   reviewedAt?: string
 }
 
+export interface VetRegistrationMaterial {
+  type: 'certificate' | 'id_card' | 'labor_proof'
+  name: string
+  url: string
+}
+
+export interface VeterinarianRegistrationApplication {
+  id: string
+  applicationNo: string
+  type: VeterinarianApplicationType
+  institutionId: string
+  institutionName: string
+  veterinarianId?: string
+  name: string
+  gender: string
+  birthDate: string
+  idCardNo: string
+  educationMajor: string
+  graduationSchool: string
+  title: string
+  workStartDate: string
+  phone: string
+  practiceType: PracticeType
+  practiceScope: string
+  certificateNo: string
+  certificateIssuingAuthority: string
+  certificateIssueDate: string
+  avatarUrl: string
+  materials: VetRegistrationMaterial[]
+  status: VeterinarianApplicationStatus
+  reviewRemark?: string
+  reviewedAt?: string
+  createdAt: string
+  syncStatus?: 'synced' | 'not_synced'
+  changeReason?: string
+  cancelReason?: string
+}
+
 export interface PetOwner {
   id: string
   name: string
@@ -596,6 +639,7 @@ export interface PetProfile {
   breed: string
   gender: string
   age: number
+  weight: number
   identityNo: string
   createdAt: string
   active: boolean
@@ -618,7 +662,9 @@ export interface DrugInventory {
   id: string
   institutionId: string
   drugName: string
+  specification: string
   batchNo: string
+  unit: string
   manufacturer: string
   approvalNo: string
   validTo: string
@@ -674,11 +720,96 @@ export interface MedicalWasteRecord {
   createdAt: string
 }
 
+export interface TreatmentRecordData {
+  temperature: number
+  weight: number
+  mentalState: string
+  appetite: string
+  clinicalSymptoms: string
+  checkItems: string
+  checkResult: string
+  preliminaryDiagnosis: string
+  finalDiagnosis: string
+  treatmentOpinion: string
+  needFollowUp: boolean
+  followUpTime: string
+  medicalAdvice: string
+  filledAt: string
+}
+
+export interface PrescriptionItem {
+  drugId: string
+  drugName: string
+  specification: string
+  batchNo: string
+  unit: string
+  currentStock: number
+  singleDose: string
+  frequency: string
+  days: number
+  quantity: number
+  administration: string
+  notes: string
+}
+
+export interface ConsultationPrescription {
+  id: string
+  prescriptionNo: string
+  consultationId: string
+  consultationNo: string
+  petOwnerName: string
+  petName: string
+  species: string
+  weight: number
+  diagnosis: string
+  veterinarianId: string
+  veterinarianName: string
+  institutionId: string
+  items: PrescriptionItem[]
+  needDispensing: boolean
+  createdAt: string
+}
+
+export interface ConsultationRecord {
+  id: string
+  consultationNo: string
+  petOwnerId: string
+  petOwnerName: string
+  petOwnerPhone: string
+  petId: string
+  petName: string
+  species: string
+  breed: string
+  gender: string
+  age: number
+  weight: number
+  chiefComplaint: string
+  initialSymptoms: string
+  consultationTime: string
+  veterinarianId: string
+  veterinarianName: string
+  institutionId: string
+  status: ConsultationStatus
+  dispensingStatus: DispensingStatus
+  treatmentRecord?: TreatmentRecordData
+  prescriptionId?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AnnualReportSection {
+  title: string
+  html: string
+}
+
 export interface AnnualReport {
   id: string
   institutionId: string
+  institutionName: string
   year: number
   status: AnnualReportStatus
+  sections: AnnualReportSection[]
+  currentPage: number
   veterinarianCount: number
   petCount: number
   immunizationCount: number
@@ -690,6 +821,29 @@ export interface AnnualReport {
   submittedAt?: string
   withdrawnAt?: string
   withdrawReason?: string
+  regulatorRemark?: string
+  regulatorReviewedAt?: string
+  archiveStatus?: 'archived' | 'not_archived'
+}
+
+export interface VeterinarianAnnualReport {
+  id: string
+  veterinarianId: string
+  veterinarianName: string
+  institutionId: string
+  institutionName: string
+  year: number
+  status: VetAnnualReportStatus
+  sections: AnnualReportSection[]
+  currentPage: number
+  generatedAt: string
+  submittedToClinicAt?: string
+  clinicReviewedAt?: string
+  clinicReviewRemark?: string
+  submittedToRegulatorAt?: string
+  regulatorReviewedAt?: string
+  regulatorRemark?: string
+  archiveStatus?: 'archived' | 'not_archived'
 }
 
 export interface SyncLog {
@@ -934,6 +1088,7 @@ export interface AppData {
   sealRecords: SealManagementRecord[]
   clinicInstitutions: ClinicInstitution[]
   veterinarians: Veterinarian[]
+  veterinarianRegistrationApplications: VeterinarianRegistrationApplication[]
   petOwners: PetOwner[]
   petProfiles: PetProfile[]
   immunizationLedgers: ImmunizationLedger[]
@@ -942,6 +1097,10 @@ export interface AppData {
   drugInOutRecords: DrugInOutRecord[]
   medicalWasteRecords: MedicalWasteRecord[]
   annualReports: AnnualReport[]
+  veterinarianAnnualReports: VeterinarianAnnualReport[]
+  consultations: ConsultationRecord[]
+  consultationPrescriptions: ConsultationPrescription[]
+  drugRequisitions: DrugRequisition[]
   syncLogs: SyncLog[]
   closedLoopNodes: ClosedLoopNode[]
   operationLogs: OperationLog[]
@@ -1024,9 +1183,9 @@ export interface CompleteHarmlessInput { taskId: string; method: string; process
 export interface ClinicInstitutionInput { name: string; licenseNo: string; address: string; contactPerson: string; phone: string; type: string; mapPoint: string }
 export interface VeterinarianInput { name: string; certificateNo: string; practiceType: PracticeType; institutionId: string; practiceScope: string; phone: string; material: string }
 export interface PetOwnerInput { name: string; phone: string; address: string }
-export interface PetProfileInput { ownerId: string; name: string; species: string; breed: string; gender: string; age: number; identityNo: string }
+export interface PetProfileInput { ownerId: string; name: string; species: string; breed: string; gender: string; age: number; weight: number; identityNo: string }
 export interface ImmunizationInput { petId: string; vaccineName: string; vaccineBatchNo: string; immunizedAt: string; nextImmunizedAt: string; veterinarianId: string; institutionId: string }
-export interface DrugStockInInput { institutionId: string; drugName: string; batchNo: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; supplier: string; traceCode: string }
+export interface DrugStockInInput { institutionId: string; drugName: string; specification: string; batchNo: string; unit: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; supplier: string; traceCode: string }
 export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
 export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
 export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }
@@ -1129,5 +1288,67 @@ export interface MarkUsageSubmitInput {
   quantity: number
   useObject: string
   operator: string
+}
+
+export interface ConsultationInput {
+  petId: string
+  chiefComplaint: string
+  initialSymptoms: string
+  weight: number
+}
+
+export interface TreatmentRecordInput {
+  temperature: number
+  weight: number
+  mentalState: string
+  appetite: string
+  clinicalSymptoms: string
+  checkItems: string
+  checkResult: string
+  preliminaryDiagnosis: string
+  finalDiagnosis: string
+  treatmentOpinion: string
+  needFollowUp: boolean
+  followUpTime: string
+  medicalAdvice: string
+}
+
+export interface ConsultationPrescriptionInput {
+  consultationId: string
+  diagnosis: string
+  items: PrescriptionItem[]
+  needDispensing: boolean
+}
+
+export interface DrugRequisitionItem {
+  drugId: string
+  drugName: string
+  specification: string
+  batchNo: string
+  unit: string
+  currentStock: number
+  singleDose: string
+  frequency: string
+  days: number
+  quantity: number
+  administration: string
+  notes: string
+}
+
+export interface DrugRequisition {
+  id: string
+  requisitionNo: string
+  prescriptionId: string
+  prescriptionNo: string
+  consultationId: string
+  consultationNo: string
+  petName: string
+  petOwnerName: string
+  veterinarianName: string
+  institutionId: string
+  items: DrugRequisitionItem[]
+  status: 'pending' | 'confirmed' | 'outbound'
+  createdAt: string
+  updatedAt: string
 }
 

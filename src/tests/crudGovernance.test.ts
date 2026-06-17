@@ -24,8 +24,8 @@ async function setupClinicFlow() {
   })
   const approvedVet = await mockApi.reviewVeterinarian(veterinarian.id, true, '人员资质有效')
   const owner = await mockApi.createPetOwner({ name: '李女士', phone: '13800000001', address: '合肥市蜀山区望江西路' })
-  const pet = await mockApi.createPetProfile({ ownerId: owner.id, name: '豆包', species: '犬', breed: '柯基', gender: '雄性', age: 2, identityNo: 'IMM-AH-0001' })
-  const drug = await mockApi.stockInDrug({ institutionId: approvedClinic.id, drugName: '阿莫西林克拉维酸钾片', batchNo: 'DRUG202606', manufacturer: '安徽动物药业有限公司', approvalNo: '兽药字120102001', validTo: '2028-06-30', quantity: 80, supplier: '省级兽药配送中心', traceCode: 'TRACE-AH-DRUG-001' })
+  const pet = await mockApi.createPetProfile({ ownerId: owner.id, name: '豆包', species: '犬', breed: '柯基', gender: '雄性', age: 2, weight: 5, identityNo: 'IMM-AH-0001' })
+  const drug = await mockApi.stockInDrug({ institutionId: approvedClinic.id, drugName: '阿莫西林克拉维酸钾片', specification: '250mg×24片', batchNo: 'DRUG202606', unit: '盒', manufacturer: '安徽动物药业有限公司', approvalNo: '兽药字120102001', validTo: '2028-06-30', quantity: 80, supplier: '省级兽药配送中心', traceCode: 'TRACE-AH-DRUG-001' })
   return { clinic: approvedClinic, veterinarian: approvedVet, owner, pet, drug }
 }
 

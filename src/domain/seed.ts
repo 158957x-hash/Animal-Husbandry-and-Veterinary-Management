@@ -192,6 +192,61 @@ export function createSeedData(): AppData {
       { id: 'vet-002', name: '刘婷婷', certificateNo: 'AH-ZY-2023-0156', practiceType: 'assistant_veterinarian', institutionId: 'clinic-002', practiceScope: '小动物影像、预防医学', phone: '13855567890', material: '执业助理兽医师资格证', status: 'approved', active: true, createdAt: '2025-01-10T08:00:00.000Z', reviewedAt: '2025-01-13T09:00:00.000Z' },
     ],
 
+    /* ---- 执业兽医备案申请 ---- */
+    veterinarianRegistrationApplications: [
+      {
+        id: 'vetreg-001', applicationNo: 'ZYSYBA202606150001', type: 'new', institutionId: 'clinic-001', institutionName: '安心动物诊疗中心',
+        name: '张明辉', gender: '男', birthDate: '1990-05-15', idCardNo: '340101199005150012', educationMajor: '动物医学', graduationSchool: '安徽农业大学', title: '中级兽医师', workStartDate: '2015-07-01',
+        phone: '13855520001', practiceType: 'licensed_veterinarian', practiceScope: '小动物内科、外科、影像诊断', certificateNo: 'AH-ZY-2024-0123', certificateIssuingAuthority: '安徽省农业农村厅', certificateIssueDate: '2024-06-01',
+        avatarUrl: '', materials: [
+          { type: 'certificate', name: '执业兽医资格证书', url: '' },
+          { type: 'id_card', name: '身份证', url: '' },
+          { type: 'labor_proof', name: '劳动证明', url: '' },
+        ],
+        status: 'pending', createdAt: '2026-06-15T09:00:00.000Z',
+      },
+      {
+        id: 'vetreg-002', applicationNo: 'ZYSYBA202606150002', type: 'change', institutionId: 'clinic-001', institutionName: '安心动物诊疗中心',
+        veterinarianId: 'vet-001', name: '陈晓宁', gender: '女', birthDate: '1988-03-20', idCardNo: '340101198803200023', educationMajor: '动物医学', graduationSchool: '南京农业大学', title: '高级兽医师', workStartDate: '2012-09-01',
+        phone: '13855512345', practiceType: 'licensed_veterinarian', practiceScope: '小动物内科、外科、皮肤科、影像诊断', certificateNo: 'AH-ZY-2022-0088', certificateIssuingAuthority: '安徽省农业农村厅', certificateIssueDate: '2022-03-01',
+        avatarUrl: '', materials: [
+          { type: 'certificate', name: '执业兽医资格证书', url: '' },
+          { type: 'id_card', name: '身份证', url: '' },
+        ],
+        status: 'pending', changeReason: '执业范围变更，增加皮肤科和影像诊断', createdAt: '2026-06-15T10:00:00.000Z',
+      },
+      {
+        id: 'vetreg-003', applicationNo: 'ZYSYBA202606150003', type: 'cancel', institutionId: 'clinic-002', institutionName: '宠爱有家宠物诊所',
+        veterinarianId: 'vet-002', name: '刘婷婷', gender: '女', birthDate: '1995-08-10', idCardNo: '340101199508100034', educationMajor: '动物医学', graduationSchool: '华中农业大学', title: '初级兽医师', workStartDate: '2020-06-01',
+        phone: '13855567890', practiceType: 'assistant_veterinarian', practiceScope: '小动物影像、预防医学', certificateNo: 'AH-ZY-2023-0156', certificateIssuingAuthority: '安徽省农业农村厅', certificateIssueDate: '2023-01-15',
+        avatarUrl: '', materials: [
+          { type: 'labor_proof', name: '离职证明', url: '' },
+        ],
+        status: 'pending', cancelReason: '个人原因离职，申请注销执业备案', createdAt: '2026-06-15T14:00:00.000Z',
+      },
+      {
+        id: 'vetreg-004', applicationNo: 'ZYSYBA202606100001', type: 'new', institutionId: 'clinic-001', institutionName: '安心动物诊疗中心',
+        name: '赵雪琴', gender: '女', birthDate: '1992-11-08', idCardNo: '340101199211080045', educationMajor: '临床兽医学', graduationSchool: '中国农业大学', title: '中级兽医师', workStartDate: '2017-09-01',
+        phone: '13855530003', practiceType: 'licensed_veterinarian', practiceScope: '小动物内科、外科、超声诊断', certificateNo: 'AH-ZY-2025-0201', certificateIssuingAuthority: '安徽省农业农村厅', certificateIssueDate: '2025-09-01',
+        avatarUrl: '', materials: [
+          { type: 'certificate', name: '执业兽医资格证书', url: '' },
+          { type: 'id_card', name: '身份证', url: '' },
+          { type: 'labor_proof', name: '劳动证明', url: '' },
+        ],
+        status: 'approved', syncStatus: 'not_synced', reviewedAt: '2026-06-12T10:00:00.000Z', createdAt: '2026-06-10T08:00:00.000Z',
+      },
+      {
+        id: 'vetreg-005', applicationNo: 'ZYSYBA202606110001', type: 'change', institutionId: 'clinic-002', institutionName: '宠爱有家宠物诊所',
+        veterinarianId: 'vet-002', name: '刘婷婷', gender: '女', birthDate: '1995-08-10', idCardNo: '340101199508100034', educationMajor: '动物医学', graduationSchool: '华中农业大学', title: '中级兽医师', workStartDate: '2020-06-01',
+        phone: '13855567890', practiceType: 'licensed_veterinarian', practiceScope: '小动物影像、预防医学、内科', certificateNo: 'AH-ZY-2023-0156', certificateIssuingAuthority: '安徽省农业农村厅', certificateIssueDate: '2023-01-15',
+        avatarUrl: '', materials: [
+          { type: 'certificate', name: '执业兽医资格证书', url: '' },
+          { type: 'id_card', name: '身份证', url: '' },
+        ],
+        status: 'rejected', reviewRemark: '职称变更材料不完整，需补充职称证书', reviewedAt: '2026-06-14T15:00:00.000Z', changeReason: '职称晋升为中级兽医师', createdAt: '2026-06-11T09:00:00.000Z',
+      },
+    ],
+
     /* ---- 宠物主人 ---- */
     petOwners: [
       { id: 'owner-001', name: '李女士', phone: '13955510001', address: '安徽省合肥市蜀山区望江西路 88 号', createdAt: '2025-06-01T10:00:00.000Z', active: true },
@@ -201,10 +256,10 @@ export function createSeedData(): AppData {
 
     /* ---- 宠物档案 ---- */
     petProfiles: [
-      { id: 'pet-001', ownerId: 'owner-001', name: '豆豆', species: '犬', breed: '金毛寻回犬', gender: '公', age: 3, identityNo: 'AH-PET-2025-00001', createdAt: '2025-06-01T10:00:00.000Z', active: true },
-      { id: 'pet-002', ownerId: 'owner-001', name: '咪咪', species: '猫', breed: '英国短毛猫', gender: '母', age: 2, identityNo: 'AH-PET-2025-00002', createdAt: '2025-06-01T10:30:00.000Z', active: true },
-      { id: 'pet-003', ownerId: 'owner-002', name: '旺财', species: '犬', breed: '拉布拉多犬', gender: '公', age: 5, identityNo: 'AH-PET-2025-00003', createdAt: '2025-08-15T14:00:00.000Z', active: true },
-      { id: 'pet-004', ownerId: 'owner-003', name: '小橘', species: '猫', breed: '中华田园猫', gender: '公', age: 1, identityNo: 'AH-PET-2026-00004', createdAt: '2026-01-20T09:00:00.000Z', active: true },
+      { id: 'pet-001', ownerId: 'owner-001', name: '豆豆', species: '犬', breed: '金毛寻回犬', gender: '公', age: 3, weight: 28.5, identityNo: 'AH-PET-2025-00001', createdAt: '2025-06-01T10:00:00.000Z', active: true },
+      { id: 'pet-002', ownerId: 'owner-001', name: '咪咪', species: '猫', breed: '英国短毛猫', gender: '母', age: 2, weight: 4.2, identityNo: 'AH-PET-2025-00002', createdAt: '2025-06-01T10:30:00.000Z', active: true },
+      { id: 'pet-003', ownerId: 'owner-002', name: '旺财', species: '犬', breed: '拉布拉多犬', gender: '公', age: 5, weight: 32, identityNo: 'AH-PET-2025-00003', createdAt: '2025-08-15T14:00:00.000Z', active: true },
+      { id: 'pet-004', ownerId: 'owner-003', name: '小橘', species: '猫', breed: '中华田园猫', gender: '公', age: 1, weight: 3.8, identityNo: 'AH-PET-2026-00004', createdAt: '2026-01-20T09:00:00.000Z', active: true },
     ],
 
     /* ---- 免疫台账 ---- */
@@ -217,10 +272,10 @@ export function createSeedData(): AppData {
 
     /* ---- 药品库存 ---- */
     drugInventories: [
-      { id: 'drug-001', institutionId: 'clinic-001', drugName: '阿莫西林克拉维酸钾片', batchNo: 'DRG-2026-0101', manufacturer: '华中制药有限公司', approvalNo: '兽药字（2025）170011256', validTo: '2028-06-01T00:00:00.000Z', quantity: 200, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0001', active: true, createdAt: '2026-01-15T08:00:00.000Z' },
-      { id: 'drug-002', institutionId: 'clinic-001', drugName: '头孢曲松钠注射液', batchNo: 'DRG-2026-0201', manufacturer: '华东动物药业股份有限公司', approvalNo: '兽药字（2025）170022389', validTo: '2027-12-01T00:00:00.000Z', quantity: 50, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0002', active: true, createdAt: '2026-02-10T08:00:00.000Z' },
-      { id: 'drug-003', institutionId: 'clinic-001', drugName: '伊维菌素注射液', batchNo: 'DRG-2026-0301', manufacturer: '中原兽药集团', approvalNo: '兽药字（2024）170033456', validTo: '2027-09-01T00:00:00.000Z', quantity: 80, supplier: '合肥动物保健用品公司', traceCode: 'AH-TR-2026-0003', active: true, createdAt: '2026-03-05T08:00:00.000Z' },
-      { id: 'drug-004', institutionId: 'clinic-002', drugName: '甲硝唑片', batchNo: 'DRG-2026-0401', manufacturer: '江淮动物药业', approvalNo: '兽药字（2025）170044512', validTo: '2028-03-01T00:00:00.000Z', quantity: 150, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0004', active: true, createdAt: '2026-04-01T08:00:00.000Z' },
+      { id: 'drug-001', institutionId: 'clinic-001', drugName: '阿莫西林克拉维酸钾片', specification: '250mg×24片', batchNo: 'DRG-2026-0101', unit: '盒', manufacturer: '华中制药有限公司', approvalNo: '兽药字（2025）170011256', validTo: '2028-06-01T00:00:00.000Z', quantity: 200, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0001', active: true, createdAt: '2026-01-15T08:00:00.000Z' },
+      { id: 'drug-002', institutionId: 'clinic-001', drugName: '头孢曲松钠注射液', specification: '1.0g×10支', batchNo: 'DRG-2026-0201', unit: '盒', manufacturer: '华东动物药业股份有限公司', approvalNo: '兽药字（2025）170022389', validTo: '2027-12-01T00:00:00.000Z', quantity: 50, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0002', active: true, createdAt: '2026-02-10T08:00:00.000Z' },
+      { id: 'drug-003', institutionId: 'clinic-001', drugName: '伊维菌素注射液', specification: '1% 5ml×10支', batchNo: 'DRG-2026-0301', unit: '盒', manufacturer: '中原兽药集团', approvalNo: '兽药字（2024）170033456', validTo: '2027-09-01T00:00:00.000Z', quantity: 80, supplier: '合肥动物保健用品公司', traceCode: 'AH-TR-2026-0003', active: true, createdAt: '2026-03-05T08:00:00.000Z' },
+      { id: 'drug-004', institutionId: 'clinic-002', drugName: '甲硝唑片', specification: '200mg×100片', batchNo: 'DRG-2026-0401', unit: '瓶', manufacturer: '江淮动物药业', approvalNo: '兽药字（2025）170044512', validTo: '2028-03-01T00:00:00.000Z', quantity: 150, supplier: '安徽兽药配送中心', traceCode: 'AH-TR-2026-0004', active: true, createdAt: '2026-04-01T08:00:00.000Z' },
     ],
 
     /* ---- 处方笺 ---- */
@@ -248,8 +303,119 @@ export function createSeedData(): AppData {
 
     /* ---- 年度报告 ---- */
     annualReports: [
-      { id: 'ar-001', institutionId: 'clinic-001', year: 2025, status: 'submitted', veterinarianCount: 3, petCount: 286, immunizationCount: 412, prescriptionCount: 158, drugStockInQuantity: 1200, drugStockOutQuantity: 856, wasteHandledCount: 24, generatedAt: '2026-01-10T08:00:00.000Z', submittedAt: '2026-01-15T09:00:00.000Z' },
+      { id: 'ar-001', institutionId: 'clinic-001', institutionName: '安心动物诊疗中心', year: 2025, status: 'submitted', sections: [], currentPage: 0, veterinarianCount: 3, petCount: 286, immunizationCount: 412, prescriptionCount: 158, drugStockInQuantity: 1200, drugStockOutQuantity: 856, wasteHandledCount: 24, generatedAt: '2026-01-10T08:00:00.000Z', submittedAt: '2026-01-15T09:00:00.000Z' },
     ],
+
+    /* ---- 执业兽医年度报告 ---- */
+    veterinarianAnnualReports: [],
+
+    /* ---- 诊疗接诊记录 ---- */
+    consultations: [
+      {
+        id: 'con-001',
+        consultationNo: 'JZ202606100001',
+        petOwnerId: 'owner-001',
+        petOwnerName: '李女士',
+        petOwnerPhone: '13955510001',
+        petId: 'pet-001',
+        petName: '豆豆',
+        species: '犬',
+        breed: '金毛寻回犬',
+        gender: '公',
+        age: 3,
+        weight: 28.5,
+        chiefComplaint: '皮肤瘙痒、脱毛',
+        initialSymptoms: '背部皮肤发红，有明显抓挠痕迹',
+        consultationTime: '2026-06-10T09:30:00.000Z',
+        veterinarianId: 'vet-001',
+        veterinarianName: '陈晓宁',
+        institutionId: 'clinic-001',
+        status: 'completed',
+        dispensingStatus: 'dispensed',
+        treatmentRecord: {
+          temperature: 38.8,
+          weight: 28.5,
+          mentalState: '良好',
+          appetite: '正常',
+          clinicalSymptoms: '背部局部脱毛，皮肤红斑，皮屑增多',
+          checkItems: '皮肤刮片镜检',
+          checkResult: '可见螨虫成虫及虫卵，诊断为疥螨感染',
+          preliminaryDiagnosis: '犬疥螨病',
+          finalDiagnosis: '犬疥螨病并发细菌性毛囊炎',
+          treatmentOpinion: '伊维菌素皮下注射，配合药浴，一周后复诊',
+          needFollowUp: true,
+          followUpTime: '2026-06-17T09:00:00.000Z',
+          medicalAdvice: '隔离饲养，环境消毒，避免接触其他宠物',
+          filledAt: '2026-06-10T09:50:00.000Z',
+        },
+        prescriptionId: 'cp-001',
+        createdAt: '2026-06-10T09:30:00.000Z',
+        updatedAt: '2026-06-10T10:00:00.000Z',
+      },
+      {
+        id: 'con-002',
+        consultationNo: 'JZ202606120001',
+        petOwnerId: 'owner-002',
+        petOwnerName: '王先生',
+        petOwnerPhone: '13955510002',
+        petId: 'pet-003',
+        petName: '旺财',
+        species: '犬',
+        breed: '拉布拉多犬',
+        gender: '公',
+        age: 5,
+        weight: 32,
+        chiefComplaint: '呕吐、腹泻两日',
+        initialSymptoms: '食欲废绝，精神沉郁，呕吐淡黄色黏液',
+        consultationTime: '2026-06-12T14:00:00.000Z',
+        veterinarianId: 'vet-001',
+        veterinarianName: '陈晓宁',
+        institutionId: 'clinic-001',
+        status: 'filling_record',
+        dispensingStatus: 'no_dispensing',
+        createdAt: '2026-06-12T14:00:00.000Z',
+        updatedAt: '2026-06-12T14:00:00.000Z',
+      },
+    ],
+
+    /* ---- 诊疗处方 ---- */
+    consultationPrescriptions: [
+      {
+        id: 'cp-001',
+        prescriptionNo: 'CF202606100001',
+        consultationId: 'con-001',
+        consultationNo: 'JZ202606100001',
+        petOwnerName: '李女士',
+        petName: '豆豆',
+        species: '犬',
+        weight: 28.5,
+        diagnosis: '犬疥螨病并发细菌性毛囊炎',
+        veterinarianId: 'vet-001',
+        veterinarianName: '陈晓宁',
+        institutionId: 'clinic-001',
+        needDispensing: true,
+        items: [
+          {
+            drugId: 'drug-003',
+            drugName: '伊维菌素注射液',
+            specification: '1% 5ml',
+            batchNo: 'DRG-2026-0301',
+            unit: '支',
+            currentStock: 80,
+            singleDose: '0.2ml',
+            frequency: '单次',
+            days: 1,
+            quantity: 1,
+            administration: '皮下注射',
+            notes: '注射后观察30分钟',
+          },
+        ],
+        createdAt: '2026-06-10T10:00:00.000Z',
+      },
+    ],
+
+    /* ---- 药品领用单 ---- */
+    drugRequisitions: [],
 
     /* ---- 同步日志 ---- */
     syncLogs: [

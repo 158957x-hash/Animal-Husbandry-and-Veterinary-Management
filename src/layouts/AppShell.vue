@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import QRCode from 'qrcode'
 import { useAppStore } from '../stores/app'
 
 const store = useAppStore()
@@ -9,6 +10,38 @@ const route = useRoute()
 const router = useRouter()
 const assistantVisible = ref(false)
 const openMenuGroups = ref<Record<string, boolean>>({})
+const traceQrCode = ref('')
+const traceBaseUrl = ref('')
+
+onMounted(() => {
+  traceBaseUrl.value = getDefaultTraceBaseUrl()
+  generateTraceQrCode()
+})
+
+async function generateTraceQrCode() {
+  traceQrCode.value = await QRCode.toDataURL(getTraceUrl(), { width: 180, margin: 1 })
+}
+
+function getDefaultTraceBaseUrl() {
+  const base = import.meta.env.BASE_URL || '/'
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${base}`
+  }
+  return `${window.location.origin}${base}`
+}
+
+function normalizeTraceBaseUrl(value: string) {
+  return value.endsWith('/') ? value : `${value}/`
+}
+
+function getTraceUrl() {
+  return `${normalizeTraceBaseUrl(traceBaseUrl.value || getDefaultTraceBaseUrl())}#/public/mark-trace`
+}
+
+function onTraceBaseUrlChange() {
+  traceBaseUrl.value = normalizeTraceBaseUrl(traceBaseUrl.value)
+  generateTraceQrCode()
+}
 
 const roleText = computed(() => {
   const map = {
@@ -86,8 +119,9 @@ const menus = computed(() => {
         children: [
           { label: '诊疗监管', path: '/regulator/clinic-supervision' },
           { label: '诊疗机构审核', path: '/regulator/clinic-institutions' },
-          { label: '执业兽医审核', path: '/regulator/clinic-veterinarians' },
-          { label: '年度报告查看', path: '/regulator/clinic-reports' },
+          { label: '执业兽医备案审核', path: '/regulator/clinic-veterinarians' },
+          { label: '年度报告审核', path: '/regulator/clinic-reports' },
+          { label: '执业兽医报告管理', path: '/regulator/veterinarian-reports' },
           { label: '药品处方监管', path: '/regulator/clinic-drug-supervision' },
           { label: '废弃物监管', path: '/regulator/clinic-waste-supervision' },
         ],
@@ -103,14 +137,18 @@ const menus = computed(() => {
       { label: '动物诊疗工作台', path: '/clinic/admin/dashboard' },
       { label: '诊疗机构备案', path: '/clinic/admin/institutions' },
       { label: '执业兽医备案', path: '/clinic/admin/veterinarians' },
-      { label: '药品库存与处方', path: '/clinic/admin/drugs' },
+      { label: '药品库存管理', path: '/clinic/admin/drugs' },
+      { label: '药品出库管理', path: '/clinic/admin/drug-outbound' },
+      { label: '出入库记录', path: '/clinic/admin/drug-records' },
       { label: '废弃物处理', path: '/clinic/admin/waste' },
-      { label: '年度报告管理', path: '/clinic/admin/reports' },
+      { label: '年度报告', path: '/clinic/admin/reports' },
+      { label: '执业兽医年度报告审核', path: '/clinic/admin/veterinarian-reports' },
     ],
     practicing_vet: [
       { label: '宠物主人与档案', path: '/clinic/veterinarian/pets' },
       { label: '免疫台账管理', path: '/clinic/veterinarian/immunization' },
-      { label: '药品库存与处方', path: '/clinic/veterinarian/prescriptions' },
+      { label: '接诊管理', path: '/clinic/veterinarian/consultations' },
+      { label: '年度报告', path: '/clinic/veterinarian/reports' },
     ],
     pet_owner: [
       { label: '宠物档案记录', path: '/clinic/owner/records' },
@@ -222,6 +260,12 @@ async function refreshData() {
         <el-button type="success" class="full-width" @click="refreshData">刷新业务数据</el-button>
         <el-button plain class="full-width" @click="reset">恢复初始数据</el-button>
         <el-button class="full-width" @click="router.push('/regulator/closed-loop')">查看闭环校验</el-button>
+        <div class="assistant-trace-card">
+          <strong>扫码查验二维码</strong>
+          <img v-if="traceQrCode" :src="traceQrCode" alt="扫码查验二维码" />
+          <el-input v-model="traceBaseUrl" size="small" placeholder="扫码基础地址" @change="onTraceBaseUrlChange" />
+          <small>{{ getTraceUrl() }}</small>
+        </div>
       </div>
     </div>
   </div>

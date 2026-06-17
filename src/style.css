@@ -348,13 +348,43 @@ button {
 }
 
 .assistant-panel {
-  width: 260px;
+  width: 320px;
   padding: 16px;
   border: 1px solid rgba(22, 163, 74, 0.18);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 36px rgba(11, 38, 27, 0.18);
   backdrop-filter: blur(16px);
+}
+
+.assistant-trace-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5efe8;
+}
+
+.assistant-trace-card strong {
+  color: #12372a;
+  font-size: 14px;
+}
+
+.assistant-trace-card img {
+  width: 176px;
+  height: 176px;
+  justify-self: center;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e4efe8;
+  border-radius: 12px;
+}
+
+.assistant-trace-card small {
+  color: #667a70;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-all;
 }
 
 .assistant-header {

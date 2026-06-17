@@ -6,6 +6,9 @@ import type {
   ClinicInstitutionInput,
   CompleteHarmlessInput,
   CompleteMedicalWasteInput,
+  ConsultationInput,
+  ConsultationPrescriptionInput,
+  DrugRequisitionItem,
   DrugStockInInput,
   EntryCheckInput,
   HarmlessTaskInput,
@@ -26,6 +29,7 @@ import type {
   SlaughterEntryExceptionInput,
   SlaughterEntryReturnInput,
   TransportExceptionInput,
+  TreatmentRecordInput,
   UserRole,
   UserSession,
   VeterinarianInput,
@@ -263,6 +267,56 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
+    async saveAnnualReport(id: string) {
+      const result = await mockApi.saveAnnualReport(id)
+      await this.refresh()
+      return result
+    },
+    async archiveAnnualReport(id: string, remark: string) {
+      const result = await mockApi.archiveAnnualReport(id, remark)
+      await this.refresh()
+      return result
+    },
+    async generateVetAnnualReport(vetId: string, year: number) {
+      const result = await mockApi.generateVetAnnualReport(vetId, year)
+      await this.refresh()
+      return result
+    },
+    async submitVetAnnualReportToClinic(id: string) {
+      const result = await mockApi.submitVetAnnualReportToClinic(id)
+      await this.refresh()
+      return result
+    },
+    async clinicReviewVetAnnualReport(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.clinicReviewVetAnnualReport(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async submitVetAnnualReportToRegulator(id: string) {
+      const result = await mockApi.submitVetAnnualReportToRegulator(id)
+      await this.refresh()
+      return result
+    },
+    async archiveVetAnnualReport(id: string, remark: string) {
+      const result = await mockApi.archiveVetAnnualReport(id, remark)
+      await this.refresh()
+      return result
+    },
+    async reviewVetAnnualReport(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.reviewVetAnnualReport(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async reviewAnnualReport(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.reviewAnnualReport(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async withdrawVetAnnualReport(id: string, reason: string) {
+      const result = await mockApi.withdrawVetAnnualReport(id, reason)
+      await this.refresh()
+      return result
+    },
     async updatePetProfile(id: string, input: Parameters<typeof mockApi.updatePetProfile>[1]) {
       const result = await mockApi.updatePetProfile(id, input)
       await this.refresh()
@@ -296,6 +350,20 @@ export const useAppStore = defineStore('app', {
       const result = await mockApi.disableVeterinarian(id)
       await this.refresh()
       return result
+    },
+    async submitVeterinarianRegistration(input: Parameters<typeof mockApi.submitVeterinarianRegistration>[0]) {
+      const result = await mockApi.submitVeterinarianRegistration(input)
+      await this.refresh()
+      return result
+    },
+    async reviewVeterinarianRegistration(id: string, approved: boolean, remark: string) {
+      const result = await mockApi.reviewVeterinarianRegistration(id, approved, remark)
+      await this.refresh()
+      return result
+    },
+    async batchSyncVeterinarianRegistrations(ids: string[]) {
+      await mockApi.batchSyncVeterinarianRegistrations(ids)
+      await this.refresh()
     },
     async voidPrescription(id: string, reason: string) {
       const result = await mockApi.voidPrescription(id, reason)
@@ -473,6 +541,48 @@ export const useAppStore = defineStore('app', {
     },
     async getTraceabilityByProductBatch(productBatchNo: string) {
       return await mockApi.getTraceabilityByProductBatch(productBatchNo)
+    },
+    // ---- 诊疗接诊管理 ----
+    async createConsultation(input: ConsultationInput) {
+      const result = await mockApi.createConsultation(input)
+      await this.refresh()
+      return result
+    },
+    async confirmConsultation(id: string) {
+      const result = await mockApi.confirmConsultation(id)
+      await this.refresh()
+      return result
+    },
+    async saveTreatmentRecord(id: string, input: TreatmentRecordInput) {
+      const result = await mockApi.saveTreatmentRecord(id, input)
+      await this.refresh()
+      return result
+    },
+    async createConsultationPrescription(input: ConsultationPrescriptionInput) {
+      const result = await mockApi.createConsultationPrescription(input)
+      await this.refresh()
+      return result
+    },
+    async getPetHistoryConsultations(petId: string) {
+      return await mockApi.getPetHistoryConsultations(petId)
+    },
+    async getDrugRequisitions() {
+      return await mockApi.getDrugRequisitions()
+    },
+    async confirmDrugRequisition(requisitionId: string, items: DrugRequisitionItem[]) {
+      const result = await mockApi.confirmDrugRequisition(requisitionId, items)
+      await this.refresh()
+      return result
+    },
+    async submitDrugRequisition(requisitionId: string) {
+      const result = await mockApi.submitDrugRequisition(requisitionId)
+      await this.refresh()
+      return result
+    },
+    async processDrugOutbound(requisitionId: string) {
+      const result = await mockApi.processDrugOutbound(requisitionId)
+      await this.refresh()
+      return result
     },
   },
 })

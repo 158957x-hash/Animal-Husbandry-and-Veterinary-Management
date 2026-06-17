@@ -23,7 +23,7 @@ const selectedReturn = ref<any>(null)
 
 const addForm = reactive({
   markType: 'card_ring' as MarkType,
-  quantity: 100,
+  markNo: 'KH202606160001',
   batchNo: 'SCPC20260616001',
   spec: '标准规格',
   material: '食品级塑料',
@@ -255,28 +255,41 @@ async function confirmReturn() {
   returnDialogVisible.value = false
 }
 
+function openManualAddDialog() {
+  addForm.markNo = addForm.markType === 'card_ring' ? 'KH202606160001' : 'BQ202606160001'
+  addDialogVisible.value = true
+}
+
+function pendingFeature(name: string) {
+  ElMessage.info(`${name}功能待接入`)
+}
+
 function addInventory() {
-  const prefix = addForm.markType === 'card_ring' ? 'KH' : 'BQ'
-  const start = store.data.quarantineMarks.length + 1
-  for (let i = 0; i < addForm.quantity; i += 1) {
-    store.data.quarantineMarks.unshift({
-      id: `mark-new-${Date.now()}-${i}`,
-      markNo: `${prefix}${addForm.batchNo}${String(start + i).padStart(4, '0')}`,
-      markType: addForm.markType,
-      ownerOrg: '监管端库存',
-      status: 'in_stock',
-      qrCode: `${prefix}-QR-${addForm.batchNo}-${start + i}`,
-      issuedAt: new Date().toISOString(),
-    })
+  if (!addForm.markNo) {
+    ElMessage.warning('请输入标志编号')
+    return
   }
+  if (store.data.quarantineMarks.some((item) => item.markNo === addForm.markNo)) {
+    ElMessage.warning('该标志编号已存在')
+    return
+  }
+  store.data.quarantineMarks.unshift({
+    id: `mark-new-${Date.now()}`,
+    markNo: addForm.markNo,
+    markType: addForm.markType,
+    ownerOrg: '监管端库存',
+    status: 'in_stock',
+    qrCode: `${addForm.markNo}-QR`,
+    issuedAt: new Date().toISOString(),
+  })
   let inventory = store.data.quarantineMarkInventories.find((item) => item.markType === addForm.markType && item.orgId === 'org-regulator-001')
   if (!inventory) {
     inventory = { id: `inv-reg-${Date.now()}`, orgId: 'org-regulator-001', markType: addForm.markType, total: 0, available: 0, used: 0, returned: 0, voided: 0 }
     store.data.quarantineMarkInventories.unshift(inventory)
   }
-  inventory.total += addForm.quantity
-  inventory.available += addForm.quantity
-  ElMessage.success('监管库存已新增')
+  inventory.total += 1
+  inventory.available += 1
+  ElMessage.success('单个标志已新增')
   addDialogVisible.value = false
 }
 
@@ -355,7 +368,16 @@ function setDetailPage(key: string, page: number) {
     </el-card>
 
     <el-card v-if="activeMode === 'inventory'" class="panel-card mark-card">
-      <template #header><div class="card-header-line"><strong>标志库存</strong><el-button type="primary" @click="addDialogVisible = true">新增库存</el-button></div></template>
+      <template #header>
+        <div class="card-header-line">
+          <strong>标志库存</strong>
+          <div class="inventory-add-actions">
+            <el-button @click="pendingFeature('导入新增')">导入新增</el-button>
+            <el-button @click="pendingFeature('扫码新增')">扫码新增</el-button>
+            <el-button type="primary" @click="openManualAddDialog">手动新增</el-button>
+          </div>
+        </div>
+      </template>
       <el-table :data="pagedInventoryGroups" stripe class="full-table batch-table">
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -491,10 +513,10 @@ function setDetailPage(key: string, page: number) {
       <template #footer><el-button @click="returnDialogVisible = false">取消</el-button><el-button type="success" @click="confirmReturn">确认入库</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="addDialogVisible" title="新增标志库存" width="560px">
+    <el-dialog v-model="addDialogVisible" title="手动新增单个标志" width="560px">
       <el-form label-width="110px">
         <el-form-item label="标志类型"><el-select v-model="addForm.markType" class="full-width"><el-option label="卡环式" value="card_ring" /><el-option label="粘贴式" value="sticker" /></el-select></el-form-item>
-        <el-form-item label="新增数量"><el-input-number v-model="addForm.quantity" :min="1" /></el-form-item>
+        <el-form-item label="标志编号" required><el-input v-model="addForm.markNo" placeholder="请输入单个标志编号" /></el-form-item>
         <el-form-item label="生产批次号"><el-input v-model="addForm.batchNo" /></el-form-item>
         <el-form-item label="标志规格"><el-input v-model="addForm.spec" /></el-form-item>
         <el-form-item label="标志材质"><el-input v-model="addForm.material" /></el-form-item>
@@ -512,6 +534,12 @@ function setDetailPage(key: string, page: number) {
 
 .full-table {
   width: 100%;
+}
+
+.inventory-add-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .table-pagination {

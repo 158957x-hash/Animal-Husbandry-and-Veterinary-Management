@@ -51,6 +51,17 @@ import TraceabilityTrackView from '../views/regulator/TraceabilityTrackView.vue'
 import MarkUsageView from '../views/regulator/MarkUsageView.vue'
 import QuarantineMarkManagementView from '../views/regulator/QuarantineMarkManagementView.vue'
 import MarkTraceView from '../views/public/MarkTraceView.vue'
+import VeterinarianRegistrationReviewView from '../views/regulator/VeterinarianRegistrationReviewView.vue'
+import VeterinarianAnnualReportView from '../views/clinic/VeterinarianAnnualReportView.vue'
+import VetAnnualReportReviewView from '../views/clinic/VetAnnualReportReviewView.vue'
+import ConsultationListView from '../views/clinic/ConsultationListView.vue'
+import ConsultationRegisterView from '../views/clinic/ConsultationRegisterView.vue'
+import TreatmentRecordView from '../views/clinic/TreatmentRecordView.vue'
+import PrescriptionWriteView from '../views/clinic/PrescriptionWriteView.vue'
+import ConsultationDetailView from '../views/clinic/ConsultationDetailView.vue'
+import DrugRequisitionConfirmView from '../views/clinic/DrugRequisitionConfirmView.vue'
+import DrugOutboundView from '../views/clinic/DrugOutboundView.vue'
+import DrugInOutRecordsView from '../views/clinic/DrugInOutRecordsView.vue'
 import { useAppStore } from '../stores/app'
 
 const router = createRouter({
@@ -109,19 +120,29 @@ const router = createRouter({
         { path: 'regulator/quarantine-mark/return', component: QuarantineMarkManagementView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-supervision', component: ClinicSupervisionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-institutions', component: ClinicInstitutionView, meta: { role: 'regulator' } },
-        { path: 'regulator/clinic-veterinarians', component: ClinicVeterinarianView, meta: { role: 'regulator' } },
+        { path: 'regulator/clinic-veterinarians', component: VeterinarianRegistrationReviewView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-reports', component: AnnualReportView, meta: { role: 'regulator' } },
+        { path: 'regulator/veterinarian-reports', component: VetAnnualReportReviewView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-drug-supervision', component: DrugPrescriptionView, meta: { role: 'regulator' } },
         { path: 'regulator/clinic-waste-supervision', component: MedicalWasteView, meta: { role: 'regulator' } },
         { path: 'clinic/admin/dashboard', component: ClinicDashboardView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/admin/institutions', component: ClinicInstitutionView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/admin/veterinarians', component: ClinicVeterinarianView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/admin/drugs', component: DrugPrescriptionView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/drug-outbound', component: DrugOutboundView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/drug-records', component: DrugInOutRecordsView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/admin/waste', component: MedicalWasteView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/admin/reports', component: AnnualReportView, meta: { role: 'clinic_admin' } },
+        { path: 'clinic/admin/veterinarian-reports', component: VetAnnualReportReviewView, meta: { role: 'clinic_admin' } },
         { path: 'clinic/veterinarian/pets', component: PetProfileView, meta: { role: 'practicing_vet' } },
         { path: 'clinic/veterinarian/immunization', component: ImmunizationLedgerView, meta: { role: 'practicing_vet' } },
-        { path: 'clinic/veterinarian/prescriptions', component: DrugPrescriptionView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultations', component: ConsultationListView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultation/register', component: ConsultationRegisterView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultation/:id/treatment', component: TreatmentRecordView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultation/:id/prescription', component: PrescriptionWriteView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultation/:id/detail', component: ConsultationDetailView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/consultation/:id/requisition', component: DrugRequisitionConfirmView, meta: { role: 'practicing_vet' } },
+        { path: 'clinic/veterinarian/reports', component: VeterinarianAnnualReportView, meta: { role: 'practicing_vet' } },
         { path: 'clinic/owner/records', component: PetOwnerRecordsView, meta: { role: 'pet_owner' } },
       ],
     },

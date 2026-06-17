@@ -3,7 +3,6 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
-import QRCode from 'qrcode'
 import productCertImg from '../../../image/产品证.png'
 import meatQualityCertImg from '../../../image/肉品品质检验合格证.png'
 import animalCertImg from '../../../image/动物检疫证书.png'
@@ -60,8 +59,9 @@ const scanCode = ref('')
 const scanInputRef = ref()
 const selectedProduct = ref<ProductItem | null>(null)
 const scanRecords = ref<ScanRecord[]>([])
-const traceQrCode = ref('')
-const traceBaseUrl = ref('')
+const activeTab = ref('products')
+
+const relationStorageKey = 'slaughter-mark-usage-relations'
 
 const operatorName = '皖北标准化屠宰中心经办人'
 const currentProductCertNo = 'CPJY202606160001'
@@ -77,36 +77,8 @@ watch(
   () => resetRelationData(),
 )
 
-async function generateTraceQrCode() {
-  const url = getTraceUrl()
-  traceQrCode.value = await QRCode.toDataURL(url, { width: 200, margin: 1 })
-}
-
-function getDefaultTraceUrl() {
-  const base = import.meta.env.BASE_URL || '/'
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${base}`
-  }
-  return `${window.location.origin}${base}`
-}
-
-function normalizeTraceBaseUrl(value: string) {
-  return value.endsWith('/') ? value : `${value}/`
-}
-
-function getTraceUrl() {
-  const baseUrl = normalizeTraceBaseUrl(traceBaseUrl.value || getDefaultTraceUrl())
-  return `${baseUrl}#/public/mark-trace`
-}
-
-function onTraceUrlChange() {
-  traceBaseUrl.value = normalizeTraceBaseUrl(traceBaseUrl.value)
-  generateTraceQrCode()
-}
-
 onMounted(() => {
-  traceBaseUrl.value = getDefaultTraceUrl()
-  generateTraceQrCode()
+  restoreRelationData()
 })
 
 const totalCount = computed(() => productItems.length)
@@ -118,6 +90,7 @@ const currentPendingIndex = computed(() => {
 })
 const currentProduct = computed(() => productItems.find((item) => item.relationStatus === 'UNLINKED') || null)
 const latestScanRecords = computed(() => scanRecords.value.slice(0, 10))
+const relationRecords = computed(() => productItems.filter((item) => item.relationStatus === 'LINKED'))
 
 function createProductItems() {
   const issuedBatch = store.data.postProductBatches.find((item) => item.productCertStatus === 'issued')
@@ -174,6 +147,46 @@ function resetRelationData() {
   selectedProduct.value = null
   scanDialogVisible.value = false
   detailDialogVisible.value = false
+  localStorage.removeItem(relationStorageKey)
+}
+
+function restoreRelationData() {
+  const saved = localStorage.getItem(relationStorageKey)
+  if (!saved) return
+  try {
+    const records = JSON.parse(saved) as Array<{ productItemId: string; markCode: string; linkedAt: string; linkedBy: string }>
+    records.forEach((record, index) => {
+      const product = productItems.find((item) => item.productItemId === record.productItemId)
+      const mark = usableMarks.find((item) => item.markCode === record.markCode)
+      if (!product || !mark) return
+      product.markCode = record.markCode
+      product.relationStatus = 'LINKED'
+      product.linkedAt = record.linkedAt
+      product.linkedBy = record.linkedBy
+      mark.status = 'USED'
+      mark.usedAt = record.linkedAt
+      mark.usedProductItemId = record.productItemId
+      scanRecords.value.unshift({
+        index: index + 1,
+        markCode: record.markCode,
+        productItemId: record.productItemId,
+        linkedAt: record.linkedAt,
+        result: '关联成功',
+      })
+    })
+  } catch {
+    localStorage.removeItem(relationStorageKey)
+  }
+}
+
+function persistRelationData() {
+  const records = relationRecords.value.map((item) => ({
+    productItemId: item.productItemId,
+    markCode: item.markCode,
+    linkedAt: item.linkedAt,
+    linkedBy: item.linkedBy,
+  }))
+  localStorage.setItem(relationStorageKey, JSON.stringify(records))
 }
 
 function relationStatusText(row: ProductItem) {
@@ -264,6 +277,7 @@ function submitScan() {
     linkedAt,
     result: '关联成功',
   })
+  persistRelationData()
   ElMessage.success(`标志 ${markCode} 已关联到产品 ${product.productItemId}。`)
   scanCode.value = ''
   if (unlinkedCount.value === 0) ElMessage.success('本批次产品已全部完成标志关联。')
@@ -306,41 +320,44 @@ function openCertificate(title: string, image: string) {
       <el-card class="usage-stat-card cert"><span>产品证编号</span><b>{{ currentProductCertNo }}</b></el-card>
     </div>
 
-    <div v-if="linkedCount > 0" class="qr-code-section">
-      <el-card class="panel-card">
-        <template #header><strong>扫码查验二维码</strong></template>
-        <div class="qr-code-body">
-          <img v-if="traceQrCode" :src="traceQrCode" alt="扫码查验二维码" class="qr-code-image" />
-          <div class="qr-code-url-row">
-            <span class="qr-code-url-label">扫码地址</span>
-            <el-input v-model="traceBaseUrl" size="small" class="qr-code-url-input" placeholder="例如 http://192.168.1.100:5173/Animal-Husbandry-and-Veterinary-Management/" @change="onTraceUrlChange" />
-          </div>
-          <p class="qr-code-hint">本地扫码时将上方地址改为电脑局域网 IP；线上扫码时改为 GitHub Pages 地址。二维码会自动指向 #/public/mark-trace，刷新不会 404。</p>
-          <p class="qr-code-current"><el-tag size="small" type="info">当前二维码指向：{{ getTraceUrl() }}</el-tag></p>
-        </div>
-      </el-card>
-    </div>
-
     <el-card class="panel-card product-list-card">
-      <template #header><strong>产品列表</strong></template>
-      <el-table :data="productItems" stripe class="full-table product-table" height="620">
-        <el-table-column type="index" label="序号" width="70" />
-        <el-table-column prop="productItemId" label="产品明细编号" min-width="190" />
-        <el-table-column prop="productBatchId" label="产品批次编号" min-width="170" />
-        <el-table-column prop="productName" label="产品名称" width="110" />
-        <el-table-column prop="productType" label="产品类型" width="100" />
-        <el-table-column prop="quantity" label="产品数量" width="100" />
-        <el-table-column label="产品重量" width="100"><template #default="{ row }">{{ row.productWeight }}kg</template></el-table-column>
-        <el-table-column prop="productCertNo" label="动物产品检疫证明编号" min-width="180" />
-        <el-table-column prop="meatQualityCertNo" label="肉品品质检验合格证编号" min-width="190" />
-        <el-table-column prop="animalCertNo" label="动物检疫合格证明编号" min-width="180" />
-        <el-table-column label="标志编号" min-width="160"><template #default="{ row }">{{ row.markCode || '-' }}</template></el-table-column>
-        <el-table-column label="关联状态" width="100">
-          <template #default="{ row }"><el-tag :type="row.markCode ? 'success' : 'warning'" size="small">{{ relationStatusText(row) }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="关联时间" min-width="170"><template #default="{ row }">{{ formatTime(row.linkedAt) }}</template></el-table-column>
-        <el-table-column label="操作" width="130" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">查看检疫详情</el-button></template></el-table-column>
-      </el-table>
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="产品列表" name="products">
+          <el-table :data="productItems" stripe class="full-table product-table" height="620">
+            <el-table-column type="index" label="序号" width="70" />
+            <el-table-column prop="productItemId" label="产品明细编号" min-width="190" />
+            <el-table-column prop="productBatchId" label="产品批次编号" min-width="170" />
+            <el-table-column prop="productName" label="产品名称" width="110" />
+            <el-table-column prop="productType" label="产品类型" width="100" />
+            <el-table-column prop="quantity" label="产品数量" width="100" />
+            <el-table-column label="产品重量" width="100"><template #default="{ row }">{{ row.productWeight }}kg</template></el-table-column>
+            <el-table-column prop="productCertNo" label="动物产品检疫证明编号" min-width="180" />
+            <el-table-column prop="meatQualityCertNo" label="肉品品质检验合格证编号" min-width="190" />
+            <el-table-column prop="animalCertNo" label="动物检疫合格证明编号" min-width="180" />
+            <el-table-column label="标志编号" min-width="160"><template #default="{ row }">{{ row.markCode || '-' }}</template></el-table-column>
+            <el-table-column label="关联状态" width="100">
+              <template #default="{ row }"><el-tag :type="row.markCode ? 'success' : 'warning'" size="small">{{ relationStatusText(row) }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="关联时间" min-width="170"><template #default="{ row }">{{ formatTime(row.linkedAt) }}</template></el-table-column>
+            <el-table-column label="操作" width="130" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">查看检疫详情</el-button></template></el-table-column>
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane label="关联记录" name="records">
+          <el-table :data="relationRecords" stripe class="full-table" height="620">
+            <el-table-column type="index" label="序号" width="70" />
+            <el-table-column prop="markCode" label="标志编号" min-width="160" />
+            <el-table-column prop="productItemId" label="产品明细编号" min-width="190" />
+            <el-table-column prop="productBatchId" label="产品批次编号" min-width="170" />
+            <el-table-column prop="productName" label="产品名称" width="110" />
+            <el-table-column prop="productType" label="产品类型" width="100" />
+            <el-table-column label="产品重量" width="100"><template #default="{ row }">{{ row.productWeight }}kg</template></el-table-column>
+            <el-table-column prop="productCertNo" label="产品证编号" min-width="180" />
+            <el-table-column label="关联时间" min-width="170"><template #default="{ row }">{{ formatTime(row.linkedAt) }}</template></el-table-column>
+            <el-table-column prop="linkedBy" label="经办人" min-width="180" />
+            <el-table-column label="操作" width="130" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">查看检疫详情</el-button></template></el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
 
     <el-dialog v-model="scanDialogVisible" title="扫码关联检疫验讫标志" width="1180px" top="5vh" destroy-on-close @opened="focusScanInput">
@@ -495,59 +512,6 @@ function openCertificate(title: string, image: string) {
 
 .usage-stat-card.cert b {
   font-size: 18px;
-}
-
-.qr-code-section {
-  margin-top: 0;
-}
-
-.qr-code-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0 4px;
-}
-
-.qr-code-image {
-  width: 200px;
-  height: 200px;
-  border: 1px solid #e4efe8;
-  border-radius: 12px;
-  padding: 8px;
-  background: #fff;
-}
-
-.qr-code-url-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 520px;
-}
-
-.qr-code-url-label {
-  flex-shrink: 0;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.qr-code-url-input {
-  flex: 1;
-}
-
-.qr-code-hint {
-  color: #f59e0b;
-  font-size: 13px;
-  margin: 0;
-  text-align: center;
-  max-width: 400px;
-  line-height: 1.5;
-}
-
-.qr-code-current {
-  margin: 0;
 }
 
 .full-table {
