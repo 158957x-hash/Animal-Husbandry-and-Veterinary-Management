@@ -103,7 +103,16 @@ async function submit() {
               <el-option label="展示" value="exhibition" />
             </el-select>
           </el-form-item>
-          <el-form-item label="启运时间"><el-input v-model="form.departureTime" /></el-form-item>
+          <el-form-item label="启运时间">
+            <el-date-picker
+              v-model="form.departureTime"
+              type="datetime"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+              placeholder="请选择启运时间"
+              class="full-width"
+            />
+          </el-form-item>
           <el-form-item label="联系人"><el-input v-model="form.contactPerson" /></el-form-item>
           <el-form-item label="联系电话"><el-input v-model="form.contactPhone" /></el-form-item>
           <el-form-item label="目的地"><el-input v-model="form.destination" /></el-form-item>

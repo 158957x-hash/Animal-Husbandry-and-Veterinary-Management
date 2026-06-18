@@ -233,9 +233,6 @@ async function refreshData() {
           </button>
         </template>
       </nav>
-      <div class="sidebar-footer">
-        <el-button class="full-btn" @click="logout">返回角色选择</el-button>
-      </div>
     </aside>
     <main class="main-panel">
       <header class="topbar app-header">

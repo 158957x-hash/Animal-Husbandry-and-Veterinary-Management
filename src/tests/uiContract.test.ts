@@ -61,4 +61,15 @@ describe('菜单与免疫台账界面契约', () => {
     expect(style).toContain('.regulator-dashboard .gov-kpi-card')
     expect(regulatorDashboard).toContain('regulator-dashboard')
   })
+
+  it('产地检疫申报时间字段使用日期时间选择器且全局移除返回角色选择', () => {
+    const shell = readSource('../layouts/AppShell.vue')
+    const originApply = readSource('../views/farmer/OriginApplyView.vue')
+
+    expect(shell).not.toContain('返回角色选择')
+    expect(originApply).toContain('label="启运时间"')
+    expect(originApply).toContain('v-model="form.departureTime"')
+    expect(originApply).toContain('type="datetime"')
+    expect(originApply).not.toContain('<el-form-item label="启运时间"><el-input v-model="form.departureTime" /></el-form-item>')
+  })
 })
