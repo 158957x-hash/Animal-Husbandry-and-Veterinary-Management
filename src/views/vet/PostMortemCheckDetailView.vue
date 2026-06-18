@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
@@ -321,7 +321,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
 <template>
   <section v-if="productBatch" class="audit-layout">
     <!-- ========== 顶部标题栏 ========== -->
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="card-header-line">
         <div>
           <h2>宰后同步检疫与产品出证</h2>
@@ -358,7 +358,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
     <div class="three-col-layout">
       <!-- ========== 左栏：产品批次与来源信息 ========== -->
       <div class="col-left">
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>产品批次信息</strong></template>
           <div class="info-list compact">
             <p><span>产品批次编号</span><b>{{ productBatch.productBatchNo }}</b></p>
@@ -381,7 +381,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
           </div>
         </el-card>
 
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>上游来源信息</strong></template>
           <div class="info-list compact">
             <p><span>动物检疫合格证明编号</span><b>{{ quarantineCert?.certificateNo || '-' }}</b></p>
@@ -404,7 +404,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
       <!-- ========== 中栏：宰后同步检疫办理 + 产品检疫出证 ========== -->
       <div class="col-main">
         <!-- 宰后检疫表单（始终可编辑） -->
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header>
             <div style="display:flex;justify-content:space-between;align-items:center">
               <strong>宰后同步检疫</strong>
@@ -465,7 +465,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
       <!-- ========== 右栏：出证依据 + 证书查看 ========== -->
       <div class="col-right">
         <!-- 出证依据 -->
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>出证依据</strong></template>
           <div class="cert-basis-list">
             <!-- 动物检疫合格证明 -->
@@ -525,7 +525,7 @@ const postCheckStatusTypeMap: Record<string, string> = {
         </el-card>
 
         <!-- 证书查看区 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>证书查看</strong></template>
           <el-tabs v-model="certViewTab" type="card" size="small">
             <el-tab-pane v-if="isProductCertIssued" label="产品证" name="product">

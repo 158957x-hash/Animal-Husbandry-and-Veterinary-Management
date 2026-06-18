@@ -116,6 +116,9 @@ function getStatusTag(row: ClinicInstitution) {
             </template>
           </el-table-column>
         </el-table>
+        <div class="gov-pagination-bar">
+          <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="filtered.length" :page-size="10" />
+        </div>
       </div>
 
       <div class="map-card">

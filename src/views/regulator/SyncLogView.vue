@@ -12,7 +12,7 @@ async function retry(id: string) {
 
 <template>
   <section class="stack">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><strong>接口同步日志</strong></template>
       <el-table :data="store.data.syncLogs">
         <el-table-column prop="target" label="同步目标" min-width="210" />
@@ -23,6 +23,9 @@ async function retry(id: string) {
         <el-table-column prop="failureReason" label="失败原因" min-width="160" />
         <el-table-column label="操作" width="120"><template #default="scope"><el-button size="small" :disabled="scope.row.status === 'success'" @click="retry(scope.row.id)">重试</el-button></template></el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="store.data.syncLogs.length" :page-size="10" />
+      </div>
     </el-card>
   </section>
 </template>

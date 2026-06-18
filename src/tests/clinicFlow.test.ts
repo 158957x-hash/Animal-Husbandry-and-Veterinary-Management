@@ -38,7 +38,7 @@ describe('动物诊疗管理闭环', () => {
     const drug = await mockApi.stockInDrug({ institutionId: clinic.id, drugName: '阿莫西林克拉维酸钾片', specification: '250mg×24片', batchNo: 'DRUG202606', unit: '盒', manufacturer: '安徽动物药业有限公司', approvalNo: '兽药字120102001', validTo: '2028-06-30', quantity: 80, storageLocation: '门诊药房A柜', supplier: '省级兽药配送中心', traceCode: 'TRACE-AH-DRUG-001' })
     const prescription = await mockApi.issuePrescription({ petId: pet.id, diagnosis: '皮肤细菌感染', drugId: drug.id, dosage: '每日两次，每次半片，连用 5 日', quantity: 6, veterinarianId: veterinarian.id })
     const waste = await mockApi.createMedicalWaste({ type: '疫苗瓶及注射器', sourceBusinessType: 'immunization', sourceBusinessId: immunization.id, weight: 1.2, generatedAt: '2026-06-12T10:00:00.000Z', storageLocation: '诊疗中心医疗废弃物暂存柜', disposalCompany: '合肥绿安医疗废弃物处置有限公司', handoverPerson: '王护士' })
-    await mockApi.completeMedicalWaste({ wasteId: waste.id, handledAt: '2026-06-12T16:00:00.000Z', voucherNo: 'WASTE-20260612-001' })
+    await mockApi.completeMedicalWaste({ wasteId: waste.id, handledAt: '2026-06-12T16:00:00.000Z', handlingMethod: '高温焚烧', voucherNo: 'WASTE-20260612-001' })
     const report = await mockApi.generateAnnualReport(clinic.id, 2026)
     const submitted = await mockApi.submitAnnualReport(report.id)
     const data = await mockApi.getBootstrapData()

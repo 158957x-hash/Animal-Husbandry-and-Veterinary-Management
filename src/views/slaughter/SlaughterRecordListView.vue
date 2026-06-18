@@ -39,7 +39,7 @@ const records = computed(() => {
 
 <template>
   <section class="gov-page">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="page-hero">
         <div>
           <h2>宰后管理</h2>
@@ -47,7 +47,7 @@ const records = computed(() => {
       </div>
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><b>屠宰记录列表</b></template>
       <el-table :data="records" stripe>
         <el-table-column type="index" label="序号" width="70" />
@@ -75,6 +75,9 @@ const records = computed(() => {
           </template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="records.length" :page-size="10" />
+      </div>
       <el-empty v-if="!records.length" description="暂无屠宰作业记录" />
     </el-card>
   </section>

@@ -18,32 +18,33 @@ const farmerAlerts = computed(() => store.data.alerts.filter((item) => !item.res
 </script>
 
 <template>
-  <div class="gov-page">
-    <el-card class="panel-card">
-      <div class="page-hero">
-        <div>
-          <h2>养殖场户工作台</h2>
-          <p>集中查看存栏、申报、出证、运输和预警情况，及时办理待办事项。</p>
-        </div>
-        <div class="page-hero-actions">
-          <el-button @click="router.push('/farmer/origin-applications')">查看全部申报</el-button>
-          <el-button type="success" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
-        </div>
+  <div class="farmer-modern-page">
+    <section class="gov-page-header">
+      <div>
+        <h2>养殖场户工作台</h2>
+        <p>集中查看存栏、申报、出证、运输和预警情况，及时办理待办事项。</p>
       </div>
-    </el-card>
+      <div class="gov-page-header__actions">
+        <el-button @click="router.push('/farmer/origin-applications')">查看全部申报</el-button>
+        <el-button type="primary" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
+      </div>
+    </section>
 
-    <div class="kpi-grid">
-      <div class="kpi-card"><span>当前存栏</span><strong>{{ totalStock }}</strong><small>头/只</small></div>
-      <div class="kpi-card"><span>可申报数量</span><strong>{{ availableStock }}</strong><small>免疫合格批次</small></div>
-      <div class="kpi-card"><span>已提交申报</span><strong>{{ submittedCount }}</strong><small>待官方兽医受理</small></div>
-      <div class="kpi-card"><span>待审核申报</span><strong>{{ submittedCount }}</strong><small>等待官方兽医</small></div>
-      <div class="kpi-card"><span>已出证数量</span><strong>{{ issuedCount }}</strong><small>电子检疫证明</small></div>
-      <div class="kpi-card"><span>运输中任务</span><strong>{{ transportingCount }}</strong><small>调运监管中</small></div>
-      <div class="kpi-card"><span>预警数量</span><strong>{{ farmerAlerts.length }}</strong><small>待关注事项</small></div>
-    </div>
+    <section class="gov-kpi-grid">
+      <div class="gov-kpi-card"><span>当前存栏</span><strong>{{ totalStock }}</strong><small>头/只</small></div>
+      <div class="gov-kpi-card"><span>可申报数量</span><strong>{{ availableStock }}</strong><small>免疫合格批次</small></div>
+      <div class="gov-kpi-card"><span>已提交申报</span><strong>{{ submittedCount }}</strong><small>待官方兽医受理</small></div>
+      <div class="gov-kpi-card"><span>待审核申报</span><strong>{{ submittedCount }}</strong><small>等待官方兽医</small></div>
+      <div class="gov-kpi-card"><span>已出证数量</span><strong>{{ issuedCount }}</strong><small>电子检疫证明</small></div>
+      <div class="gov-kpi-card"><span>运输中任务</span><strong>{{ transportingCount }}</strong><small>调运监管中</small></div>
+      <div class="gov-kpi-card"><span>预警数量</span><strong>{{ farmerAlerts.length }}</strong><small>待关注事项</small></div>
+    </section>
 
-    <el-card class="panel-card">
-      <template #header><div class="card-title"><b>最近申报记录</b><small>展示最近 6 条产地检疫申报</small></div></template>
+    <section class="gov-table-card gov-compact-card">
+      <div class="gov-table-card__header">
+        <div><strong>最近申报记录</strong><small>展示最近 6 条产地检疫申报</small></div>
+        <el-button link type="primary" @click="router.push('/farmer/origin-applications')">进入列表</el-button>
+      </div>
       <el-table :data="recentApplications" stripe>
         <el-table-column type="index" label="序号" width="70" />
         <el-table-column prop="applicationNo" label="申报编号" min-width="160" />
@@ -54,7 +55,10 @@ const farmerAlerts = computed(() => store.data.alerts.filter((item) => !item.res
         <el-table-column label="更新时间" min-width="170"><template #default="{ row }">{{ formatTime(row.updatedAt) }}</template></el-table-column>
         <el-table-column label="操作" width="110"><template #default="{ row }"><el-button size="small" @click="router.push(`/farmer/origin-detail/${row.id}`)">查看</el-button></template></el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, prev, pager, next" :total="recentApplications.length" :page-size="6" />
+      </div>
       <el-empty v-if="!recentApplications.length" description="暂无申报记录，请点击新增申报开始办理" />
-    </el-card>
+    </section>
   </div>
 </template>

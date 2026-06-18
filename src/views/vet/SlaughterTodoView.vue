@@ -97,7 +97,7 @@ async function refreshApplications() {
 
 <template>
   <section class="gov-page">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="page-hero">
         <div>
           <h2>宰前检疫</h2>
@@ -113,7 +113,7 @@ async function refreshApplications() {
       </div>
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header>
         <div class="card-title">
           <strong>申报列表</strong>
@@ -162,6 +162,9 @@ async function refreshApplications() {
           </template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="currentList.length" :page-size="10" />
+      </div>
       <el-empty v-if="!currentList.length" :description="emptyDescMap[activeTab] || '暂无数据'" />
     </el-card>
   </section>

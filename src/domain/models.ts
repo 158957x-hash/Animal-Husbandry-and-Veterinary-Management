@@ -717,7 +717,9 @@ export interface MedicalWasteRecord {
   handoverPerson: string
   status: WasteStatus
   handledAt?: string
+  handlingMethod?: string
   voucherNo?: string
+  barcodeUrl?: string
   createdAt: string
 }
 
@@ -1189,7 +1191,7 @@ export interface ImmunizationInput { petId: string; vaccineName: string; vaccine
 export interface DrugStockInInput { institutionId: string; drugName: string; specification: string; batchNo: string; unit: string; manufacturer: string; approvalNo: string; validTo: string; quantity: number; storageLocation: string; supplier: string; traceCode: string }
 export interface PrescriptionInput { petId: string; diagnosis: string; drugId: string; dosage: string; quantity: number; veterinarianId: string }
 export interface MedicalWasteInput { type: string; sourceBusinessType: WasteSourceBusinessType; sourceBusinessId: string; weight: number; generatedAt: string; storageLocation: string; disposalCompany: string; handoverPerson: string }
-export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; voucherNo: string }
+export interface CompleteMedicalWasteInput { wasteId: string; handledAt: string; handlingMethod: string; voucherNo: string }
 
 export interface SlaughterSelfInspectionInput {
   batchId: string

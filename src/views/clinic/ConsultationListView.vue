@@ -70,28 +70,29 @@ function goDetail(row: ConsultationRecord) {
 </script>
 
 <template>
-  <div class="consultation-page">
-    <div class="page-header-card">
-      <div class="header-left">
+  <div class="farmer-modern-page consultation-page">
+    <section class="gov-page-header">
+      <div>
         <h2>接诊管理</h2>
         <p>管理宠物接诊记录，包括接诊登记、诊疗记录填写、处方开具等全流程</p>
       </div>
-      <div class="header-right">
+      <div class="gov-page-header__actions">
         <el-button @click="store.refresh()">刷新</el-button>
         <el-button type="primary" @click="goRegister">接诊登记</el-button>
       </div>
-    </div>
+    </section>
 
-    <div class="search-card">
+    <section class="gov-toolbar-card gov-compact-card">
       <div class="search-row">
         <el-input v-model="keyword" placeholder="搜索接诊编号、宠物名称、主人姓名或兽医" clearable class="search-input">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-button type="primary"><el-icon><Search /></el-icon>搜索</el-button>
       </div>
-    </div>
+    </section>
 
-    <div class="table-card">
+    <section class="gov-table-card gov-compact-card">
+      <div class="gov-table-card__header"><div><strong>接诊记录</strong><small>按状态办理接诊、诊疗记录和处方开具</small></div></div>
       <el-table :data="consultations" stripe style="width: 100%" empty-text="暂无接诊记录">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="consultationNo" label="接诊编号" width="160" />
@@ -129,7 +130,10 @@ function goDetail(row: ConsultationRecord) {
           </template>
         </el-table-column>
       </el-table>
-    </div>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="consultations.length" :page-size="10" />
+      </div>
+    </section>
   </div>
 </template>
 

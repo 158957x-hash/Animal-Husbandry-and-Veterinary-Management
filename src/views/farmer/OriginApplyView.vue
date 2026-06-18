@@ -73,17 +73,22 @@ async function submit() {
 </script>
 
 <template>
-  <section class="gov-page two-col">
-    <el-card class="panel-card">
-      <template #header>
-        <div class="card-title">
-          <strong>{{ editingApplication ? editingApplication.status === 'rejected' ? '编辑后重新提交产地检疫申报' : '编辑产地检疫申报草稿' : '新增产地检疫申报' }}</strong>
-          <small>按产地检疫申报要求补齐批次、车辆、目的地和联系人信息</small>
-        </div>
-      </template>
+  <section class="farmer-modern-page">
+    <div class="gov-page-header">
+      <div>
+        <h2>{{ editingApplication ? editingApplication.status === 'rejected' ? '编辑后重新提交产地检疫申报' : '编辑产地检疫申报草稿' : '新增产地检疫申报' }}</h2>
+        <p>按产地检疫申报要求补齐批次、车辆、目的地和联系人信息，提交前完成系统自查。</p>
+      </div>
+      <div class="gov-page-header__actions">
+        <el-button @click="router.push('/farmer/origin-applications')">返回列表</el-button>
+      </div>
+    </div>
+
+    <div class="gov-two-column">
+      <el-card class="gov-compact-card">
       <el-alert v-if="editingApplication?.status === 'rejected'" type="error" :closable="false" :title="`驳回原因：${editingApplication.rejectReason || '未填写'}`" />
       <el-form label-position="top" class="form-section">
-        <div class="form-grid">
+        <div class="gov-form-grid">
           <el-form-item label="养殖批次">
             <el-select v-model="form.batchId" class="full-width">
               <el-option v-for="batch in store.data.farmBatches" :key="batch.id" :label="`${batch.farmName} / ${batch.animalType} / 存栏 ${batch.stock}`" :value="batch.id" />
@@ -111,7 +116,7 @@ async function submit() {
           <el-form-item label="承运人"><el-input :model-value="selectedVehicle?.carrier || ''" disabled /></el-form-item>
           <el-form-item label="备注" class="full-line"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item>
         </div>
-        <div class="action-footer">
+        <div class="gov-form-actions">
           <el-button @click="router.push('/farmer/origin-applications')">返回列表</el-button>
           <el-button @click="saveDraft">保存草稿</el-button>
           <el-button :disabled="hasPrecheckError" type="success" @click="submit">提交申报</el-button>
@@ -119,8 +124,8 @@ async function submit() {
       </el-form>
     </el-card>
 
-    <div class="stack">
-      <el-card class="panel-card metric-card">
+      <div class="gov-status-panel">
+        <el-card class="gov-compact-card">
         <template #header><strong>批次信息</strong></template>
         <div v-if="selectedBatch" class="info-list">
           <p><span>养殖场</span><b>{{ selectedBatch.farmName }}</b></p>
@@ -129,7 +134,7 @@ async function submit() {
           <p><span>起运地</span><b>{{ selectedBatch.location }}</b></p>
         </div>
       </el-card>
-      <el-card class="panel-card">
+      <el-card class="gov-compact-card">
         <template #header><div class="card-title"><strong>申报前自查清单</strong><el-button size="small" @click="store.refresh()">重新自查</el-button></div></template>
         <el-alert v-if="hasPrecheckError" type="error" :closable="false" title="存在自查异常，系统不会提交到官方兽医待办，请先整改异常项。" />
         <div class="check-list">
@@ -139,6 +144,7 @@ async function submit() {
           </div>
         </div>
       </el-card>
+    </div>
     </div>
   </section>
 </template>

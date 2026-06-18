@@ -1516,6 +1516,7 @@ export const mockApi = {
     if (!waste) throw new Error('诊疗废弃物记录不存在')
     waste.status = 'handled'
     waste.handledAt = input.handledAt
+    waste.handlingMethod = input.handlingMethod
     waste.voucherNo = input.voucherNo
     pushLog(data, 'clinic_admin', waste.handoverPerson, '完成诊疗废弃物处理', waste.wasteNo)
     pushNode(data, '诊疗废弃物处理', '动物诊疗管理', true, waste.handoverPerson, waste.id, `${waste.type} ${waste.weight}kg`)

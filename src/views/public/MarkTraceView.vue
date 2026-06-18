@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import productCertImg from '../../../image/产品证.png'
 import meatQualityCertImg from '../../../image/肉品品质检验合格证.png'
@@ -56,7 +56,7 @@ const certificates = {
     </header>
 
     <div class="trace-cards">
-      <section class="trace-card trace-fold-card">
+      <section class="trace-card trace-fold-card gov-compact-card">
         <button class="trace-fold-header" @click="markExpanded = !markExpanded">
           <span>
             <strong>检疫验讫标志信息</strong>
@@ -74,7 +74,7 @@ const certificates = {
         </div>
       </section>
 
-      <section class="trace-card trace-fold-card">
+      <section class="trace-card trace-fold-card gov-compact-card">
         <button class="trace-fold-header" @click="productExpanded = !productExpanded">
           <span>
             <strong>产品信息</strong>
@@ -95,7 +95,7 @@ const certificates = {
         </div>
       </section>
 
-      <section class="trace-card trace-cert-tabs-card">
+      <section class="trace-card trace-cert-tabs-card gov-compact-card">
         <h2 class="trace-card-title">三证信息</h2>
         <div class="trace-tab-nav">
           <button :class="{ active: activeCertTab === 'product' }" @click="activeCertTab = 'product'">产品证</button>

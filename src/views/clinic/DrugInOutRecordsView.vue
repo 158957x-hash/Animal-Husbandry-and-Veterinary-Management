@@ -94,6 +94,9 @@ function onReset() {
           <template #default="{ row }">{{ new Date(row.createdAt).toLocaleString('zh-CN') }}</template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="records.length" :page-size="10" />
+      </div>
     </div>
   </div>
 </template>

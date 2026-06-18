@@ -13,7 +13,6 @@ const roles: Array<{ role: UserRole; title: string; subtitle: string; accent: st
   { role: 'regulator', title: '监管人员', subtitle: '检疫监管与诊疗监管统一入口', accent: '监管' },
   { role: 'clinic_admin', title: '诊疗机构管理员', subtitle: '机构备案、兽医备案、药品库存、年度报告', accent: '诊疗' },
   { role: 'practicing_vet', title: '执业兽医', subtitle: '宠物建档、免疫台账、处方笺', accent: '处方' },
-  { role: 'pet_owner', title: '宠物主人', subtitle: '宠物档案、免疫台账和处方记录', accent: '宠物' },
 ]
 
 async function enter(role: UserRole) {
@@ -38,7 +37,7 @@ async function enter(role: UserRole) {
       </div>
     </section>
     <section class="role-grid">
-      <article v-for="item in roles" :key="item.role" class="role-card" @click="enter(item.role)">
+      <article v-for="item in roles" :key="item.role" class="role-card gov-compact-card" @click="enter(item.role)">
         <span class="role-accent">{{ item.accent }}</span>
         <h2>{{ item.title }}</h2>
         <p>{{ item.subtitle }}</p>

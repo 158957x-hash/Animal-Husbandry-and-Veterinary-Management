@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
@@ -43,7 +43,7 @@ const pendingSlaughterApplyBatches = computed(() => store.data.slaughterBatches.
 
 <template>
   <div class="gov-page">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="page-hero">
         <div>
           <h2>屠宰企业工作台</h2>
@@ -56,15 +56,15 @@ const pendingSlaughterApplyBatches = computed(() => store.data.slaughterBatches.
       </div>
     </el-card>
 
-    <div class="kpi-grid">
-      <div class="kpi-card"><span>今日入场批次</span><b>{{ todayEntryCount }}</b></div>
-      <div class="kpi-card"><span>待宰批次</span><b>{{ waitingSlaughterCount }}</b></div>
-      <div class="kpi-card"><span>待提交屠宰检疫申报</span><b>{{ pendingSlaughterApplyCount }}</b></div>
-      <div class="kpi-card"><span>已出产品证数量</span><b>{{ productCertCount }}</b></div>
-      <div class="kpi-card"><span>检疫标志库存</span><b>{{ markInventoryTotal }}</b></div>
+    <div class="gov-kpi-grid">
+      <div class="gov-kpi-card"><span>今日入场批次</span><b>{{ todayEntryCount }}</b></div>
+      <div class="gov-kpi-card"><span>待宰批次</span><b>{{ waitingSlaughterCount }}</b></div>
+      <div class="gov-kpi-card"><span>待提交屠宰检疫申报</span><b>{{ pendingSlaughterApplyCount }}</b></div>
+      <div class="gov-kpi-card"><span>已出产品证数量</span><b>{{ productCertCount }}</b></div>
+      <div class="gov-kpi-card"><span>检疫标志库存</span><b>{{ markInventoryTotal }}</b></div>
     </div>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><b>最近入场记录</b></template>
       <el-table :data="recentEntries" stripe>
         <el-table-column type="index" label="序号" width="70" />
@@ -87,7 +87,7 @@ const pendingSlaughterApplyBatches = computed(() => store.data.slaughterBatches.
       <el-empty v-if="!recentEntries.length" description="暂无入场记录" />
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><b>待提交屠宰检疫申报</b></template>
       <div v-for="batch in pendingSlaughterApplyBatches" :key="batch.id" class="task-item">
         <div>

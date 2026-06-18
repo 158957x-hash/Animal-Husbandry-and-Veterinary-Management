@@ -111,8 +111,8 @@ async function removePet(row: PetProfile) {
 </script>
 
 <template>
-  <div class="pet-page">
-    <el-card class="panel-card">
+  <div class="farmer-modern-page pet-page">
+    <el-card class="gov-compact-card">
       <div class="card-header-line">
         <div>
           <h2>宠物档案管理</h2>
@@ -127,7 +127,7 @@ async function removePet(row: PetProfile) {
       <div class="action-inline"><el-input v-model="keyword" placeholder="按主人、手机号、宠物名称或标识号筛选" clearable /><el-button>导出</el-button></div>
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="宠物档案" name="pets">
           <el-table :data="pets" stripe>
@@ -144,6 +144,9 @@ async function removePet(row: PetProfile) {
             <el-table-column label="状态" width="90"><template #default="{ row }"><el-tag :type="row.active ? 'success' : 'info'">{{ row.active ? '正常' : '停用' }}</el-tag></template></el-table-column>
             <el-table-column label="操作" width="220" fixed="right"><template #default="{ row }"><el-button size="small" @click="showPet(row)">查看详情</el-button><el-button size="small" @click="editPet(row)">编辑</el-button><el-button size="small" type="danger" @click="removePet(row)">删除/停用</el-button></template></el-table-column>
           </el-table>
+          <div class="gov-pagination-bar">
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="pets.length" :page-size="10" />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="主人档案" name="owners">
           <el-table :data="owners" stripe>
@@ -155,6 +158,9 @@ async function removePet(row: PetProfile) {
             <el-table-column label="状态" width="90"><template #default="{ row }"><el-tag :type="row.active ? 'success' : 'info'">{{ row.active ? '正常' : '停用' }}</el-tag></template></el-table-column>
             <el-table-column label="操作" width="190" fixed="right"><template #default="{ row }"><el-button size="small" @click="showOwner(row)">查看详情</el-button><el-button size="small" @click="editOwner(row)">编辑</el-button><el-button size="small" type="danger" @click="removeOwner(row)">删除</el-button></template></el-table-column>
           </el-table>
+          <div class="gov-pagination-bar">
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="owners.length" :page-size="10" />
+          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>

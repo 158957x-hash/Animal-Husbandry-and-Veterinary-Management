@@ -16,7 +16,7 @@ const rows = computed(() => store.data.quarantineCertificates.filter((item) => {
 
 <template>
   <section class="stack">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><strong>产地检疫证明抽查</strong></template>
       <el-form :inline="true">
         <el-form-item label="证明编号"><el-input v-model="filters.certificateNo" clearable /></el-form-item>
@@ -35,6 +35,9 @@ const rows = computed(() => store.data.quarantineCertificates.filter((item) => {
         <el-table-column label="出证时间" width="190"><template #default="scope">{{ formatTime(scope.row.validFrom) }}</template></el-table-column>
         <el-table-column label="证明状态" width="110"><template #default="scope"><el-tag :type="new Date(scope.row.validTo) > new Date() ? 'success' : 'danger'">{{ new Date(scope.row.validTo) > new Date() ? '有效' : '失效' }}</el-tag></template></el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="rows.length" :page-size="10" />
+      </div>
     </el-card>
   </section>
 </template>

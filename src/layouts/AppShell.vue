@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Bell, SwitchButton } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'
 import { useAppStore } from '../stores/app'
 
@@ -61,7 +62,6 @@ const menus = computed(() => {
     farmer: [
       { label: '养殖场户工作台', path: '/farmer/dashboard' },
       { label: '我的产地检疫申报', path: '/farmer/origin-applications' },
-      { label: '新增产地检疫申报', path: '/farmer/origin-apply' },
     ],
     vet: [
       { label: '产地检疫待办', path: '/vet/origin-todos' },
@@ -72,6 +72,7 @@ const menus = computed(() => {
       { label: '屠宰企业工作台', path: '/slaughter/dashboard' },
       { label: '入场查验', path: '/slaughter/entry-check' },
       { label: '待宰管理', path: '/slaughter/waiting-slaughter' },
+      { label: '屠宰管理', path: '/slaughter/slaughter-records' },
       // { label: '屠宰检疫申报', path: '/slaughter/slaughter-apply' },
       { label: '宰后管理', path: '/slaughter/slaughter-records' },
       { label: '肉品品质检验', path: '/slaughter/meat-quality' },
@@ -146,6 +147,8 @@ const menus = computed(() => {
     ],
     practicing_vet: [
       { label: '宠物档案管理', path: '/clinic/veterinarian/pets' },
+      { label: '宠物检疫管理', path: '' },
+      { label: '宠物免疫管理', path: '' },
       { label: '免疫台账管理', path: '/clinic/veterinarian/immunization' },
       { label: '接诊管理', path: '/clinic/veterinarian/consultations' },
       { label: '年度报告', path: '/clinic/veterinarian/reports' },
@@ -235,15 +238,24 @@ async function refreshData() {
       </div>
     </aside>
     <main class="main-panel">
-      <header class="topbar">
-        <div>
+      <header class="topbar app-header">
+        <div class="topbar-title">
           <p class="eyebrow">{{ roleText }}工作台</p>
           <h1>{{ store.session?.name }}</h1>
         </div>
-        <div class="topbar-stats">
-          <span>申报 {{ store.data.originApplications.length }}</span>
-          <span>证明 {{ store.data.quarantineCertificates.length + store.data.productCertificates.length }}</span>
-          <span>预警 {{ store.data.alerts.length }}</span>
+        <div class="user-section">
+          <el-badge :value="store.data.alerts.length" :hidden="!store.data.alerts.length">
+            <el-button class="header-icon-btn" text title="消息提醒" aria-label="消息提醒">
+              <el-icon><Bell /></el-icon>
+            </el-button>
+          </el-badge>
+          <div class="user-profile">
+            <div class="user-avatar">{{ (store.session?.name || 'U')[0] }}</div>
+            <span class="user-name">{{ store.session?.name }}</span>
+          </div>
+          <el-button class="header-icon-btn logout-btn" text title="退出登录" aria-label="退出登录" @click="logout">
+            <el-icon><SwitchButton /></el-icon>
+          </el-button>
         </div>
       </header>
       <router-view />

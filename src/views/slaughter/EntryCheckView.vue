@@ -71,7 +71,7 @@ function handleEntryAction(entry: SlaughterEntryRecord) {
 
 <template>
   <section class="gov-page">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="page-hero">
         <div>
           <h2>入场查验</h2>
@@ -80,7 +80,7 @@ function handleEntryAction(entry: SlaughterEntryRecord) {
       </div>
     </el-card>
 
-    <el-card class="panel-card search-card-flat">
+    <el-card class="gov-compact-card search-card-flat">
       <div class="page-toolbar compact">
         <el-input v-model="keywordInput" class="filter-keyword" placeholder="按入场编号、动物证编号、养殖场、车牌筛选" clearable @keyup.enter="searchEntries" />
         <el-select v-model="statusFilterInput" class="filter-short" placeholder="查验状态" clearable>
@@ -95,7 +95,7 @@ function handleEntryAction(entry: SlaughterEntryRecord) {
       </div>
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><strong>入场查验列表</strong></template>
       <el-table :data="filteredEntries" stripe>
         <el-table-column prop="entryNo" label="入场编号" min-width="170" />
@@ -126,6 +126,9 @@ function handleEntryAction(entry: SlaughterEntryRecord) {
           </template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="filteredEntries.length" :page-size="10" />
+      </div>
       <el-empty v-if="!filteredEntries.length" description="暂无入场查验数据" />
     </el-card>
   </section>

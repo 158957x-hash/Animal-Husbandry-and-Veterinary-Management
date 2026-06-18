@@ -102,27 +102,27 @@ function onTabChange() {
 </script>
 
 <template>
-  <div class="outbound-page">
-    <div class="page-header-card">
-      <div class="header-left">
+  <div class="farmer-modern-page outbound-page">
+    <section class="gov-page-header">
+      <div>
         <h2>药品出库管理</h2>
         <p>处理执业医师提交的药品领用单，按库存位置选择出库数量后确认出库。</p>
       </div>
-      <div class="header-right">
+      <div class="gov-page-header__actions">
         <el-button @click="store.refresh()">刷新</el-button>
       </div>
-    </div>
+    </section>
 
-    <div class="search-card">
+    <section class="gov-toolbar-card gov-compact-card">
       <div class="search-row">
         <el-input v-model="keyword" placeholder="搜索领用单号、处方编号、宠物名称或兽医" clearable class="search-input">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-button type="primary"><el-icon><Search /></el-icon>搜索</el-button>
       </div>
-    </div>
+    </section>
 
-    <div class="tab-card">
+    <section class="gov-table-card gov-compact-card tab-card">
       <el-tabs v-model="activeTab" @tab-change="onTabChange">
         <el-tab-pane name="pending">
           <template #label>
@@ -161,7 +161,10 @@ function onTabChange() {
           </template>
         </el-table-column>
       </el-table>
-    </div>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="currentList.length" :page-size="10" />
+      </div>
+    </section>
 
     <el-dialog v-model="detailVisible" title="药品出库单详情" width="980px" destroy-on-close>
       <div v-if="currentReq" class="detail-body">

@@ -45,9 +45,20 @@ const statusDescription = computed(() => {
 </script>
 
 <template>
-  <section v-if="application" class="gov-page two-col">
-    <el-card class="panel-card certificate-card">
-      <template #header><div class="card-title"><strong>申报详情</strong><el-tag :type="statusType[application.status]">{{ statusText[application.status] }}</el-tag></div></template>
+  <section v-if="application" class="farmer-modern-page">
+    <div class="gov-page-header">
+      <div>
+        <h2>申报详情</h2>
+        <p>{{ application.applicationNo }} · {{ application.animalType }} · {{ application.destination }}</p>
+      </div>
+      <div class="gov-page-header__actions">
+        <el-tag :type="statusType[application.status]">{{ statusText[application.status] }}</el-tag>
+        <el-button @click="router.push('/farmer/origin-applications')">返回列表</el-button>
+      </div>
+    </div>
+
+    <div class="gov-two-column">
+      <el-card class="gov-compact-card certificate-card">
       <div class="info-list">
         <p><span>申报编号</span><b>{{ application.applicationNo }}</b></p>
         <p><span>动物种类</span><b>{{ application.animalType }}</b></p>
@@ -80,15 +91,15 @@ const statusDescription = computed(() => {
       <div class="info-list"><p v-for="log in logs" :key="log.id"><span>{{ formatTime(log.createdAt) }}</span><b>{{ log.actor }}｜{{ log.action }}</b></p><p v-if="!logs.length"><span>暂无</span><b>当前申报暂无独立操作日志</b></p></div>
     </el-card>
 
-    <div class="stack">
-      <el-card class="panel-card">
+      <div class="gov-status-panel">
+        <el-card class="gov-compact-card">
         <template #header><strong>当前状态说明</strong></template>
         <el-alert :type="application.status === 'rejected' ? 'error' : application.status === 'draft' ? 'info' : 'success'" :closable="false" :title="statusDescription" />
         <div v-if="application.status === 'rejected'" class="action-footer"><el-button type="success" @click="router.push(`/farmer/origin-apply/${application.id}`)">编辑后重新提交</el-button></div>
         <div v-if="application.status === 'draft'" class="action-footer"><el-button @click="router.push(`/farmer/origin-apply/${application.id}`)">继续编辑</el-button><el-button type="success" @click="router.push('/farmer/origin-applications')">返回列表提交</el-button></div>
       </el-card>
 
-      <el-card v-if="certificate" class="panel-card certificate-paper">
+      <el-card v-if="certificate" class="gov-compact-card certificate-paper">
         <template #header><strong>动物检疫合格证明</strong></template>
         <div class="cert-image-box">
           <img :src="certImage" alt="动物检疫合格证明" />
@@ -105,7 +116,7 @@ const statusDescription = computed(() => {
         </div>
       </el-card>
 
-      <el-card v-if="transport" class="panel-card">
+      <el-card v-if="transport" class="gov-compact-card">
         <template #header><strong>运输任务</strong></template>
         <div class="info-list">
           <p><span>运输状态</span><b>{{ statusText[transport.status] }}</b></p>
@@ -115,6 +126,7 @@ const statusDescription = computed(() => {
           <el-timeline-item v-for="point in transport.route" :key="point.name" :timestamp="point.time" :type="point.status === 'risk' ? 'danger' : point.status === 'done' ? 'success' : 'primary'"><b>{{ point.name }}</b><p>{{ point.description }}</p></el-timeline-item>
         </el-timeline>
       </el-card>
+    </div>
     </div>
   </section>
   <el-empty v-else description="暂无申报记录" />

@@ -19,14 +19,20 @@ const latestStatus = computed(() => {
 </script>
 
 <template>
-  <section class="dashboard stack">
-    <div class="kpi-grid">
-      <article v-for="item in kpis" :key="item.label" class="kpi-card">
+  <section class="farmer-modern-page regulator-dashboard dashboard stack">
+    <section class="gov-page-header">
+      <div>
+        <h2>监管驾驶舱</h2>
+        <p>集中查看产地申报、动物证明、运输任务和产品证明等监管链路数据。</p>
+      </div>
+    </section>
+    <div class="gov-kpi-grid">
+      <article v-for="item in kpis" :key="item.label" class="gov-kpi-card">
         <span>{{ item.label }}</span>
         <b>{{ item.value }}</b>
       </article>
     </div>
-    <el-card class="panel-card chain-card">
+    <el-card class="gov-compact-card chain-card">
       <template #header><strong>养殖场到屠宰场完整链路</strong></template>
       <div class="chain-flow">
         <span>养殖批次</span>
@@ -40,7 +46,7 @@ const latestStatus = computed(() => {
       <p class="chain-status">当前最新业务状态：{{ statusText[latestStatus] }}</p>
     </el-card>
     <section class="page-grid two-col">
-      <el-card class="panel-card">
+      <el-card class="gov-compact-card">
         <template #header><strong>预警记录</strong></template>
         <div v-for="alert in store.data.alerts" :key="alert.id" class="alert-item" :class="alert.level">
           <b>{{ alert.type }}</b>
@@ -49,7 +55,7 @@ const latestStatus = computed(() => {
         </div>
         <el-empty v-if="!store.data.alerts.length" description="暂无预警" />
       </el-card>
-      <el-card class="panel-card">
+      <el-card class="gov-compact-card">
         <template #header><strong>操作日志</strong></template>
         <el-timeline>
           <el-timeline-item v-for="log in store.data.operationLogs" :key="log.id" :timestamp="formatTime(log.createdAt)">

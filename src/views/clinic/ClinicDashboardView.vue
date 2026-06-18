@@ -15,17 +15,17 @@ const reportRate = computed(() => {
 </script>
 
 <template>
-  <div class="page-grid">
-    <div class="kpi-grid">
-      <div class="kpi-card"><span>诊疗机构</span><b>{{ store.data.clinicInstitutions.length }}</b></div>
-      <div class="kpi-card"><span>执业兽医</span><b>{{ store.data.veterinarians.length }}</b></div>
-      <div class="kpi-card"><span>宠物建档</span><b>{{ store.data.petProfiles.length }}</b></div>
-      <div class="kpi-card"><span>本月处方</span><b>{{ monthlyPrescriptions }}</b></div>
-      <div class="kpi-card"><span>报告提交率</span><b>{{ reportRate }}%</b></div>
-      <div class="kpi-card"><span>废弃物待处理</span><b>{{ store.data.medicalWasteRecords.filter((item) => item.status === 'pending').length }}</b></div>
+  <div class="farmer-modern-page">
+    <div class="gov-kpi-grid">
+      <div class="gov-kpi-card"><span>诊疗机构</span><b>{{ store.data.clinicInstitutions.length }}</b></div>
+      <div class="gov-kpi-card"><span>执业兽医</span><b>{{ store.data.veterinarians.length }}</b></div>
+      <div class="gov-kpi-card"><span>宠物建档</span><b>{{ store.data.petProfiles.length }}</b></div>
+      <div class="gov-kpi-card"><span>本月处方</span><b>{{ monthlyPrescriptions }}</b></div>
+      <div class="gov-kpi-card"><span>报告提交率</span><b>{{ reportRate }}%</b></div>
+      <div class="gov-kpi-card"><span>废弃物待处理</span><b>{{ store.data.medicalWasteRecords.filter((item) => item.status === 'pending').length }}</b></div>
     </div>
 
-    <el-card class="panel-card chain-card">
+    <el-card class="gov-compact-card chain-card">
       <h2>动物诊疗管理数据流</h2>
       <div class="chain-flow">
         <span>机构备案</span>

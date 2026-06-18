@@ -112,7 +112,7 @@ describe('页面交互规范化 CRUD 业务规则', () => {
     const updated = await mockApi.updateMedicalWaste(waste.id, { storageLocation: '暂存柜 B', weight: 1.5 })
     const voided = await mockApi.voidMedicalWaste(updated.id, '登记重复')
     const handled = await mockApi.createMedicalWaste({ type: '处方包装废弃物', sourceBusinessType: 'immunization', sourceBusinessId: record.id, weight: 0.6, generatedAt: '2026-06-12T11:00:00.000Z', storageLocation: '暂存柜 C', disposalCompany: '合肥绿安医疗废弃物处置有限公司', handoverPerson: '王护士' })
-    await mockApi.completeMedicalWaste({ wasteId: handled.id, handledAt: '2026-06-12T12:00:00.000Z', voucherNo: 'WASTE-001' })
+    await mockApi.completeMedicalWaste({ wasteId: handled.id, handledAt: '2026-06-12T12:00:00.000Z', handlingMethod: '高温焚烧', voucherNo: 'WASTE-001' })
 
     await expect(mockApi.voidMedicalWaste(handled.id, '处理完成后作废')).rejects.toThrow('已处理废弃物记录不能作废')
     const data = await mockApi.getBootstrapData()

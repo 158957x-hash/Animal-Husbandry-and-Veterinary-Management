@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -238,7 +238,7 @@ const markUsage = computed(() => {
 <template>
   <section v-if="application" class="audit-layout">
     <!-- 顶部标题栏 -->
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="card-header-line">
         <div>
           <h2>屠宰检疫审核 - {{ application.applicationNo }}</h2>
@@ -255,7 +255,7 @@ const markUsage = computed(() => {
       <!-- ========== 左栏：申报内容（与屠宰端一致） ========== -->
       <div class="col-side">
         <!-- 一、关联待宰批次 -->
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>关联待宰批次</strong></template>
           <div class="info-list compact">
             <p><span>待宰批次编号</span><b>{{ batch?.batchNo || '-' }}</b></p>
@@ -273,7 +273,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 二、动物证与入场信息 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>动物证与入场信息</strong></template>
           <div v-if="relatedCert" class="info-list compact">
             <p><span>动物检疫合格证明编号</span><b>{{ relatedCert.certificateNo }}</b></p>
@@ -289,7 +289,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 三、申报条件 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>申报条件</strong></template>
           <div class="condition-grid">
             <div class="cond-row"><span>入场查验状态</span><el-tag :type="entryRecord?.status === 'entry_passed' ? 'success' : 'danger'" size="small">{{ entryRecord?.status === 'entry_passed' ? '已通过' : '未通过' }}</el-tag></div>
@@ -300,7 +300,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 四、自检资料 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>自检资料</strong></template>
           <div class="self-check-section">
             <div class="section-title">非洲猪瘟检测</div>
@@ -321,7 +321,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 五、屠宰检疫申报信息 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>屠宰检疫申报信息</strong></template>
           <div class="info-list compact">
             <p><span>申报类型</span><b>{{ application.purpose === '急宰' ? '急宰申报' : '正常屠宰检疫' }}</b></p>
@@ -337,7 +337,7 @@ const markUsage = computed(() => {
       <!-- ========== 中栏：官方兽医审核工作区 ========== -->
       <div class="col-main">
         <!-- 身份核验 -->
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>身份核验</strong><el-tag type="success" size="small" style="float:right">已通过</el-tag></template>
           <div class="identity-row">
             <span>王敏 / AH-VET-0001 / 利辛县动物卫生监督所</span>
@@ -347,7 +347,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 受理条件核验 -->
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>受理条件核验</strong><el-tag v-if="acceptChecksAllPassed" type="success" size="small" style="float:right">允许受理</el-tag><el-tag v-else type="danger" size="small" style="float:right">条件未满足</el-tag></template>
           <div class="check-grid">
             <div v-for="check in acceptChecks" :key="check.label" class="check-item">
@@ -359,7 +359,7 @@ const markUsage = computed(() => {
 
         <!-- 根据状态显示不同操作区 -->
         <!-- 待受理 -->
-        <el-card v-if="isPendingAccept" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isPendingAccept" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>受理操作</strong></template>
           <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
             <el-button type="success" :disabled="!acceptChecksAllPassed" @click="handleAccept">受理申报</el-button>
@@ -369,7 +369,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 宰前检查 -->
-        <el-card v-if="isAcceptedPendingPreCheck" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isAcceptedPendingPreCheck" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>宰前检查</strong></template>
           <div class="ante-check-form">
             <div v-for="(item, idx) in anteCheckItems" :key="idx" class="ante-check-row">
@@ -401,7 +401,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 宰后产品批次 -->
-        <el-card v-if="isPostProductGenerated" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isPostProductGenerated" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>宰后产品批次</strong></template>
           <template v-if="postProductBatches.length > 0">
             <div v-for="(pb, pidx) in postProductBatches" :key="pb.id || pidx" class="batch-item" style="border:1px solid #ebeef5;border-radius:4px;padding:8px;margin-bottom:8px">
@@ -418,7 +418,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 待产品出证 -->
-        <el-card v-if="isProductCertPending" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isProductCertPending" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>产品出证</strong></template>
           <template v-if="postProductBatches.length > 0">
             <div v-for="(pb, pidx) in postProductBatches" :key="pb.id || pidx" class="batch-item" style="border:1px solid #ebeef5;border-radius:4px;padding:8px;margin-bottom:8px">
@@ -448,7 +448,7 @@ const markUsage = computed(() => {
         </el-card>
 
         <!-- 已出证 -->
-        <el-card v-if="isProductCertIssued" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isProductCertIssued" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>出证信息</strong></template>
           <div class="cert-summary">
             <div class="cert-summary-icon">
@@ -472,7 +472,7 @@ const markUsage = computed(() => {
 
       <!-- ========== 右栏：产地检疫证书 ========== -->
       <div class="col-side">
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>产地检疫证书</strong></template>
           <div v-if="relatedCert" style="text-align:center;padding:16px;background:#fff;border:1px solid #e0e0e0;border-radius:4px">
             <img :src="certImage" alt="动物检疫合格证明" style="width:100%;max-width:260px;display:block;margin:0 auto" />

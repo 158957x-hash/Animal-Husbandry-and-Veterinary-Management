@@ -66,20 +66,21 @@ function edit(row: OriginQuarantineApplication) {
 </script>
 
 <template>
-  <div class="gov-page">
-    <el-card class="panel-card">
-      <div class="page-hero">
-        <div>
-          <h2>我的产地检疫申报</h2>
-          <p>集中查看申报进度，并根据当前状态办理提交、撤回、查看证明和运输任务等事项。</p>
-        </div>
-        <div class="page-hero-actions">
-          <el-button type="success" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
-        </div>
+  <div class="farmer-modern-page">
+    <section class="gov-page-header">
+      <div>
+        <h2>我的产地检疫申报</h2>
+        <p>集中查看申报进度，并根据当前状态办理提交、撤回、查看证明和运输任务等事项。</p>
       </div>
-      <div class="page-toolbar">
-        <el-input v-model="keywordInput" class="filter-keyword" placeholder="按编号、动物、目的地、车牌筛选" clearable @keyup.enter="searchApplications" />
-        <el-select v-model="statusFilterInput" class="filter-short" placeholder="状态筛选" clearable>
+      <div class="gov-page-header__actions">
+        <el-button type="primary" @click="router.push('/farmer/origin-apply')">新增申报</el-button>
+      </div>
+    </section>
+
+    <section class="gov-toolbar-card gov-compact-card">
+      <div class="gov-filter-grid">
+        <el-input v-model="keywordInput" placeholder="按编号、动物、目的地、车牌筛选" clearable @keyup.enter="searchApplications" />
+        <el-select v-model="statusFilterInput" placeholder="状态筛选" clearable>
           <el-option label="草稿" value="draft" />
           <el-option label="已提交" value="submitted" />
           <el-option label="待官方兽医审核" value="origin_reviewing" />
@@ -89,16 +90,16 @@ function edit(row: OriginQuarantineApplication) {
           <el-option label="已到达" value="arrived" />
           <el-option label="已作废" value="voided" />
         </el-select>
-        <div class="toolbar-actions">
+        <div class="gov-card-title__actions">
           <el-button type="primary" @click="searchApplications">搜索</el-button>
           <el-button @click="refreshApplications">刷新</el-button>
           <el-button>导出</el-button>
         </div>
       </div>
-    </el-card>
+    </section>
 
-    <el-card class="panel-card">
-      <template #header><b>申报列表</b></template>
+    <section class="gov-table-card gov-compact-card">
+      <div class="gov-table-card__header"><div><strong>申报列表</strong><small>按申报状态办理对应事项</small></div></div>
       <el-table :data="applications" stripe>
         <el-table-column type="index" label="序号" width="70" />
         <el-table-column prop="applicationNo" label="申报编号" min-width="160" />
@@ -137,7 +138,10 @@ function edit(row: OriginQuarantineApplication) {
           </template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="applications.length" :page-size="10" />
+      </div>
       <el-empty v-if="!applications.length" description="暂无申报记录" />
-    </el-card>
+    </section>
   </div>
 </template>

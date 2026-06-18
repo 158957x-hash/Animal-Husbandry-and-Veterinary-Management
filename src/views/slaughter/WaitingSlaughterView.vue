@@ -209,7 +209,7 @@ function handleAction(batchId: string, action: string) {
 
 <template>
   <section class="gov-page">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="page-hero">
         <div>
           <h2>待宰管理</h2>
@@ -218,7 +218,7 @@ function handleAction(batchId: string, action: string) {
       </div>
     </el-card>
 
-    <el-card class="panel-card search-card-flat">
+    <el-card class="gov-compact-card search-card-flat">
       <div class="page-toolbar compact">
         <el-input v-model="keywordInput" class="filter-keyword" placeholder="按批次编号、入场编号、动物证编号、养殖场筛选" clearable @keyup.enter="searchBatches" />
         <el-select v-model="statusFilterInput" class="filter-short" placeholder="当前状态" clearable>
@@ -231,7 +231,7 @@ function handleAction(batchId: string, action: string) {
       </div>
     </el-card>
 
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><strong>待宰批次列表</strong></template>
       <el-table :data="filteredBatches" stripe>
         <el-table-column prop="batchNo" label="待宰批次编号" min-width="160" />
@@ -283,6 +283,9 @@ function handleAction(batchId: string, action: string) {
           </template>
         </el-table-column>
       </el-table>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="filteredBatches.length" :page-size="10" />
+      </div>
       <el-empty v-if="!filteredBatches.length" description="暂无待宰批次" />
     </el-card>
   </section>

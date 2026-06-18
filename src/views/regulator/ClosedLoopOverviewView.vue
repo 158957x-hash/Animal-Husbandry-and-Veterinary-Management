@@ -14,7 +14,7 @@ async function report() {
 
 <template>
   <section class="page-grid two-col">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><div class="card-header-line"><strong>检疫屠宰闭环校验总览</strong><el-button type="success" @click="report">生成闭环校验报告</el-button></div></template>
       <el-timeline>
         <el-timeline-item v-for="node in store.data.closedLoopNodes" :key="node.id" :timestamp="formatTime(node.operatedAt)" :type="node.passed ? 'success' : 'danger'">
@@ -25,9 +25,12 @@ async function report() {
           </button>
         </el-timeline-item>
       </el-timeline>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, prev, pager, next" :total="store.data.closedLoopNodes.length" :page-size="10" />
+      </div>
       <el-empty v-if="!store.data.closedLoopNodes.length" description="完成业务流转后生成闭环节点" />
     </el-card>
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <template #header><strong>节点详情</strong></template>
       <div v-if="selected" class="info-list">
         <p><span>节点</span><b>{{ selected.nodeName }}</b></p>

@@ -85,20 +85,20 @@ function onReset() {
 </script>
 
 <template>
-  <div class="inventory-page">
-    <div class="page-header-card">
-      <div class="header-left">
+  <div class="farmer-modern-page inventory-page">
+    <section class="gov-page-header">
+      <div>
         <h2>药品库存管理</h2>
         <p>管理药品库存信息，支持入库、编辑、停用及库存盘点。</p>
       </div>
-      <div class="header-right">
+      <div class="gov-page-header__actions">
         <el-button @click="store.refresh()" :icon="Refresh">刷新</el-button>
         <el-button type="primary" @click="openStock">药品入库</el-button>
         <el-button type="warning">库存盘点</el-button>
       </div>
-    </div>
+    </section>
 
-    <div class="search-card">
+    <section class="gov-toolbar-card gov-compact-card">
       <el-form :model="searchForm" inline>
         <el-form-item label="药品名称">
           <el-input v-model="searchForm.drugName" placeholder="请输入药品名称" clearable />
@@ -117,9 +117,10 @@ function onReset() {
           <el-button @click="onReset">重置</el-button>
         </el-form-item>
       </el-form>
-    </div>
+    </section>
 
-    <div class="table-card">
+    <section class="gov-table-card gov-compact-card">
+      <div class="gov-table-card__header"><div><strong>库存列表</strong><small>按药品名称、规格、批号和单位合并展示库存</small></div></div>
       <el-table :data="drugs" stripe style="width: 100%" empty-text="暂无药品库存">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="drugName" label="药品名称" min-width="180" />
@@ -148,7 +149,10 @@ function onReset() {
           </template>
         </el-table-column>
       </el-table>
-    </div>
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="drugs.length" :page-size="10" />
+      </div>
+    </section>
 
     <!-- 入库弹窗 -->
     <el-dialog v-model="stockDialog" title="药品入库" width="620px" destroy-on-close>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
@@ -92,7 +92,7 @@ const certViewDialogVisible = ref(false)
 
 <template>
   <section v-if="productBatch" class="audit-layout">
-    <el-card class="panel-card">
+    <el-card class="gov-compact-card">
       <div class="card-header-line">
         <div>
           <h2>宰后检疫详情</h2>
@@ -112,7 +112,7 @@ const certViewDialogVisible = ref(false)
 
     <div class="three-col-layout">
       <div class="col-left">
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>产品批次信息</strong></template>
           <div class="info-list compact">
             <p><span>产品批次编号</span><b>{{ productBatch.productBatchNo }}</b></p>
@@ -127,7 +127,7 @@ const certViewDialogVisible = ref(false)
             <p><span>产品重量</span><b>{{ productBatch.productWeight }} kg</b></p>
           </div>
         </el-card>
-        <el-card class="panel-card compact-card" style="margin-top:8px">
+        <el-card class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>上游来源信息</strong></template>
           <div class="info-list compact">
             <p><span>动物检疫合格证明编号</span><b>{{ quarantineCert?.certificateNo || '-' }}</b></p>
@@ -140,7 +140,7 @@ const certViewDialogVisible = ref(false)
       </div>
 
       <div class="col-main">
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>宰后同步检疫结果</strong></template>
           <div class="ante-check-form" v-if="checkDetail?.items?.length">
             <div v-for="(item, idx) in checkDetail.items" :key="idx" class="ante-check-row readonly">
@@ -159,7 +159,7 @@ const certViewDialogVisible = ref(false)
           </div>
         </el-card>
 
-        <el-card v-if="isProductCertIssued" class="panel-card compact-card" style="margin-top:8px">
+        <el-card v-if="isProductCertIssued" class="gov-compact-card compact-card" style="margin-top:8px">
           <template #header><strong>产品检疫出证</strong></template>
           <el-tag type="success" size="large">动物产品检疫证明已出具</el-tag>
           <div class="info-list compact" style="margin-top:12px">
@@ -171,7 +171,7 @@ const certViewDialogVisible = ref(false)
       </div>
 
       <div class="col-right">
-        <el-card class="panel-card compact-card">
+        <el-card class="gov-compact-card compact-card">
           <template #header><strong>证书查看</strong></template>
           <el-tabs v-model="certViewTab" type="card" size="small">
             <el-tab-pane v-if="isProductCertIssued" label="产品证" name="product">
