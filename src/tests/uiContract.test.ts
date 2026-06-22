@@ -72,4 +72,36 @@ describe('菜单与免疫台账界面契约', () => {
     expect(originApply).toContain('type="datetime"')
     expect(originApply).not.toContain('<el-form-item label="启运时间"><el-input v-model="form.departureTime" /></el-form-item>')
   })
+
+  it('产地检疫查验支持取证附件上传弹窗和人脸识别', () => {
+    const originInspection = readSource('../views/vet/OriginInspectionView.vue')
+
+    expect(originInspection).toContain('上传附件')
+    expect(originInspection).toContain('uploadDialogVisible')
+    expect(originInspection).toContain('附件类型')
+    expect(originInspection).toContain('车辆照片')
+    expect(originInspection).toContain('el-upload')
+    expect(originInspection).toContain('上传成功')
+    expect(originInspection).toContain('人脸识别')
+    expect(originInspection).toContain('faceDialogVisible')
+    expect(originInspection).toContain('getUserMedia')
+    expect(originInspection).toContain('face-camera-video')
+  })
+
+  it('官方兽医三个检疫页面均支持摄像头人脸识别', () => {
+    const originInspection = readSource('../views/vet/OriginInspectionView.vue')
+    const slaughterAudit = readSource('../views/vet/SlaughterAuditDetailView.vue')
+    const postMortem = readSource('../views/vet/PostMortemCheckDetailView.vue')
+
+    for (const source of [originInspection, slaughterAudit, postMortem]) {
+      expect(source).toContain('人脸识别')
+      expect(source).toContain('faceDialogVisible')
+      expect(source).toContain('getUserMedia')
+      expect(source).toContain('face-camera-video')
+      expect(source).toContain('face-scan-frame')
+      expect(source).toContain('stopFaceRecognition')
+      expect(source).toContain('未核验')
+      expect(source).toContain('identityVerified')
+    }
+  })
 })

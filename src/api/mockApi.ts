@@ -2460,9 +2460,15 @@ export const mockApi = {
 
   async applyQuarantineMarkReturn(input: QuarantineMarkReturnApplicationInput): Promise<QuarantineMarkApplication> {
     const data = readData()
-    const availableReturnMarks = data.quarantineMarks.filter((item) => item.markType === input.markType && (item.status === 'in_stock' || item.status === 'issued'))
-    if (availableReturnMarks.length < input.quantity) throw new Error(`可退回标志不足，需要 ${input.quantity} 枚，可退回 ${availableReturnMarks.length} 枚`)
-    const application: QuarantineMarkApplication = {
+    if (input.markNos && input.markNos.length) {
+      if (input.markNos.length !== input.quantity) throw new Error(`选择的标志数量(${input.markNos.length})与退回数量(${input.quantity})不一致`)
+      const validMarks = data.quarantineMarks.filter((m) => input.markNos!.includes(m.markNo) && m.markType === input.markType && (m.status === 'issued' || m.status === 'in_stock'))
+      if (validMarks.length !== input.markNos.length) throw new Error('部分标志编号不存在或不可退回')
+    } else {
+      const availableReturnMarks = data.quarantineMarks.filter((item) => item.markType === input.markType && (item.status === 'in_stock' || item.status === 'issued'))
+      if (availableReturnMarks.length < input.quantity) throw new Error(`可退回标志不足，需要 ${input.quantity} 枚，可退回 ${availableReturnMarks.length} 枚`)
+    }
+    const application: QuarantineMarkApplication & { markNos?: string[] } = {
       id: id('mark-ret-app'),
       applicationNo: no('BZTH'),
       orgId: 'org-slaughter-001',
@@ -2473,6 +2479,7 @@ export const mockApi = {
       reason: input.reason,
       status: 'return_pending_review',
       appliedBy: input.appliedBy,
+      markNos: input.markNos,
       createdAt: now(),
     }
     data.quarantineMarkApplications.unshift(application)
@@ -2505,6 +2512,7 @@ export const mockApi = {
         quantity: application.quantity,
         reason: application.reason,
         status: 'pending_return' as const,
+        markNos: (application as any).markNos,
         createdAt: now(),
       }
       data.quarantineMarkReturnOrders.unshift(returnOrder)
@@ -2566,7 +2574,7 @@ export const mockApi = {
     return clone(application)
   },
 
-  async issueQuarantineMarks(issueOrderId: string): Promise<QuarantineMarkApplication> {
+  async issueQuarantineMarks(issueOrderId: string, markNos?: string[]): Promise<QuarantineMarkApplication> {
     const data = readData()
     const issueOrder = data.quarantineMarkIssueOrders.find((order) => order.id === issueOrderId || order.applicationId === issueOrderId)
     if (!issueOrder) throw new Error('待发放单不存在')
@@ -2574,36 +2582,46 @@ export const mockApi = {
     const application = data.quarantineMarkApplications.find((a) => a.id === issueOrder.applicationId)
     if (!application) throw new Error('检疫验讫标志申领记录不存在')
 
+    if (markNos && markNos.length) {
+      if (markNos.length !== issueOrder.quantity) throw new Error(`选择的标志数量(${markNos.length})与申领数量(${issueOrder.quantity})不一致`)
+      const selectedMarks = data.quarantineMarks.filter((m) => markNos.includes(m.markNo))
+      if (selectedMarks.length !== markNos.length) throw new Error('部分标志编号不存在')
+      selectedMarks.forEach((mark) => {
+        mark.status = 'issued'
+        mark.ownerOrg = application.orgName
+        mark.issuedAt = now()
+      })
+    } else {
+      // 兼容旧逻辑：按编号段生成
+      const startMatch = issueOrder.rangeStart.match(/^([A-Z]{2}\d{8})(\d{4})$/)
+      const endMatch = issueOrder.rangeEnd.match(/^([A-Z]{2}\d{8})(\d{4})$/)
+      if (!startMatch || !endMatch) throw new Error('标志编号格式异常')
+      const prefix = startMatch[1]
+      const startNum = parseInt(startMatch[2], 10)
+      const endNum = parseInt(endMatch[2], 10)
+      for (let i = startNum; i <= endNum; i++) {
+        const markNo = `${prefix}${String(i).padStart(4, '0')}`
+        const exists = data.quarantineMarks.some((item) => item.markNo === markNo)
+        if (exists) continue
+        const mark: QuarantineMark = {
+          id: id('mark'),
+          markNo,
+          markType: application.markType,
+          ownerOrg: application.orgName,
+          status: 'issued',
+          qrCode: `https://trace.animal-vet.gov.cn/mark/${markNo}`,
+          issuedAt: now(),
+        }
+        data.quarantineMarks.unshift(mark)
+      }
+    }
+
     application.status = 'issued'
     application.issuedRangeStart = issueOrder.rangeStart
     application.issuedRangeEnd = issueOrder.rangeEnd
     issueOrder.status = 'issued'
     issueOrder.issuedBy = '市级畜牧兽医监管员'
     issueOrder.issuedAt = now()
-
-    const startMatch = issueOrder.rangeStart.match(/^([A-Z]{2}\d{8})(\d{4})$/)
-    const endMatch = issueOrder.rangeEnd.match(/^([A-Z]{2}\d{8})(\d{4})$/)
-    if (!startMatch || !endMatch) throw new Error('标志编号格式异常')
-
-    const prefix = startMatch[1]
-    const startNum = parseInt(startMatch[2], 10)
-    const endNum = parseInt(endMatch[2], 10)
-
-    for (let i = startNum; i <= endNum; i++) {
-      const markNo = `${prefix}${String(i).padStart(4, '0')}`
-      const exists = data.quarantineMarks.some((item) => item.markNo === markNo)
-      if (exists) continue
-      const mark: QuarantineMark = {
-        id: id('mark'),
-        markNo,
-        markType: application.markType,
-        ownerOrg: application.orgName,
-        status: 'in_stock',
-        qrCode: `https://trace.animal-vet.gov.cn/mark/${markNo}`,
-        issuedAt: now(),
-      }
-      data.quarantineMarks.unshift(mark)
-    }
 
     let inventory = data.quarantineMarkInventories.find((inv) => inv.markType === application.markType && inv.orgId === application.orgId)
     if (!inventory) {
@@ -2635,8 +2653,15 @@ export const mockApi = {
     const application = data.quarantineMarkApplications.find((a) => a.id === returnOrder.applicationId)
     if (!application) throw new Error('检疫验讫标志退回申请不存在')
 
-    const returnableMarks = data.quarantineMarks.filter((item) => item.markType === returnOrder.markType && (item.status === 'in_stock' || item.status === 'issued')).slice(0, returnOrder.quantity)
-    if (returnableMarks.length < returnOrder.quantity) throw new Error(`可退回标志不足，需要 ${returnOrder.quantity} 枚，可退回 ${returnableMarks.length} 枚`)
+    const returnOrderMarkNos = returnOrder.markNos
+    let returnableMarks: QuarantineMark[]
+    if (returnOrderMarkNos && returnOrderMarkNos.length) {
+      returnableMarks = data.quarantineMarks.filter((item) => returnOrderMarkNos.includes(item.markNo))
+      if (returnableMarks.length !== returnOrder.quantity) throw new Error(`部分标志编号不存在，需要 ${returnOrder.quantity} 枚，找到 ${returnableMarks.length} 枚`)
+    } else {
+      returnableMarks = data.quarantineMarks.filter((item) => item.markType === returnOrder.markType && (item.status === 'in_stock' || item.status === 'issued')).slice(0, returnOrder.quantity)
+      if (returnableMarks.length < returnOrder.quantity) throw new Error(`可退回标志不足，需要 ${returnOrder.quantity} 枚，可退回 ${returnableMarks.length} 枚`)
+    }
     returnableMarks.forEach((mark) => {
       mark.status = 'returned'
       mark.ownerOrg = '监管端库存'

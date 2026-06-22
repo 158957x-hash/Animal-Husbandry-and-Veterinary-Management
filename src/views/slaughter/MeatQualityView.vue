@@ -4,10 +4,13 @@ import { ElMessage } from 'element-plus'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
 import type { PostProductBatch } from '../../domain/models'
+import meatQualityCertImg from '../../../image/肉品品质检验合格证.png'
 
 const store = useAppStore()
 const dialogVisible = ref(false)
+const detailVisible = ref(false)
 const currentBatch = ref<PostProductBatch | null>(null)
+const detailBatch = ref<PostProductBatch | null>(null)
 
 const checkItems = [
   '胴体外观',
@@ -132,6 +135,11 @@ async function generateCert() {
   ElMessage.success('肉品品质检验合格证已生成')
   dialogVisible.value = false
 }
+
+function openDetail(batch: PostProductBatch) {
+  detailBatch.value = batch
+  detailVisible.value = true
+}
 </script>
 
 <template>
@@ -193,6 +201,12 @@ async function generateCert() {
         </el-table-column>
         <el-table-column label="创建时间" min-width="160">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button v-if="row.meatQualityStatus === 'cert_generated'" type="success" size="small" @click="openDetail(row)">查看合格证</el-button>
+            <el-button v-else type="primary" size="small" @click="openDialog(row)">查看</el-button>
+          </template>
         </el-table-column>
       </el-table>
       <el-empty v-if="!completedBatches.length" description="暂无已完成检验记录" />
@@ -278,5 +292,61 @@ async function generateCert() {
         <el-button type="success" @click="generateCert">生成肉品品质检验合格证</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="detailVisible" title="肉品品质检验合格证" width="600px" destroy-on-close>
+      <div v-if="detailBatch" class="cert-detail">
+        <div class="cert-info">
+          <div class="info-row"><span class="info-label">产品批次编号：</span><span>{{ detailBatch.productBatchNo }}</span></div>
+          <div class="info-row"><span class="info-label">屠宰批次编号：</span><span>{{ detailBatch.slaughterBatchNo }}</span></div>
+          <div class="info-row"><span class="info-label">动物种类：</span><span>{{ detailBatch.animalType }}</span></div>
+          <div class="info-row"><span class="info-label">产品名称：</span><span>{{ detailBatch.productName }}</span></div>
+          <div class="info-row"><span class="info-label">产品重量：</span><span>{{ detailBatch.productWeight }} kg</span></div>
+          <div class="info-row"><span class="info-label">检验状态：</span><el-tag type="success" size="small">已出证</el-tag></div>
+        </div>
+        <div class="cert-img-box">
+          <img :src="meatQualityCertImg" alt="肉品品质检验合格证" class="cert-img" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.cert-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cert-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+.cert-info .info-row {
+  font-size: 14px;
+  color: #303133;
+  min-width: 45%;
+}
+.cert-info .info-label {
+  color: #909399;
+}
+.cert-img-box {
+  text-align: center;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+.cert-img {
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+</style>

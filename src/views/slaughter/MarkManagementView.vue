@@ -26,6 +26,12 @@ const returnForm = reactive({
   reason: '',
   appliedBy: '',
 })
+const returnSelectedMarkNos = ref<string[]>([])
+const returnAvailableMarks = computed(() => {
+  return store.data.quarantineMarks.filter(
+    (m) => m.markType === returnForm.markType && m.status === 'issued' && m.ownerOrg === '皖北标准化屠宰中心'
+  )
+})
 
 const markTypeText: Record<MarkType, string> = {
   card_ring: '卡环式',
@@ -111,7 +117,11 @@ async function submitReturnApplication() {
     ElMessage.warning('请填写完整的退回申请信息')
     return
   }
-  await store.applyQuarantineMarkReturn({ ...returnForm })
+  if (returnSelectedMarkNos.value.length !== returnForm.quantity) {
+    ElMessage.warning(`请选择 ${returnForm.quantity} 个待退回标志，当前已选 ${returnSelectedMarkNos.value.length} 个`)
+    return
+  }
+  await store.applyQuarantineMarkReturn({ ...returnForm, markNos: returnSelectedMarkNos.value })
   ElMessage.success('标志退回申请已提交，等待监管端审核')
   returnDialogVisible.value = false
 }
@@ -207,12 +217,22 @@ async function submitReturnApplication() {
       <template #footer><el-button @click="applyDialogVisible = false">取消</el-button><el-button type="primary" @click="submitApplication">提交申领</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="returnDialogVisible" title="退回检疫验讫标志申请" width="480px" destroy-on-close>
+    <el-dialog v-model="returnDialogVisible" title="退回检疫验讫标志申请" width="680px" destroy-on-close>
       <el-form label-position="top">
         <el-form-item label="标志类型" required><el-select v-model="returnForm.markType" class="full-width"><el-option label="卡环式" value="card_ring" /><el-option label="粘贴式" value="sticker" /></el-select></el-form-item>
         <el-form-item label="退回数量" required><el-input-number v-model="returnForm.quantity" :min="1" class="full-width" /></el-form-item>
         <el-form-item label="退回原因" required><el-input v-model="returnForm.reason" type="textarea" :rows="3" placeholder="请输入退回原因" /></el-form-item>
         <el-form-item label="申请人" required><el-input v-model="returnForm.appliedBy" placeholder="请输入申请人姓名" /></el-form-item>
+        <el-form-item :label="'选择待退回标志 (已选 ' + returnSelectedMarkNos.length + ' / ' + returnForm.quantity + ')'">
+          <el-table :data="returnAvailableMarks" stripe size="small" max-height="280" @selection-change="returnSelectedMarkNos = ($event as any[]).map((r: any) => r.markNo)">
+            <el-table-column type="selection" width="60" />
+            <el-table-column prop="markNo" label="标志编号" min-width="180" />
+            <el-table-column label="发放时间" min-width="160"><template #default="{ row }">{{ formatTime(row.issuedAt) }}</template></el-table-column>
+          </el-table>
+          <div v-if="returnAvailableMarks.length < returnForm.quantity" style="margin-top:8px;color:#f56c6c;font-size:13px">
+            注意：当前仅有 {{ returnAvailableMarks.length }} 个该类型可用标志，不足退回数量 {{ returnForm.quantity }}
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer><el-button @click="returnDialogVisible = false">取消</el-button><el-button type="primary" @click="submitReturnApplication">提交退回申请</el-button></template>
     </el-dialog>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
@@ -18,6 +18,90 @@ const stockDialog = ref(false)
 const drugEditDialog = ref(false)
 const currentDrug = ref<DrugInventory>()
 const approvedInstitutions = computed(() => store.data.clinicInstitutions.filter((item) => item.status === 'approved' && item.active))
+
+/* ---- 柜子可视化 ---- */
+const cabinets = [
+  { id: 'cabinet-a', name: '门诊药房A柜', drawers: ['第1层', '第2层', '第3层', '第4层'] },
+  { id: 'cabinet-b', name: '门诊药房B柜', drawers: ['第1层', '第2层', '第3层', '第4层'] },
+  { id: 'cabinet-c', name: '注射室药柜', drawers: ['第1层', '第2层', '第3层'] },
+  { id: 'cabinet-d', name: '住院部药柜', drawers: ['第1层', '第2层', '第3层'] },
+  { id: 'cabinet-e', name: '冷藏柜', drawers: ['上层', '中层', '下层'] },
+]
+const selectedCabinet = ref('')
+const selectedDrawer = ref('')
+const selectedLocation = ref('')
+const editSelectedCabinet = ref('')
+const editSelectedDrawer = ref('')
+const editSelectedLocation = ref('')
+
+function selectCabinetDrawer(cabinetName: string, drawer: string) {
+  selectedCabinet.value = cabinetName
+  selectedDrawer.value = drawer
+  selectedLocation.value = `${cabinetName} - ${drawer}`
+  drugForm.storageLocation = selectedLocation.value
+}
+
+function selectEditCabinetDrawer(cabinetName: string, drawer: string) {
+  editSelectedCabinet.value = cabinetName
+  editSelectedDrawer.value = drawer
+  editSelectedLocation.value = `${cabinetName} - ${drawer}`
+  drugEditForm.storageLocation = editSelectedLocation.value
+}
+
+/* ---- 药品名称自动补全 ---- */
+const drugNameSuggestions = ref<{ value: string; drug: DrugInventory }[]>([])
+const drugNameQuery = ref('')
+
+function queryDrugNames(query: string) {
+  drugNameQuery.value = query
+  if (!query) {
+    drugNameSuggestions.value = []
+    return
+  }
+  const seen = new Set<string>()
+  drugNameSuggestions.value = store.data.drugInventories
+    .filter((d) => d.drugName.includes(query) && !seen.has(d.drugName) && seen.add(d.drugName))
+    .map((d) => ({ value: d.drugName, drug: d }))
+}
+
+function selectDrugName(item: { value: string; drug: DrugInventory }) {
+  drugNameQuery.value = item.value
+  drugForm.drugName = item.value
+  drugForm.specification = item.drug.specification
+  drugForm.unit = item.drug.unit
+  drugForm.manufacturer = item.drug.manufacturer
+  drugForm.approvalNo = item.drug.approvalNo
+  drugForm.supplier = item.drug.supplier
+  drugForm.validTo = item.drug.validTo
+  drugNameSuggestions.value = []
+}
+
+const editDrugNameSuggestions = ref<{ value: string; drug: DrugInventory }[]>([])
+const editDrugNameQuery = ref('')
+
+function queryEditDrugNames(query: string) {
+  editDrugNameQuery.value = query
+  if (!query) {
+    editDrugNameSuggestions.value = []
+    return
+  }
+  const seen = new Set<string>()
+  editDrugNameSuggestions.value = store.data.drugInventories
+    .filter((d) => d.drugName.includes(query) && !seen.has(d.drugName) && seen.add(d.drugName))
+    .map((d) => ({ value: d.drugName, drug: d }))
+}
+
+function selectEditDrugName(item: { value: string; drug: DrugInventory }) {
+  editDrugNameQuery.value = item.value
+  drugEditForm.drugName = item.value
+  drugEditForm.specification = item.drug.specification
+  drugEditForm.unit = item.drug.unit
+  drugEditForm.manufacturer = item.drug.manufacturer
+  drugEditForm.approvalNo = item.drug.approvalNo
+  drugEditForm.supplier = item.drug.supplier
+  drugEditForm.validTo = item.drug.validTo
+  editDrugNameSuggestions.value = []
+}
 
 type MergedDrugInventory = DrugInventory & { locationCount: number }
 
@@ -48,13 +132,31 @@ const drugForm = reactive({ institutionId: '', drugName: '', specification: '', 
 const drugEditForm = reactive({ institutionId: '', drugName: '', specification: '', batchNo: '', unit: '', manufacturer: '', approvalNo: '', validTo: '', storageLocation: '', supplier: '', traceCode: '' })
 
 function openStock() {
-  Object.assign(drugForm, { institutionId: approvedInstitutions.value[0]?.id || '', drugName: '', specification: '', batchNo: `DRUG${Date.now().toString().slice(-6)}`, unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, storageLocation: '门诊药房A柜', supplier: '', traceCode: '' })
+  Object.assign(drugForm, { institutionId: approvedInstitutions.value[0]?.id || '', drugName: '', specification: '', batchNo: `DRUG${Date.now().toString().slice(-6)}`, unit: '盒', manufacturer: '', approvalNo: '', validTo: '', quantity: 0, storageLocation: '', supplier: '', traceCode: '' })
+  drugNameQuery.value = ''
+  drugNameSuggestions.value = []
+  selectedCabinet.value = ''
+  selectedDrawer.value = ''
+  selectedLocation.value = ''
   stockDialog.value = true
 }
 
 function openDrugEdit(row: DrugInventory) {
   currentDrug.value = row
   Object.assign(drugEditForm, row)
+  editDrugNameQuery.value = row.drugName
+  editDrugNameSuggestions.value = []
+  editSelectedCabinet.value = ''
+  editSelectedDrawer.value = ''
+  editSelectedLocation.value = row.storageLocation || ''
+  // 解析现有位置到柜子/抽屉
+  if (row.storageLocation) {
+    const parts = row.storageLocation.split(' - ')
+    if (parts.length === 2) {
+      editSelectedCabinet.value = parts[0]
+      editSelectedDrawer.value = parts[1]
+    }
+  }
   drugEditDialog.value = true
 }
 
@@ -155,10 +257,21 @@ function onReset() {
     </section>
 
     <!-- 入库弹窗 -->
-    <el-dialog v-model="stockDialog" title="药品入库" width="620px" destroy-on-close>
+    <el-dialog v-model="stockDialog" title="药品入库" width="680px" destroy-on-close>
       <el-form label-position="top">
         <el-form-item label="入库机构"><el-select v-model="drugForm.institutionId" class="full-width"><el-option v-for="item in approvedInstitutions" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="药品名称"><el-input v-model="drugForm.drugName" /></el-form-item>
+        <el-form-item label="药品名称">
+          <el-autocomplete
+            v-model="drugNameQuery"
+            :fetch-suggestions="queryDrugNames"
+            :trigger-on-focus="false"
+            placeholder="输入药品名称，可从已有药品中选择"
+            class="full-width"
+            @select="selectDrugName"
+            @input="(v: string) => { drugForm.drugName = v; queryDrugNames(v) }"
+            clearable
+          />
+        </el-form-item>
         <el-form-item label="规格"><el-input v-model="drugForm.specification" /></el-form-item>
         <el-form-item label="批号"><el-input v-model="drugForm.batchNo" /></el-form-item>
         <el-form-item label="单位"><el-input v-model="drugForm.unit" /></el-form-item>
@@ -166,7 +279,23 @@ function onReset() {
         <el-form-item label="批准文号"><el-input v-model="drugForm.approvalNo" /></el-form-item>
         <el-form-item label="有效期"><el-input v-model="drugForm.validTo" /></el-form-item>
         <el-form-item label="入库数量"><el-input-number v-model="drugForm.quantity" :min="1" class="full-width" /></el-form-item>
-        <el-form-item label="库存位置"><el-input v-model="drugForm.storageLocation" /></el-form-item>
+        <el-form-item label="库存位置">
+          <div class="cabinet-grid">
+            <div v-for="cab in cabinets" :key="cab.id" class="cabinet-block">
+              <div class="cabinet-name">{{ cab.name }}</div>
+              <div class="drawer-list">
+                <div
+                  v-for="d in cab.drawers"
+                  :key="d"
+                  class="drawer-item"
+                  :class="{ 'drawer-active': selectedCabinet === cab.name && selectedDrawer === d }"
+                  @click="selectCabinetDrawer(cab.name, d)"
+                >{{ d }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-if="selectedLocation" class="selected-location">已选择：<b>{{ selectedLocation }}</b></div>
+        </el-form-item>
         <el-form-item label="供应商"><el-input v-model="drugForm.supplier" /></el-form-item>
         <el-form-item label="追溯码"><el-input v-model="drugForm.traceCode" /></el-form-item>
       </el-form>
@@ -174,17 +303,44 @@ function onReset() {
     </el-dialog>
 
     <!-- 编辑弹窗 -->
-    <el-dialog v-model="drugEditDialog" title="编辑药品信息" width="620px" destroy-on-close>
+    <el-dialog v-model="drugEditDialog" title="编辑药品信息" width="680px" destroy-on-close>
       <el-form label-position="top">
         <el-form-item label="所属机构"><el-select v-model="drugEditForm.institutionId" class="full-width"><el-option v-for="item in approvedInstitutions" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="药品名称"><el-input v-model="drugEditForm.drugName" /></el-form-item>
+        <el-form-item label="药品名称">
+          <el-autocomplete
+            v-model="editDrugNameQuery"
+            :fetch-suggestions="queryEditDrugNames"
+            :trigger-on-focus="false"
+            placeholder="输入药品名称，可从已有药品中选择"
+            class="full-width"
+            @select="selectEditDrugName"
+            @input="(v: string) => { drugEditForm.drugName = v; queryEditDrugNames(v) }"
+            clearable
+          />
+        </el-form-item>
         <el-form-item label="规格"><el-input v-model="drugEditForm.specification" /></el-form-item>
         <el-form-item label="批号"><el-input v-model="drugEditForm.batchNo" /></el-form-item>
         <el-form-item label="单位"><el-input v-model="drugEditForm.unit" /></el-form-item>
         <el-form-item label="生产企业"><el-input v-model="drugEditForm.manufacturer" /></el-form-item>
         <el-form-item label="批准文号"><el-input v-model="drugEditForm.approvalNo" /></el-form-item>
         <el-form-item label="有效期"><el-input v-model="drugEditForm.validTo" /></el-form-item>
-        <el-form-item label="库存位置"><el-input v-model="drugEditForm.storageLocation" /></el-form-item>
+        <el-form-item label="库存位置">
+          <div class="cabinet-grid">
+            <div v-for="cab in cabinets" :key="cab.id" class="cabinet-block">
+              <div class="cabinet-name">{{ cab.name }}</div>
+              <div class="drawer-list">
+                <div
+                  v-for="d in cab.drawers"
+                  :key="d"
+                  class="drawer-item"
+                  :class="{ 'drawer-active': editSelectedCabinet === cab.name && editSelectedDrawer === d }"
+                  @click="selectEditCabinetDrawer(cab.name, d)"
+                >{{ d }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-if="editSelectedLocation" class="selected-location">已选择：<b>{{ editSelectedLocation }}</b></div>
+        </el-form-item>
         <el-form-item label="供应商"><el-input v-model="drugEditForm.supplier" /></el-form-item>
         <el-form-item label="追溯码"><el-input v-model="drugEditForm.traceCode" /></el-form-item>
       </el-form>
@@ -202,4 +358,63 @@ function onReset() {
 .search-card { background: #fff; border-radius: 8px; padding: 16px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .table-card { background: #fff; border-radius: 8px; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .full-width { width: 100%; }
+
+/* ========== 柜子可视化选择 ========== */
+.cabinet-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cabinet-block {
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.cabinet-name {
+  background: linear-gradient(135deg, #1a7a4c 0%, #0d5e38 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px 8px;
+}
+.drawer-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+}
+.drawer-item {
+  padding: 5px 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+.drawer-item:hover {
+  border-color: #1a7a4c;
+  color: #1a7a4c;
+  background: #ecfdf5;
+}
+.drawer-item.drawer-active {
+  border-color: #1a7a4c;
+  background: #1a7a4c;
+  color: #fff;
+  font-weight: 600;
+}
+.selected-location {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #065f46;
+}
 </style>

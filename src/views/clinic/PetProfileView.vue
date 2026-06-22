@@ -18,6 +18,22 @@ const currentPet = ref<PetProfile>()
 const ownerForm = reactive({ name: '李女士', phone: '13800000001', address: '合肥市蜀山区望江西路' })
 const petForm = reactive({ ownerId: '', name: '豆包', species: '犬', breed: '柯基', gender: '雄性', age: 2, weight: 5, identityNo: 'IMM-AH-0001' })
 
+const speciesOptions = ['犬', '猫', '兔', '鸟', '龟', '鱼', '仓鼠', '豚鼠', '蜥蜴', '蛇', '刺猬', '貂', '龙猫', '鹦鹉', '其他']
+const breedOptions: Record<string, string[]> = {
+  犬: ['柯基', '金毛', '泰迪', '博美', '柴犬', '哈士奇', '拉布拉多', '边境牧羊犬', '萨摩耶', '雪纳瑞', '贵宾', '比熊', '吉娃娃', '法斗', '巴哥', '中华田园犬', '德牧', '阿拉斯加', '约克夏', '马尔济斯'],
+  猫: ['英短', '美短', '布偶', '暹罗', '橘猫', '缅因', '波斯', '加菲', '德文卷毛', '中华田园猫', '无毛猫', '折耳猫', '金吉拉', '蓝猫', '挪威森林猫'],
+  兔: ['荷兰垂耳兔', '侏儒兔', '安哥拉兔', '狮子兔', '雷克斯兔', '道奇兔', '其他兔'],
+  鸟: ['虎皮鹦鹉', '玄凤鹦鹉', '牡丹鹦鹉', '金丝雀', '文鸟', '百灵', '其他鸟'],
+  龟: ['巴西龟', '草龟', '陆龟', '鳄龟', '地图龟', '其他龟'],
+  鱼: ['金鱼', '锦鲤', '龙鱼', '斗鱼', '孔雀鱼', '神仙鱼', '其他鱼'],
+  仓鼠: ['金丝熊', '银狐', '三线', '一线', '奶茶', '紫仓', '其他仓鼠'],
+  豚鼠: ['短毛豚鼠', '长毛豚鼠', '其他豚鼠'],
+  其他: ['其他品种'],
+}
+const genderOptions = ['雄性', '雌性', '未知']
+
+const availableBreeds = computed(() => breedOptions[petForm.species] || breedOptions['其他'])
+
 const owners = computed(() => store.data.petOwners.filter((item) => !keyword.value || item.name.includes(keyword.value) || item.phone.includes(keyword.value)))
 const pets = computed(() => store.data.petProfiles.filter((item) => !keyword.value || item.name.includes(keyword.value) || item.identityNo.includes(keyword.value)))
 
@@ -166,7 +182,7 @@ async function removePet(row: PetProfile) {
     </el-card>
 
     <el-dialog v-model="ownerDialog" :title="ownerMode === 'create' ? '新增主人档案' : '编辑主人档案'" width="520px"><el-form label-position="top"><el-form-item label="姓名"><el-input v-model="ownerForm.name" /></el-form-item><el-form-item label="手机号"><el-input v-model="ownerForm.phone" /></el-form-item><el-form-item label="地址"><el-input v-model="ownerForm.address" /></el-form-item></el-form><template #footer><el-button @click="ownerDialog = false">取消</el-button><el-button type="success" @click="saveOwner">保存</el-button></template></el-dialog>
-    <el-dialog v-model="petDialog" :title="petMode === 'create' ? '新增宠物档案' : '编辑宠物档案'" width="560px"><el-form label-position="top"><el-form-item label="所属主人"><el-select v-model="petForm.ownerId" class="full-width"><el-option v-for="item in store.data.petOwners" :key="item.id" :label="`${item.name} ${item.phone}`" :value="item.id" /></el-select></el-form-item><el-form-item label="宠物名称"><el-input v-model="petForm.name" /></el-form-item><el-form-item label="宠物种类"><el-input v-model="petForm.species" /></el-form-item><el-form-item label="品种"><el-input v-model="petForm.breed" /></el-form-item><el-form-item label="性别"><el-input v-model="petForm.gender" /></el-form-item><el-form-item label="年龄"><el-input-number v-model="petForm.age" :min="0" class="full-width" /></el-form-item><el-form-item label="体重(kg)"><el-input-number v-model="petForm.weight" :min="0" :precision="1" :step="0.5" class="full-width" /></el-form-item><el-form-item label="芯片号或免疫牌号"><el-input v-model="petForm.identityNo" /></el-form-item></el-form><template #footer><el-button @click="petDialog = false">取消</el-button><el-button type="success" @click="savePet">保存</el-button></template></el-dialog>
+    <el-dialog v-model="petDialog" :title="petMode === 'create' ? '新增宠物档案' : '编辑宠物档案'" width="560px"><el-form label-position="top"><el-form-item label="所属主人"><el-select v-model="petForm.ownerId" class="full-width"><el-option v-for="item in store.data.petOwners" :key="item.id" :label="`${item.name} ${item.phone}`" :value="item.id" /></el-select></el-form-item><el-form-item label="宠物名称"><el-input v-model="petForm.name" /></el-form-item><el-form-item label="宠物种类"><el-select v-model="petForm.species" class="full-width" filterable allow-create><el-option v-for="s in speciesOptions" :key="s" :label="s" :value="s" /></el-select></el-form-item><el-form-item label="品种"><el-select v-model="petForm.breed" class="full-width" filterable allow-create><el-option v-for="b in availableBreeds" :key="b" :label="b" :value="b" /></el-select></el-form-item><el-form-item label="性别"><el-select v-model="petForm.gender" class="full-width" filterable allow-create><el-option v-for="g in genderOptions" :key="g" :label="g" :value="g" /></el-select></el-form-item><el-form-item label="年龄"><el-input-number v-model="petForm.age" :min="0" class="full-width" /></el-form-item><el-form-item label="体重(kg)"><el-input-number v-model="petForm.weight" :min="0" :precision="1" :step="0.5" class="full-width" /></el-form-item><el-form-item label="芯片号或免疫牌号"><el-input v-model="petForm.identityNo" /></el-form-item></el-form><template #footer><el-button @click="petDialog = false">取消</el-button><el-button type="success" @click="savePet">保存</el-button></template></el-dialog>
 
     <el-dialog v-model="petDetailVisible" title="宠物档案详情" width="820px">
       <div v-if="currentPet" class="detail-body">

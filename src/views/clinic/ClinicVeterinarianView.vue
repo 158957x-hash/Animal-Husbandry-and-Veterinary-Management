@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Upload, User } from '@element-plus/icons-vue'
+import { Plus, Search, Upload, User, Document } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
 import type { PracticeType, Veterinarian, VeterinarianApplicationType } from '../../domain/models'
 
@@ -58,6 +58,10 @@ const form = reactive({
   laborProofUrl: '',
 })
 
+const certificateFileName = ref('')
+const idCardFileName = ref('')
+const laborProofFileName = ref('')
+
 function resetForm() {
   const inst = currentInstitution.value
   Object.assign(form, {
@@ -82,6 +86,9 @@ function resetForm() {
   })
   changeReason.value = ''
   cancelReason.value = ''
+  certificateFileName.value = ''
+  idCardFileName.value = ''
+  laborProofFileName.value = ''
 }
 
 function openNew() {
@@ -140,12 +147,19 @@ function handleMaterialUpload(type: 'certificate' | 'id_card' | 'labor_proof') {
     const reader = new FileReader()
     reader.onload = (e) => {
       const url = e.target?.result as string
-      if (type === 'certificate') form.certificateUrl = url
-      else if (type === 'id_card') form.idCardUrl = url
-      else form.laborProofUrl = url
+      if (type === 'certificate') {
+        form.certificateUrl = url
+        certificateFileName.value = file.name
+      } else if (type === 'id_card') {
+        form.idCardUrl = url
+        idCardFileName.value = file.name
+      } else {
+        form.laborProofUrl = url
+        laborProofFileName.value = file.name
+      }
     }
     reader.readAsDataURL(file.raw)
-    return false
+    ElMessage.success(`${file.name} 上传成功`)
   }
 }
 
@@ -503,18 +517,21 @@ function doSearch() {
                 <el-upload
                   :auto-upload="false"
                   :show-file-list="false"
-                  :before-upload="handleMaterialUpload('certificate')"
-                  accept="image/*"
-                  drag
+                  :on-change="handleMaterialUpload('certificate')"
+                  accept="image/*,.pdf"
                 >
-                  <div v-if="form.certificateUrl" class="upload-preview">
-                    <img :src="form.certificateUrl" alt="证书" />
-                  </div>
-                  <div v-else class="upload-placeholder">
-                    <el-icon :size="32"><Upload /></el-icon>
-                    <span>点击或拖拽上传</span>
-                  </div>
+                  <el-button type="primary" plain>
+                    <el-icon><Upload /></el-icon> 选择文件
+                  </el-button>
+                  <template #tip>
+                    <div class="upload-tip-text">支持 jpg、png、pdf</div>
+                  </template>
                 </el-upload>
+                <div v-if="certificateFileName" class="uploaded-file-name">
+                  <el-icon><Document /></el-icon>
+                  <span>{{ certificateFileName }}</span>
+                  <el-tag type="success" size="small">已上传</el-tag>
+                </div>
               </div>
             </el-col>
             <el-col :span="8">
@@ -523,18 +540,21 @@ function doSearch() {
                 <el-upload
                   :auto-upload="false"
                   :show-file-list="false"
-                  :before-upload="handleMaterialUpload('id_card')"
-                  accept="image/*"
-                  drag
+                  :on-change="handleMaterialUpload('id_card')"
+                  accept="image/*,.pdf"
                 >
-                  <div v-if="form.idCardUrl" class="upload-preview">
-                    <img :src="form.idCardUrl" alt="身份证" />
-                  </div>
-                  <div v-else class="upload-placeholder">
-                    <el-icon :size="32"><Upload /></el-icon>
-                    <span>点击或拖拽上传</span>
-                  </div>
+                  <el-button type="primary" plain>
+                    <el-icon><Upload /></el-icon> 选择文件
+                  </el-button>
+                  <template #tip>
+                    <div class="upload-tip-text">支持 jpg、png、pdf</div>
+                  </template>
                 </el-upload>
+                <div v-if="idCardFileName" class="uploaded-file-name">
+                  <el-icon><Document /></el-icon>
+                  <span>{{ idCardFileName }}</span>
+                  <el-tag type="success" size="small">已上传</el-tag>
+                </div>
               </div>
             </el-col>
             <el-col :span="8">
@@ -543,18 +563,21 @@ function doSearch() {
                 <el-upload
                   :auto-upload="false"
                   :show-file-list="false"
-                  :before-upload="handleMaterialUpload('labor_proof')"
-                  accept="image/*"
-                  drag
+                  :on-change="handleMaterialUpload('labor_proof')"
+                  accept="image/*,.pdf"
                 >
-                  <div v-if="form.laborProofUrl" class="upload-preview">
-                    <img :src="form.laborProofUrl" alt="劳动证明" />
-                  </div>
-                  <div v-else class="upload-placeholder">
-                    <el-icon :size="32"><Upload /></el-icon>
-                    <span>点击或拖拽上传</span>
-                  </div>
+                  <el-button type="primary" plain>
+                    <el-icon><Upload /></el-icon> 选择文件
+                  </el-button>
+                  <template #tip>
+                    <div class="upload-tip-text">支持 jpg、png、pdf</div>
+                  </template>
                 </el-upload>
+                <div v-if="laborProofFileName" class="uploaded-file-name">
+                  <el-icon><Document /></el-icon>
+                  <span>{{ laborProofFileName }}</span>
+                  <el-tag type="success" size="small">已上传</el-tag>
+                </div>
               </div>
             </el-col>
           </el-row>
@@ -677,30 +700,36 @@ function doSearch() {
 }
 
 .upload-item {
-  text-align: center;
+  text-align: left;
 }
-
 .upload-label {
   font-size: 13px;
   color: #4e5969;
   margin-bottom: 8px;
   font-weight: 500;
 }
-
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px;
+.upload-tip-text {
+  font-size: 12px;
   color: #86909c;
+  margin-top: 4px;
 }
-
-.upload-preview img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 4px;
+.uploaded-file-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #166534;
+}
+.uploaded-file-name span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cancel-section {

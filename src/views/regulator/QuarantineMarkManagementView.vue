@@ -41,11 +41,25 @@ const issueForm = reactive({
   issuer: '市级畜牧兽医监管员',
   remark: '核验领用单位信息后发放。',
 })
+const issueSelectedMarkNos = ref<string[]>([])
+const issueAvailableMarks = computed(() => {
+  if (!selectedIssue.value) return []
+  return store.data.quarantineMarks.filter(
+    (m) => m.markType === selectedIssue.value.markType && m.status === 'in_stock'
+  )
+})
 
 const returnForm = reactive({
   warehouseLocation: '监管端标志库-A区',
   operator: '市级畜牧兽医监管员',
   acceptanceRemark: '退回标志数量与申请一致，外观完好，准予入库。',
+})
+const returnSelectedMarkNos = ref<string[]>([])
+const returnAvailableMarks = computed(() => {
+  if (!selectedReturn.value) return []
+  return store.data.quarantineMarks.filter(
+    (m) => m.markType === selectedReturn.value.markType && m.status === 'issued' && m.ownerOrg === selectedReturn.value.orgId
+  )
 })
 
 const activeMode = computed(() => {
@@ -200,6 +214,7 @@ function openIssueDialog(row: any) {
   issueForm.receiver = '屠宰企业经办人'
   issueForm.issuer = '市级畜牧兽医监管员'
   issueForm.remark = '核验领用单位信息后发放。'
+  issueSelectedMarkNos.value = []
   issueDialogVisible.value = true
 }
 
@@ -208,6 +223,7 @@ function openReturnDialog(row: any) {
   returnForm.warehouseLocation = '监管端标志库-A区'
   returnForm.operator = '市级畜牧兽医监管员'
   returnForm.acceptanceRemark = '退回标志数量与申请一致，外观完好，准予入库。'
+  returnSelectedMarkNos.value = []
   returnDialogVisible.value = true
 }
 
@@ -239,7 +255,11 @@ async function confirmIssue() {
     ElMessage.warning('请填写领取人和发放人')
     return
   }
-  await store.issueQuarantineMarks(selectedIssue.value.id)
+  if (issueSelectedMarkNos.value.length !== selectedIssue.value.quantity) {
+    ElMessage.warning(`请选择 ${selectedIssue.value.quantity} 个标志，当前已选 ${issueSelectedMarkNos.value.length} 个`)
+    return
+  }
+  await store.issueQuarantineMarks(selectedIssue.value.id, issueSelectedMarkNos.value)
   ElMessage.success('标志已发放，发放记录已生成')
   issueDialogVisible.value = false
 }
@@ -469,6 +489,12 @@ function setDetailPage(key: string, page: number) {
         <p class="wide"><span>申请原因</span><b>{{ selectedReview.reason }}</b></p>
         <p><span>申请时间</span><b>{{ formatTime(selectedReview.createdAt) }}</b></p>
       </div>
+      <div v-if="selectedReview?.applicationType === 'return' && selectedReview?.markNos?.length" style="margin-bottom:14px">
+        <el-table :data="selectedReview.markNos.map((no: string, i: number) => ({ index: i + 1, markNo: no }))" stripe size="small" max-height="260">
+          <el-table-column prop="index" label="序号" width="60" />
+          <el-table-column prop="markNo" label="退回标志编号" min-width="180" />
+        </el-table>
+      </div>
       <el-form label-position="top" class="dialog-form-block">
         <el-form-item label="审核人" required><el-input v-model="reviewForm.reviewer" /></el-form-item>
         <el-form-item label="审核意见" required><el-input v-model="reviewForm.opinion" type="textarea" :rows="3" /></el-form-item>
@@ -493,6 +519,17 @@ function setDetailPage(key: string, page: number) {
         <el-form-item label="领取人" required><el-input v-model="issueForm.receiver" /></el-form-item>
         <el-form-item label="发放人" required><el-input v-model="issueForm.issuer" /></el-form-item>
         <el-form-item label="发放备注"><el-input v-model="issueForm.remark" /></el-form-item>
+        <el-form-item class="wide" :label="'选择待发放标志 (已选 ' + issueSelectedMarkNos.length + ' / ' + (selectedIssue?.quantity ?? 0) + ')'">
+          <el-table :data="issueAvailableMarks" stripe size="small" max-height="300" @selection-change="issueSelectedMarkNos = ($event as any[]).map((r: any) => r.markNo)">
+            <el-table-column type="selection" width="60" />
+            <el-table-column prop="markNo" label="标志编号" min-width="160" />
+            <el-table-column label="二维码编号" min-width="200" prop="qrCode" show-overflow-tooltip />
+            <el-table-column label="生产批次" width="140" prop="productionBatchNo" />
+          </el-table>
+          <div v-if="issueAvailableMarks.length < selectedIssue?.quantity" style="margin-top:8px;color:#f56c6c;font-size:13px">
+            注意：库存中仅有 {{ issueAvailableMarks.length }} 个该类型在库标志，无法满足申领数量 {{ selectedIssue?.quantity }}
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer><el-button @click="issueDialogVisible = false">取消</el-button><el-button type="success" @click="confirmIssue">确认发放</el-button></template>
     </el-dialog>
@@ -509,6 +546,13 @@ function setDetailPage(key: string, page: number) {
         <el-form-item label="入库仓位" required><el-input v-model="returnForm.warehouseLocation" /></el-form-item>
         <el-form-item label="经办人" required><el-input v-model="returnForm.operator" /></el-form-item>
         <el-form-item class="wide" label="验收说明" required><el-input v-model="returnForm.acceptanceRemark" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item class="wide" :label="'退回标志明细 (' + (selectedReturn?.markNos?.length || selectedReturn?.quantity || 0) + ' 个)'">
+          <el-table v-if="selectedReturn?.markNos?.length" :data="selectedReturn.markNos.map((no: string, i: number) => ({ index: i + 1, markNo: no }))" stripe size="small" max-height="300">
+            <el-table-column prop="index" label="序号" width="70" />
+            <el-table-column prop="markNo" label="标志编号" min-width="180" />
+          </el-table>
+          <el-empty v-else description="暂无退回标志明细" :image-size="60" />
+        </el-form-item>
       </el-form>
       <template #footer><el-button @click="returnDialogVisible = false">取消</el-button><el-button type="success" @click="confirmReturn">确认入库</el-button></template>
     </el-dialog>

@@ -493,8 +493,8 @@ export const useAppStore = defineStore('app', {
       await this.refresh()
       return result
     },
-    async issueQuarantineMarks(id: string) {
-      const result = await mockApi.issueQuarantineMarks(id)
+    async issueQuarantineMarks(id: string, markNos?: string[]) {
+      const result = await mockApi.issueQuarantineMarks(id, markNos)
       await this.refresh()
       return result
     },

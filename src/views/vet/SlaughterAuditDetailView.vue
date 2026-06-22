@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -49,9 +49,41 @@ const isQualityCertGenerated = computed(() => application.value?.status === 'qua
 const isProductCertPending = computed(() => application.value?.status === 'product_cert_pending')
 const isProductCertIssued = computed(() => application.value?.status === 'product_cert_issued')
 
-/* ---- 身份核验（默认已通过） ---- */
+/* ---- 身份核验（默认未核验） ---- */
+const identityVerified = ref(false)
 const identitySerial = ref('AH-VET-VERIFY-202606130915')
 const identityTime = ref('2026-06-13T09:15:00.000Z')
+const faceDialogVisible = ref(false)
+const faceVideoRef = ref<HTMLVideoElement | null>(null)
+let faceStream: MediaStream | null = null
+
+async function startFaceRecognition() {
+  faceDialogVisible.value = true
+  try {
+    faceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    if (faceVideoRef.value) {
+      faceVideoRef.value.srcObject = faceStream
+    }
+    setTimeout(() => {
+      stopFaceRecognition()
+      identityVerified.value = true
+      identityTime.value = new Date().toISOString()
+      identitySerial.value = `AH-VET-FACE-${Date.now()}`
+      ElMessage.success('人脸识别通过，身份核验已更新')
+    }, 2000)
+  } catch {
+    faceDialogVisible.value = false
+    ElMessage.error('无法访问摄像头，请检查权限设置')
+  }
+}
+
+function stopFaceRecognition() {
+  if (faceStream) {
+    faceStream.getTracks().forEach((t) => t.stop())
+    faceStream = null
+  }
+  faceDialogVisible.value = false
+}
 
 /* ---- 受理条件自动校验 ---- */
 const acceptChecks = computed(() => {
@@ -338,7 +370,15 @@ const markUsage = computed(() => {
       <div class="col-main">
         <!-- 身份核验 -->
         <el-card class="gov-compact-card compact-card">
-          <template #header><strong>身份核验</strong><el-tag type="success" size="small" style="float:right">已通过</el-tag></template>
+          <template #header>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong>身份核验</strong>
+              <div style="display:flex;align-items:center;gap:8px">
+                <el-tag :type="identityVerified ? 'success' : 'warning'" size="small">{{ identityVerified ? '已通过' : '未核验' }}</el-tag>
+                <el-button size="small" type="primary" plain @click="startFaceRecognition">人脸识别</el-button>
+              </div>
+            </div>
+          </template>
           <div class="identity-row">
             <span>王敏 / AH-VET-0001 / 利辛县动物卫生监督所</span>
             <span>皖政通核验 / {{ formatTime(identityTime) }}</span>
@@ -573,6 +613,15 @@ const markUsage = computed(() => {
         <el-button @click="returnDialog = false">取消</el-button>
         <el-button type="danger" :disabled="!returnReason.trim()" @click="handleReturn">确认退回</el-button>
       </template>
+    </el-dialog>
+    <el-dialog v-model="faceDialogVisible" title="人脸识别" width="480px" :close-on-click-modal="false" @close="stopFaceRecognition">
+      <div class="face-camera-wrap">
+        <video ref="faceVideoRef" autoplay playsinline class="face-camera-video" />
+        <div class="face-scan-overlay">
+          <div class="face-scan-frame" />
+          <p class="face-scan-text">正在识别中，请保持面部在框内...</p>
+        </div>
+      </div>
     </el-dialog>
   </section>
   <el-empty v-else description="未找到申报" />
@@ -817,5 +866,56 @@ const markUsage = computed(() => {
   .three-col-layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* ========== 人脸识别摄像头弹窗 ========== */
+.face-camera-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.face-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.face-scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.face-scan-frame {
+  width: 200px;
+  height: 260px;
+  border: 2px solid rgba(73, 183, 101, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5);
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%, 100% { box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(73, 183, 101, 0.3); }
+  50% { box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5), 0 0 35px rgba(73, 183, 101, 0.6); }
+}
+.face-scan-text {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  opacity: 0.9;
 }
 </style>

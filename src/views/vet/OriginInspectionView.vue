@@ -1,11 +1,12 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import { Document, CircleCheck, CircleClose, Warning } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
 import { formatTime } from '../../lib/format'
-import type { InspectionAttachment } from '../../domain/models'
+import type { InspectionAttachment, InspectionAttachmentType } from '../../domain/models'
 import certImage from '../../../image/动物检疫证书.png'
 
 const store = useAppStore()
@@ -26,9 +27,40 @@ const isRejected = computed(() => application.value?.status === 'rejected')
 const isIssued = computed(() => application.value ? ['certificate_issued', 'transporting', 'arrived'].includes(application.value.status) : false)
 
 /* ---- 身份核验 ---- */
-const identityVerified = ref(true)
+const identityVerified = ref(false)
 const identitySerial = ref('AH-VET-VERIFY-202606130915')
 const identityTime = ref('2026-06-13T09:15:00.000Z')
+const faceDialogVisible = ref(false)
+const faceVideoRef = ref<HTMLVideoElement | null>(null)
+let faceStream: MediaStream | null = null
+
+async function startFaceRecognition() {
+  faceDialogVisible.value = true
+  try {
+    faceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    if (faceVideoRef.value) {
+      faceVideoRef.value.srcObject = faceStream
+    }
+    setTimeout(() => {
+      stopFaceRecognition()
+      identityVerified.value = true
+      identityTime.value = new Date().toISOString()
+      identitySerial.value = `AH-VET-FACE-${Date.now()}`
+      ElMessage.success('人脸识别通过，身份核验已更新')
+    }, 2000)
+  } catch {
+    faceDialogVisible.value = false
+    ElMessage.error('无法访问摄像头，请检查权限设置')
+  }
+}
+
+function stopFaceRecognition() {
+  if (faceStream) {
+    faceStream.getTracks().forEach((t) => t.stop())
+    faceStream = null
+  }
+  faceDialogVisible.value = false
+}
 
 /* ---- 现场查验 ---- */
 const siteChecks = ref({
@@ -39,10 +71,23 @@ const siteCheckPassed = computed(() => Object.values(siteChecks.value).every(Boo
 const inspectionRemark = ref('')
 
 /* ---- 取证附件 ---- */
-const attachments = computed(() => application.value ? store.data.inspectionAttachments.filter((a) => a.applicationNo === application.value!.applicationNo) : [])
+const persistedAttachments = computed(() => application.value ? store.data.inspectionAttachments.filter((a) => a.applicationNo === application.value!.applicationNo) : [])
+const uploadedMockAttachments = ref<InspectionAttachment[]>([])
+const attachments = computed(() => [...persistedAttachments.value, ...uploadedMockAttachments.value])
 const attachmentCount = computed(() => attachments.value.length)
 const previewVisible = ref(false)
 const previewAttachment = ref<InspectionAttachment | null>(null)
+const uploadDialogVisible = ref(false)
+const uploadType = ref<InspectionAttachmentType>('vehicle_photo')
+const attachmentTypeOptions: { type: InspectionAttachmentType; typeName: string }[] = [
+  { type: 'vehicle_photo', typeName: '车辆照片' },
+  { type: 'certificate_photo', typeName: '证明照片' },
+  { type: 'ear_tag_photo', typeName: '耳标照片' },
+  { type: 'loading_photo', typeName: '装载照片' },
+  { type: 'scene_photo', typeName: '现场照片' },
+  { type: 'other', typeName: '其他' },
+]
+const selectedAttachmentType = computed(() => attachmentTypeOptions.find((item) => item.type === uploadType.value) || attachmentTypeOptions[0])
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
@@ -53,6 +98,28 @@ function showPreview(att: InspectionAttachment) { previewAttachment.value = att;
 function downloadAttachment(att: InspectionAttachment) {
   if (att.dataUrl) { const l = document.createElement('a'); l.href = att.dataUrl; l.download = att.fileName; l.click() }
   else { const b = new Blob([`${att.typeName} - ${att.fileName}`], { type: 'text/plain' }); const u = URL.createObjectURL(b); const l = document.createElement('a'); l.href = u; l.download = att.fileName; l.click(); URL.revokeObjectURL(u) }
+}
+function handleAttachmentFileChange(file: UploadFile) {
+  if (!application.value || !file.raw) return
+  const typeOption = selectedAttachmentType.value
+  const reader = new FileReader()
+  reader.onload = () => {
+    uploadedMockAttachments.value.push({
+      id: `mock-${Date.now()}`,
+      applicationNo: application.value!.applicationNo,
+      type: typeOption.type,
+      typeName: typeOption.typeName,
+      fileName: file.name,
+      fileSize: file.size || file.raw!.size,
+      fileType: file.raw!.type || 'application/octet-stream',
+      dataUrl: typeof reader.result === 'string' ? reader.result : undefined,
+      uploadedBy: store.session?.name || '官方兽医',
+      uploadedAt: new Date().toISOString(),
+    })
+    uploadDialogVisible.value = false
+    ElMessage.success('上传成功，附件已加入取证材料')
+  }
+  reader.readAsDataURL(file.raw)
 }
 
 /* ---- 自动校验 ---- */
@@ -237,7 +304,10 @@ async function reject() {
             </div>
           </div>
           <div class="sec-card">
-            <div class="sec-title">取证附件 <span class="sec-title-count">{{ attachmentCount }} 个</span></div>
+            <div class="sec-title">
+              <span>取证附件 <span class="sec-title-count">{{ attachmentCount }} 个</span></span>
+              <el-button size="small" type="primary" plain @click="uploadDialogVisible = true">上传附件</el-button>
+            </div>
             <div class="table-wrap">
               <el-table v-if="attachments.length" :data="attachments" stripe size="small">
                 <el-table-column prop="typeName" label="类型" width="100" />
@@ -294,7 +364,10 @@ async function reject() {
         <!-- 中栏：审核工作区 -->
         <div class="col-center">
           <div class="sec-card">
-            <div class="sec-title">身份核验 <el-tag type="success" size="small" class="sec-tag">已通过</el-tag></div>
+            <div class="sec-title">
+              <span>身份核验 <el-tag :type="identityVerified ? 'success' : 'warning'" size="small" class="sec-tag">{{ identityVerified ? '已通过' : '未核验' }}</el-tag></span>
+              <el-button size="small" type="primary" plain @click="startFaceRecognition">人脸识别</el-button>
+            </div>
             <div class="identity-row">
               <span>王敏 / AH-VET-0001 / 利辛县动物卫生监督所</span>
               <span>皖政通核验 / {{ formatTime(identityTime) }}</span>
@@ -324,7 +397,10 @@ async function reject() {
           </div>
 
           <div class="sec-card">
-            <div class="sec-title">取证附件 <span class="sec-title-count">{{ attachmentCount }} 个</span></div>
+            <div class="sec-title">
+              <span>取证附件 <span class="sec-title-count">{{ attachmentCount }} 个</span></span>
+              <el-button size="small" type="primary" plain @click="uploadDialogVisible = true">上传附件</el-button>
+            </div>
             <div class="table-wrap">
               <el-table :data="attachments" stripe size="small">
                 <el-table-column prop="typeName" label="类型" width="100" />
@@ -525,10 +601,36 @@ async function reject() {
       <el-form label-position="top"><el-form-item label="驳回原因"><el-input v-model="rejectReason" type="textarea" :rows="4" placeholder="请填写驳回原因" /></el-form-item></el-form>
       <template #footer><el-button @click="rejectDialog = false">取消</el-button><el-button type="danger" :disabled="!rejectReason.trim()" @click="reject">确认驳回</el-button></template>
     </el-dialog>
+    <el-dialog v-model="uploadDialogVisible" title="上传取证附件" width="520px">
+      <el-form label-position="top">
+        <el-form-item label="附件类型">
+          <el-select v-model="uploadType" class="full-width" placeholder="请选择附件类型">
+            <el-option v-for="item in attachmentTypeOptions" :key="item.type" :label="item.typeName" :value="item.type" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="上传附件">
+          <el-upload drag :auto-upload="false" :show-file-list="false" :on-change="handleAttachmentFileChange">
+            <el-icon size="42"><Document /></el-icon>
+            <div class="upload-text">点击或拖拽文件到此处，打开文件夹选择附件</div>
+            <div class="upload-tip">选择文件后将模拟上传成功并加入附件表格</div>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer><el-button @click="uploadDialogVisible = false">关闭</el-button></template>
+    </el-dialog>
     <el-dialog v-model="previewVisible" title="附件预览" width="600px">
       <div v-if="previewAttachment" style="text-align:center">
         <img v-if="previewAttachment.dataUrl" :src="previewAttachment.dataUrl" style="max-width:100%;max-height:400px;border-radius:6px" />
         <div v-else style="padding:32px;color:var(--text-secondary)"><el-icon size="48"><Document /></el-icon><p><b>{{ previewAttachment.fileName }}</b></p><p>类型：{{ previewAttachment.typeName }}｜大小：{{ formatFileSize(previewAttachment.fileSize) }}</p></div>
+      </div>
+    </el-dialog>
+    <el-dialog v-model="faceDialogVisible" title="人脸识别" width="480px" :close-on-click-modal="false" @close="stopFaceRecognition">
+      <div class="face-camera-wrap">
+        <video ref="faceVideoRef" autoplay playsinline class="face-camera-video" />
+        <div class="face-scan-overlay">
+          <div class="face-scan-frame" />
+          <p class="face-scan-text">正在识别中，请保持面部在框内...</p>
+        </div>
       </div>
     </el-dialog>
   </section>
@@ -609,6 +711,8 @@ async function reject() {
 /* ========== 卡片内表格包裹 ========== */
 .sec-card :deep(.el-table) { margin: 0; }
 .table-wrap { padding: 0 20px 16px; }
+.upload-text { margin-top: 8px; color: var(--text-primary); font-size: 14px; }
+.upload-tip { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
 
 /* ========== 审核处理 ========== */
 .action-block { padding: 20px; }
@@ -877,5 +981,56 @@ async function reject() {
 @media (max-width: 1200px) {
   .three-col-layout { grid-template-columns: 1fr; }
   .two-col-layout { grid-template-columns: 1fr; }
+}
+
+/* ========== 人脸识别摄像头弹窗 ========== */
+.face-camera-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.face-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* 镜像翻转更符合用户习惯 */
+}
+.face-scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.face-scan-frame {
+  width: 200px;
+  height: 260px;
+  border: 2px solid rgba(73, 183, 101, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5);
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%, 100% { box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(73, 183, 101, 0.3); }
+  50% { box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5), 0 0 35px rgba(73, 183, 101, 0.6); }
+}
+.face-scan-text {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  opacity: 0.9;
 }
 </style>
