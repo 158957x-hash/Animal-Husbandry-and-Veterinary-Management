@@ -255,6 +255,10 @@ function onTabChange() {
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="gov-pagination-bar">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="currentList.length" :page-size="10" />
+      </div>
     </div>
 
     <!-- Review Dialog -->
@@ -424,6 +428,7 @@ function onTabChange() {
 
 <style scoped>
 .review-page {
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -434,21 +439,24 @@ function onTabChange() {
   justify-content: space-between;
   align-items: flex-start;
   background: #fff;
-  border-radius: 8px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .page-header-card h2 {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
   color: #1d2129;
 }
 
 .page-header-card p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: #86909c;
+  line-height: 1.5;
+  max-width: 600px;
 }
 
 .header-right {
@@ -459,20 +467,21 @@ function onTabChange() {
 
 .search-card {
   background: #fff;
-  border-radius: 8px;
-  padding: 16px 24px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 20px 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .search-row {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-input {
   flex: 1;
-  max-width: 280px;
+  max-width: 320px;
 }
 
 .search-select {
@@ -481,9 +490,9 @@ function onTabChange() {
 
 .tab-card {
   background: #fff;
-  border-radius: 8px;
-  padding: 4px 16px 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 8px 20px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .review-tabs {
@@ -494,6 +503,7 @@ function onTabChange() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: 15px;
 }
 
 .tab-badge {
@@ -503,9 +513,9 @@ function onTabChange() {
 .batch-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #f2f3f5;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .review-detail {
@@ -515,15 +525,17 @@ function onTabChange() {
 }
 
 .review-section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .review-section h4 {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
   color: #1d2129;
-  border-left: 3px solid #165dff;
-  padding-left: 10px;
+  border-left: 3px solid #104826;
+  padding-left: 12px;
+  line-height: 1.3;
 }
 
 .material-list {
@@ -536,9 +548,9 @@ function onTabChange() {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   background: #f7f8fa;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .material-uploaded {
@@ -552,11 +564,17 @@ function onTabChange() {
 }
 
 .reason-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #4e5969;
   margin: 0;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: #f7f8fa;
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+.gov-pagination-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0 4px;
 }
 </style>
